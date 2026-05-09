@@ -162,7 +162,7 @@ const MyOrder = () => {
           <div className="max-w-6xl mx-auto px-4 md:px-0">
             <h1 className="text-3xl font-bold text-[#2f4274] mb-2">Pesanan Saya</h1>
             <p className="text-[#4a5f95] mb-6">
-              Lihat ringkasan pesanan dan progress album Anda. Pengeditan pesanan tidak tersedia di halaman ini.
+              Lihat ringkasan pesanan dan progress album Anda.
             </p>
 
             <div className="bg-white rounded-2xl border border-[#d7e3ff] shadow-lg p-4 md:p-6 mb-6">
