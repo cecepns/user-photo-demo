@@ -5,6 +5,7 @@ import toast, { Toaster } from "react-hot-toast";
 import AdminLayout from "../../components/AdminLayout";
 import { formatRupiah, formatDate, formatDateTime } from "../../utils/formatters";
 import jsPDF from "jspdf";
+import { useSiteIdentity } from "../../hooks/useSiteIdentity";
 
 const API_BASE = "https://api-inventory.isavralabel.com/wedding-app/api";
 const CLIENT_COLOR_POOL = [
@@ -68,6 +69,7 @@ const AdminOrders = () => {
   const [showDuplicatesOnly, setShowDuplicatesOnly] = useState(false);
   const [editableOrderItems, setEditableOrderItems] = useState([]);
   const [savingOrderItems, setSavingOrderItems] = useState(false);
+  const { appName, contact: siteContact } = useSiteIdentity();
 
   // Kunci duplikat: email + wedding_date sama = kemungkinan pesanan ganda
   const duplicateKey = (order) =>
@@ -724,19 +726,29 @@ const AdminOrders = () => {
     // Company header
     doc.setFontSize(16);
     doc.setFont("helvetica", "bold");
-    doc.text("Chekusphoto", 20, 20);
+    doc.text(appName, 20, 20);
 
     // Company details
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
-    doc.text(
-      "Jl. Raya panongan Kec. Panongan Kab. Tangerang Provinsi Banten",
-      20,
-      30
-    );
-    doc.text("Telephone: 089646829459", 20, 37);
-    doc.text("Email: edo19priyatno@gmail.com", 20, 44);
-    doc.text(`Website: ${currentDomain}`, 20, 51);
+    const addressSingleLine = [siteContact.addressLine1, siteContact.addressLine2]
+      .filter(Boolean)
+      .join(" ");
+    doc.text(addressSingleLine, 20, 30);
+    let headerY = 37;
+    if (siteContact.phone) {
+      doc.text(`Telephone: ${siteContact.phone}`, 20, headerY);
+      headerY += 7;
+    }
+    if (siteContact.email) {
+      doc.text(`Email: ${siteContact.email}`, 20, headerY);
+      headerY += 7;
+    }
+    if (siteContact.instagramUrl) {
+      doc.text(`Instagram: ${siteContact.instagramUrl}`, 20, headerY);
+      headerY += 7;
+    }
+    doc.text(`Website: ${currentDomain}`, 20, headerY);
 
     // Invoice details (right side)
     doc.setFontSize(12);
@@ -938,7 +950,7 @@ const AdminOrders = () => {
       item.bank_account_number ||
       "1234567890";
     const bankAccountName =
-      selectedBank?.name || item.bank_account_name || "Chekusphoto";
+      selectedBank?.name || item.bank_account_name || appName;
     doc.text(`Nomor Rekening: ${bankAccountNumber}`, 20, currentY + 75);
     doc.text(`Atas Nama: ${bankAccountName}`, 20, currentY + 82);
 

@@ -4,6 +4,11 @@ import { Edit, Plus, Trash2, Upload } from 'lucide-react';
 import toast from 'react-hot-toast';
 import AdminLayout from '../../components/AdminLayout';
 import { API_BASE, imageUrl } from '../../utils/imageUrl';
+import {
+  DEFAULT_SITE_CONTACT,
+  parseSiteContactFromDescription,
+  serializeSiteIdentityDescription,
+} from '../../hooks/useSiteIdentity';
 
 const AdminContent = () => {
   const [sections, setSections] = useState([]);
@@ -22,6 +27,9 @@ const AdminContent = () => {
     is_active: true,
     sort_order: 0
   });
+  const [siteContactDraft, setSiteContactDraft] = useState(() => ({
+    ...DEFAULT_SITE_CONTACT,
+  }));
 
   useEffect(() => {
     fetchSections();
@@ -54,13 +62,21 @@ const AdminContent = () => {
       
       const method = editingSection ? 'PUT' : 'POST';
       
+      const isSiteIdentity = formData.section_name === 'site_identity';
+      const payload = isSiteIdentity
+        ? {
+            ...formData,
+            description: serializeSiteIdentityDescription(siteContactDraft),
+          }
+        : formData;
+
       const response = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload)
       });
 
       if (response.ok) {
@@ -92,6 +108,7 @@ const AdminContent = () => {
       is_active: section.is_active,
       sort_order: section.sort_order || 0
     });
+    setSiteContactDraft(parseSiteContactFromDescription(section.description));
     setShowModal(true);
   };
 
@@ -131,6 +148,7 @@ const AdminContent = () => {
       is_active: true,
       sort_order: 0
     });
+    setSiteContactDraft({ ...DEFAULT_SITE_CONTACT });
   };
 
   const openCreateModal = () => {
@@ -207,7 +225,7 @@ const AdminContent = () => {
           <div className="flex flex-wrap justify-between items-center">
             <div>
               <h1 className="text-3xl font-bold text-gray-800 mb-2">Kelola Konten</h1>
-              <p className="text-gray-600">Kelola konten dinamis untuk website Anda. Edit section <strong>site_identity</strong> untuk ubah nama aplikasi, nama perusahaan, inisial logo, dan logo utama (isi di field URL Gambar).</p>
+              <p className="text-gray-600">Kelola konten dinamis untuk website Anda. Edit section <strong>site_identity</strong> untuk nama aplikasi, nama perusahaan, inisial, logo, serta alamat, telepon, email, Instagram, jam kerja, dan embed peta (footer, halaman kontak, dan invoice).</p>
             </div>
             <div className="flex items-center gap-4">
               <a
@@ -371,18 +389,104 @@ const AdminContent = () => {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Deskripsi
-                  </label>
-                  <textarea
-                    value={formData.description}
-                    onChange={(e) => setFormData({...formData, description: e.target.value})}
-                    rows={4}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                    placeholder="Deskripsi section..."
-                  />
-                </div>
+                {isSiteIdentity ? (
+                  <div className="space-y-4 rounded-lg border border-gray-200 bg-gray-50/80 p-4">
+                    <p className="text-sm font-medium text-gray-800">Kontak &amp; lokasi (tampil di footer, halaman Kontak, dan PDF invoice)</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Alamat baris 1</label>
+                        <input
+                          type="text"
+                          value={siteContactDraft.addressLine1}
+                          onChange={(e) =>
+                            setSiteContactDraft((p) => ({ ...p, addressLine1: e.target.value }))
+                          }
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white"
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Alamat baris 2</label>
+                        <input
+                          type="text"
+                          value={siteContactDraft.addressLine2}
+                          onChange={(e) =>
+                            setSiteContactDraft((p) => ({ ...p, addressLine2: e.target.value }))
+                          }
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Telepon</label>
+                        <input
+                          type="text"
+                          value={siteContactDraft.phone}
+                          onChange={(e) =>
+                            setSiteContactDraft((p) => ({ ...p, phone: e.target.value }))
+                          }
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input
+                          type="email"
+                          value={siteContactDraft.email}
+                          onChange={(e) =>
+                            setSiteContactDraft((p) => ({ ...p, email: e.target.value }))
+                          }
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white"
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">URL Instagram</label>
+                        <input
+                          type="url"
+                          value={siteContactDraft.instagramUrl}
+                          onChange={(e) =>
+                            setSiteContactDraft((p) => ({ ...p, instagramUrl: e.target.value }))
+                          }
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white"
+                          placeholder="https://www.instagram.com/akun/"
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">URL embed Google Maps (iframe src)</label>
+                        <input
+                          type="url"
+                          value={siteContactDraft.mapsEmbedUrl}
+                          onChange={(e) =>
+                            setSiteContactDraft((p) => ({ ...p, mapsEmbedUrl: e.target.value }))
+                          }
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white"
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Jam kerja (satu baris per baris)</label>
+                        <textarea
+                          value={siteContactDraft.businessHours}
+                          onChange={(e) =>
+                            setSiteContactDraft((p) => ({ ...p, businessHours: e.target.value }))
+                          }
+                          rows={4}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white font-mono text-sm"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Deskripsi
+                    </label>
+                    <textarea
+                      value={formData.description}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      rows={4}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      placeholder="Deskripsi section..."
+                    />
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
