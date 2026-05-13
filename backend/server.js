@@ -1927,7 +1927,7 @@ app.delete('/api/gallery/images/:id', authenticateToken, async (req, res) => {
 
 // Content sections routes
 // Catatan: untuk section_name = 'site_identity', field description dapat berisi JSON
-// { "siteContact": { addressLine1, addressLine2, phone, email, instagramUrl, mapsEmbedUrl, businessHours } }
+// { "siteContact": { ... }, "footerServices": ["...", "..."] }
 // (dikelola dari admin frontend). GET/PUT tidak perlu parsing khusus — disimpan sebagai teks.
 app.get('/api/content-sections', async (req, res) => {
   try {

@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useSiteIdentity } from '../hooks/useSiteIdentity';
 
 const Footer = () => {
-  const { appName, companyName, contact } = useSiteIdentity();
+  const { appName, companyName, contact, footerServices } = useSiteIdentity();
 
   return (
     <footer className="bg-gray-900 text-white">
@@ -50,10 +50,11 @@ const Footer = () => {
           <div>
             <h3 className=" text-lg font-semibold mb-4">Layanan</h3>
             <ul className="space-y-2">
-              <li><span className="text-gray-400">Perencanaan Pernikahan</span></li>
-              <li><span className="text-gray-400">Koordinasi Acara</span></li>
-              <li><span className="text-gray-400">Pemilihan Venue</span></li>
-              <li><span className="text-gray-400">Dekorasi</span></li>
+              {footerServices.map((label, idx) => (
+                <li key={`${idx}-${label}`}>
+                  <span className="text-gray-400">{label}</span>
+                </li>
+              ))}
             </ul>
           </div>
 

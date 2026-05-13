@@ -6,7 +6,9 @@ import AdminLayout from '../../components/AdminLayout';
 import { API_BASE, imageUrl } from '../../utils/imageUrl';
 import {
   DEFAULT_SITE_CONTACT,
+  DEFAULT_FOOTER_SERVICES,
   parseSiteContactFromDescription,
+  parseFooterServicesFromDescription,
   serializeSiteIdentityDescription,
 } from '../../hooks/useSiteIdentity';
 
@@ -30,6 +32,9 @@ const AdminContent = () => {
   const [siteContactDraft, setSiteContactDraft] = useState(() => ({
     ...DEFAULT_SITE_CONTACT,
   }));
+  const [footerServicesText, setFooterServicesText] = useState(
+    () => DEFAULT_FOOTER_SERVICES.join('\n')
+  );
 
   useEffect(() => {
     fetchSections();
@@ -66,7 +71,14 @@ const AdminContent = () => {
       const payload = isSiteIdentity
         ? {
             ...formData,
-            description: serializeSiteIdentityDescription(siteContactDraft),
+            description: serializeSiteIdentityDescription(
+              siteContactDraft,
+              footerServicesText
+                .split('\n')
+                .map((l) => l.trim())
+                .filter(Boolean)
+                .slice(0, 20)
+            ),
           }
         : formData;
 
@@ -109,6 +121,9 @@ const AdminContent = () => {
       sort_order: section.sort_order || 0
     });
     setSiteContactDraft(parseSiteContactFromDescription(section.description));
+    setFooterServicesText(
+      parseFooterServicesFromDescription(section.description).join('\n')
+    );
     setShowModal(true);
   };
 
@@ -149,6 +164,7 @@ const AdminContent = () => {
       sort_order: 0
     });
     setSiteContactDraft({ ...DEFAULT_SITE_CONTACT });
+    setFooterServicesText(DEFAULT_FOOTER_SERVICES.join('\n'));
   };
 
   const openCreateModal = () => {
@@ -225,7 +241,7 @@ const AdminContent = () => {
           <div className="flex flex-wrap justify-between items-center">
             <div>
               <h1 className="text-3xl font-bold text-gray-800 mb-2">Kelola Konten</h1>
-              <p className="text-gray-600">Kelola konten dinamis untuk website Anda. Edit section <strong>site_identity</strong> untuk nama aplikasi, nama perusahaan, inisial, logo, serta alamat, telepon, email, Instagram, jam kerja, dan embed peta (footer, halaman kontak, dan invoice).</p>
+              <p className="text-gray-600">Kelola konten dinamis untuk website Anda. Edit section <strong>site_identity</strong> untuk nama aplikasi, nama perusahaan, inisial, logo, kontak &amp; peta, daftar teks kolom Layanan di footer, serta data untuk invoice.</p>
             </div>
             <div className="flex items-center gap-4">
               <a
@@ -469,6 +485,19 @@ const AdminContent = () => {
                           }
                           rows={4}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white font-mono text-sm"
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Daftar layanan (kolom &quot;Layanan&quot; di footer)
+                        </label>
+                        <p className="text-xs text-gray-500 mb-2">Satu baris = satu item. Maksimal 20 baris.</p>
+                        <textarea
+                          value={footerServicesText}
+                          onChange={(e) => setFooterServicesText(e.target.value)}
+                          rows={6}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white font-mono text-sm"
+                          placeholder={DEFAULT_FOOTER_SERVICES.join('\n')}
                         />
                       </div>
                     </div>

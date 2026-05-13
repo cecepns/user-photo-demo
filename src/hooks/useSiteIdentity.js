@@ -18,27 +18,57 @@ export const DEFAULT_SITE_CONTACT = {
     'Senin - Jumat: 09:00 - 18:00\nSabtu: 10:00 - 16:00\nMinggu: Hanya dengan janji temu',
 };
 
+/** Baris daftar di kolom "Layanan" footer (JSON key `footerServices`). */
+export const DEFAULT_FOOTER_SERVICES = [
+  'Perencanaan Pernikahan',
+  'Koordinasi Acara',
+  'Pemilihan Venue',
+  'Dekorasi',
+];
+
+function tryParseSiteIdentityJson(description) {
+  if (!description || typeof description !== 'string') return null;
+  const trimmed = description.trim();
+  if (!trimmed.startsWith('{')) return null;
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    return null;
+  }
+}
+
 export const parseSiteContactFromDescription = (description) => {
   const merged = { ...DEFAULT_SITE_CONTACT };
-  if (!description || typeof description !== 'string') return merged;
-  const trimmed = description.trim();
-  if (!trimmed.startsWith('{')) return merged;
-  try {
-    const obj = JSON.parse(trimmed);
-    const c = obj?.siteContact && typeof obj.siteContact === 'object' ? obj.siteContact : {};
-    for (const key of Object.keys(DEFAULT_SITE_CONTACT)) {
-      if (Object.prototype.hasOwnProperty.call(c, key)) {
-        merged[key] = String(c[key] ?? '').trim();
-      }
+  const obj = tryParseSiteIdentityJson(description);
+  if (!obj?.siteContact || typeof obj.siteContact !== 'object') return merged;
+  const c = obj.siteContact;
+  for (const key of Object.keys(DEFAULT_SITE_CONTACT)) {
+    if (Object.prototype.hasOwnProperty.call(c, key)) {
+      merged[key] = String(c[key] ?? '').trim();
     }
-    return merged;
-  } catch {
-    return { ...DEFAULT_SITE_CONTACT };
   }
+  return merged;
 };
 
-export const serializeSiteIdentityDescription = (siteContact) =>
-  JSON.stringify({ siteContact: { ...DEFAULT_SITE_CONTACT, ...siteContact } });
+export const parseFooterServicesFromDescription = (description) => {
+  const obj = tryParseSiteIdentityJson(description);
+  if (!obj) return [...DEFAULT_FOOTER_SERVICES];
+  if (Array.isArray(obj.footerServices)) {
+    const list = obj.footerServices.map((s) => String(s ?? '').trim()).filter(Boolean);
+    if (list.length > 0) return list;
+  }
+  return [...DEFAULT_FOOTER_SERVICES];
+};
+
+export const serializeSiteIdentityDescription = (siteContact, footerServices) => {
+  const services = Array.isArray(footerServices)
+    ? footerServices.map((s) => String(s ?? '').trim()).filter(Boolean)
+    : [];
+  return JSON.stringify({
+    siteContact: { ...DEFAULT_SITE_CONTACT, ...siteContact },
+    footerServices: services.length > 0 ? services : [...DEFAULT_FOOTER_SERVICES],
+  });
+};
 
 const normalizeInitial = (value) => {
   if (!value) return '';
@@ -68,6 +98,7 @@ const buildIdentity = (data) => {
   const appInitial = normalizeInitial(data?.button_text) || deriveInitialFromName(appName);
   const logoUrl = String(data?.image_url || '').trim();
   const contact = parseSiteContactFromDescription(data?.description);
+  const footerServices = parseFooterServicesFromDescription(data?.description);
 
   return {
     appName,
@@ -75,6 +106,7 @@ const buildIdentity = (data) => {
     appInitial,
     logoUrl,
     contact,
+    footerServices,
   };
 };
 
