@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { useSiteIdentity } from '../../hooks/useSiteIdentity';
+import { imageUrl } from '../../utils/imageUrl';
 
 const AdminLogin = () => {
   const [credentials, setCredentials] = useState({
@@ -63,7 +64,7 @@ const AdminLogin = () => {
           <div className="text-center mb-8">
             <div className="w-16 h-16 bg-gradient-to-r from-primary-500 to-secondary-500 rounded-full flex items-center justify-center mx-auto mb-4">
               {logoUrl ? (
-                <img src={logoUrl} alt={appName} className="w-full h-full rounded-full object-cover" />
+                <img src={imageUrl(logoUrl)} alt={appName} className="w-full h-full rounded-full object-cover" />
               ) : (
                 <span className="text-white font-bold text-2xl">{appInitial}</span>
               )}
