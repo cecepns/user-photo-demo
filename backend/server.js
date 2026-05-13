@@ -1209,7 +1209,7 @@ app.post('/api/orders', async (req, res) => {
   try {
     const [result] = await db.execute(
       'INSERT INTO orders (name, email, phone, address, wedding_date, notes, service_id, service_name, selected_items, total_amount, booking_amount, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [name, email, phone, address, wedding_date, notes, service_id, service_name, JSON.stringify(selected_items), total_amount, booking_amount || 2000000, 'pending']
+      [name, email, phone, address, wedding_date, notes, service_id, service_name, JSON.stringify(selected_items), total_amount, booking_amount || 300000, 'pending']
     );
     res.json({ id: result.insertId, message: 'Order created successfully' });
   } catch (error) {
@@ -1376,7 +1376,7 @@ app.post('/api/custom-requests', async (req, res) => {
     email || null,
     phone || null,
     wedding_date || null,
-    booking_amount ? parseFloat(booking_amount) : null,
+    booking_amount ? parseFloat(booking_amount) : 300000,
     services || null,
     additional_requests || null,
     'pending' // Set default status to pending

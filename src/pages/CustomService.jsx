@@ -11,6 +11,9 @@ function itemImageUrl(filename) {
   return `${API_BASE}/uploads-weddingsapp/${filename}`;
 }
 
+/** Minimal uang muka booking layanan kustom (selaras dengan Service Detail). */
+const MIN_BOOKING_AMOUNT = 300000;
+
 const CustomService = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -21,7 +24,7 @@ const CustomService = () => {
     wedding_date: "",
     services: [],
     additional_requests: "",
-    booking_amount: 300000, // Default minimum booking amount
+    booking_amount: MIN_BOOKING_AMOUNT,
   });
 
   const [serviceOptions, setServiceOptions] = useState([]);
@@ -906,20 +909,20 @@ const CustomService = () => {
                   {/* Booking Amount */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Jumlah Booking (Minimal Rp 300.000)
+                      Jumlah Booking (Minimal {formatRupiah(MIN_BOOKING_AMOUNT)})
                     </label>
                     <input
                       type="number"
                       name="booking_amount"
                       value={formData.booking_amount}
                       onChange={handleInputChange}
-                      min="300000"
-                      step="100000"
+                      min={MIN_BOOKING_AMOUNT}
+                      step="50000"
                       required
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     />
                     <p className="text-sm text-gray-500 mt-1">
-                      Minimal booking Rp 300.000. Anda dapat menyesuaikan jumlah
+                      Minimal booking {formatRupiah(MIN_BOOKING_AMOUNT)}. Anda dapat menyesuaikan jumlah
                       sesuai kebutuhan.
                     </p>
                   </div>

@@ -15,6 +15,9 @@ const formatPrice = (price) => {
   return `Rp ${numPrice.toLocaleString('id-ID')}`;
 };
 
+/** Minimal uang muka booking (harus selaras dengan backend jika ada validasi). */
+const MIN_BOOKING_AMOUNT = 300000;
+
 // Helper function to calculate total price
 const calculateTotalPrice = (items, basePrice = 0) => {
   // Convert basePrice to number if it's a string
@@ -331,10 +334,10 @@ const ServiceDetail = () => {
                           <div className="flex flex-col font-bold text-lg">
                             <span>Total Pembayaran Booking:</span>
                             <span className="text-lg sm:text-xl text-primary-600">
-                              {formatPrice(2000000)}
+                              {formatPrice(MIN_BOOKING_AMOUNT)}
                             </span>
                             <p className="text-xs text-gray-500 mt-1">
-                              Minimal Rp 2.000.000, bisa lebih
+                              Minimal {formatPrice(MIN_BOOKING_AMOUNT)}, bisa lebih
                             </p>
                           </div>
                         </div>
@@ -523,8 +526,8 @@ const PaymentInstructionsModal = ({ orderData, onClose }) => {
   //   doc.setFont('helvetica', 'normal');
   //   doc.text(`Total Harga Layanan: ${formatPrice(calculateTotalPrice(orderData.selected_items, orderData.base_price || 0))}`, 20, currentY + 30);
   //   doc.text(`Metode Pembayaran: ${selectedPaymentMethod?.name || 'Transfer Bank'}`, 20, currentY + 37);
-  //   doc.text('Biaya Booking: Rp 2.000.000', 20, currentY + 44);
-  //   doc.text(`Total Pembayaran Diperlukan: ${formatPrice(2000000)}`, 20, currentY + 51);
+  //   doc.text(`Biaya Booking: ${formatPrice(MIN_BOOKING_AMOUNT)}`, 20, currentY + 44);
+  //   doc.text(`Total Pembayaran Diperlukan: ${formatPrice(MIN_BOOKING_AMOUNT)}`, 20, currentY + 51);
     
   //   // Add bank account information
   //   doc.setFontSize(12);
@@ -585,7 +588,7 @@ const BookingModal = ({ service, selectedItems, onClose, onOrderSuccess }) => {
     phone: '',
     address: '',
     wedding_date: '',
-    booking_amount: 2000000,
+    booking_amount: MIN_BOOKING_AMOUNT,
     notes: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -726,19 +729,21 @@ const BookingModal = ({ service, selectedItems, onClose, onOrderSuccess }) => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Jumlah Booking (Minimal Rp 2.000.000)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Jumlah Booking (Minimal {formatPrice(MIN_BOOKING_AMOUNT)})
+                    </label>
                     <input
                       type="number"
                       name="booking_amount"
                       value={formData.booking_amount}
                       onChange={handleInputChange}
-                      min="2000000"
-                      step="100000"
+                      min={MIN_BOOKING_AMOUNT}
+                      step="50000"
                       required
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      Minimal booking Rp 2.000.000, bisa lebih sesuai kebutuhan
+                      Minimal booking {formatPrice(MIN_BOOKING_AMOUNT)}, bisa lebih sesuai kebutuhan
                     </p>
                   </div>
 
@@ -787,11 +792,11 @@ const BookingModal = ({ service, selectedItems, onClose, onOrderSuccess }) => {
                       <div className="flex justify-between items-center font-bold text-lg">
                         <span>Total Pembayaran Booking:</span>
                         <span className="text-primary-600">
-                          {formatPrice(2000000)}
+                          {formatPrice(MIN_BOOKING_AMOUNT)}
                         </span>
                       </div>
                       <p className="text-xs text-gray-500 mt-1">
-                        Minimal Rp 2.000.000, bisa lebih sesuai kebutuhan
+                        Minimal {formatPrice(MIN_BOOKING_AMOUNT)}, bisa lebih sesuai kebutuhan
                       </p>
                     </div>
                   </div>
@@ -803,7 +808,7 @@ const BookingModal = ({ service, selectedItems, onClose, onOrderSuccess }) => {
                       <li>• Konsultasi gratis sebelum pemesanan</li>
                       <li>• Garansi kepuasan 100%</li>
                       <li>• Tim support 24/7</li>
-                      <li>• Transfer minimal Rp 2.000.000 untuk booking</li>
+                      <li>• Transfer minimal {formatPrice(MIN_BOOKING_AMOUNT)} untuk booking</li>
                     </ul>
                   </div>
 
@@ -811,13 +816,14 @@ const BookingModal = ({ service, selectedItems, onClose, onOrderSuccess }) => {
                   <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                     <h6 className="font-semibold text-red-800 mb-2">⚠️ Persyaratan Booking</h6>
                     <p className="text-sm text-red-700 mb-2">
-                      Untuk melakukan booking, Anda harus melakukan transfer <strong>minimal Rp 2.000.000</strong> terlebih dahulu. 
+                      Untuk melakukan booking, Anda harus melakukan transfer{' '}
+                      <strong>minimal {formatPrice(MIN_BOOKING_AMOUNT)}</strong> terlebih dahulu.
                       Pembayaran akan dikonfirmasi dalam 1x24 jam setelah transfer dilakukan.
                     </p>
                     <p className="text-xs text-red-600">
-                      <strong>Catatan:</strong> Total harga layanan adalah {formatPrice(calculateTotalPrice(selectedItems, service.base_price))}. 
-                      {selectedItems.length > 0 ? 'Paket lengkap dengan semua item terpilih.' : ''} 
-                      Pembayaran minimal Rp 2.000.000 adalah uang muka untuk booking. Sisa pembayaran dapat diselesaikan sesuai kesepakatan.
+                      <strong>Catatan:</strong> Total harga layanan adalah {formatPrice(calculateTotalPrice(selectedItems, service.base_price))}.
+                      {selectedItems.length > 0 ? 'Paket lengkap dengan semua item terpilih.' : ''}{' '}
+                      Pembayaran minimal {formatPrice(MIN_BOOKING_AMOUNT)} adalah uang muka untuk booking. Sisa pembayaran dapat diselesaikan sesuai kesepakatan.
                     </p>
                   </div>
                 </div>
