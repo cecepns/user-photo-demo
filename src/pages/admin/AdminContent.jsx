@@ -37,7 +37,7 @@ const AdminContent = () => {
 
   const fetchSections = async () => {
     try {
-      const response = await fetch('https://api-inventory.isavralabel.com/wedding-app/api/content-sections?is_active=false', {
+      const response = await fetch('https://api-inventory.isavralabel.com/chekusphoto/api/content-sections?is_active=false', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
         }
@@ -57,8 +57,8 @@ const AdminContent = () => {
     
     try {
       const url = editingSection 
-        ? `https://api-inventory.isavralabel.com/wedding-app/api/content-sections/${editingSection.id}`
-        : 'https://api-inventory.isavralabel.com/wedding-app/api/content-sections';
+        ? `https://api-inventory.isavralabel.com/chekusphoto/api/content-sections/${editingSection.id}`
+        : 'https://api-inventory.isavralabel.com/chekusphoto/api/content-sections';
       
       const method = editingSection ? 'PUT' : 'POST';
       
@@ -116,7 +116,7 @@ const AdminContent = () => {
     if (!confirm('Apakah Anda yakin ingin menghapus konten ini?')) return;
 
     try {
-      const response = await fetch(`https://api-inventory.isavralabel.com/wedding-app/api/content-sections/${id}`, {
+      const response = await fetch(`https://api-inventory.isavralabel.com/chekusphoto/api/content-sections/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('admin_token')}`

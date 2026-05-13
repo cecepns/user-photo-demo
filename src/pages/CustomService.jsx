@@ -5,7 +5,7 @@ import toast from "react-hot-toast";
 import { ChevronLeft, ChevronRight, X, Image as ImageIcon } from "lucide-react";
 import { formatRupiah } from "../utils/formatters";
 
-const API_BASE = "https://api-inventory.isavralabel.com/wedding-app";
+const API_BASE = "https://api-inventory.isavralabel.com/chekusphoto";
 function itemImageUrl(filename) {
   if (!filename || filename.startsWith("http")) return filename || "";
   return `${API_BASE}/uploads-weddingsapp/${filename}`;
@@ -73,7 +73,7 @@ const CustomService = () => {
   const fetchCategories = async () => {
     try {
       const response = await fetch(
-        "https://api-inventory.isavralabel.com/wedding-app/api/items/categories"
+        "https://api-inventory.isavralabel.com/chekusphoto/api/items/categories"
       );
       const data = await response.json();
       setCategories(data);
@@ -85,10 +85,10 @@ const CustomService = () => {
   const fetchServiceOptions = async (category = "") => {
     try {
       const url = category
-        ? `https://api-inventory.isavralabel.com/wedding-app/api/items?category=${encodeURIComponent(
+        ? `https://api-inventory.isavralabel.com/chekusphoto/api/items?category=${encodeURIComponent(
             category
           )}`
-        : "https://api-inventory.isavralabel.com/wedding-app/api/items";
+        : "https://api-inventory.isavralabel.com/chekusphoto/api/items";
       const response = await fetch(url);
       const data = await response.json();
       setServiceOptions(data);
@@ -101,7 +101,7 @@ const CustomService = () => {
   const fetchPaymentMethods = async () => {
     try {
       const response = await fetch(
-        "https://api-inventory.isavralabel.com/wedding-app/api/payment-methods"
+        "https://api-inventory.isavralabel.com/chekusphoto/api/payment-methods"
       );
       const data = await response.json();
       setPaymentMethods(data);
@@ -116,7 +116,7 @@ const CustomService = () => {
   const fetchCustomServiceContent = async () => {
     try {
       const response = await fetch(
-        "https://api-inventory.isavralabel.com/wedding-app/api/content-sections/custom_service_section"
+        "https://api-inventory.isavralabel.com/chekusphoto/api/content-sections/custom_service_section"
       );
       if (response.ok) {
         const data = await response.json();
@@ -163,7 +163,7 @@ const CustomService = () => {
     e.preventDefault();
     try {
       const response = await fetch(
-        "https://api-inventory.isavralabel.com/wedding-app/api/custom-requests",
+        "https://api-inventory.isavralabel.com/chekusphoto/api/custom-requests",
         {
           method: "POST",
           headers: {

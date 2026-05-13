@@ -1,4 +1,4 @@
-export const API_BASE = 'https://api-inventory.isavralabel.com/wedding-app';
+export const API_BASE = 'https://api-inventory.isavralabel.com/chekusphoto';
 
 export function imageUrl(value) {
   if (!value) return '';

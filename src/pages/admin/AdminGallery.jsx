@@ -4,7 +4,7 @@ import { Plus, Edit, Trash2, Image, Star, Eye, EyeOff, Upload } from 'lucide-rea
 import toast, { Toaster } from 'react-hot-toast';
 import AdminLayout from '../../components/AdminLayout';
 
-const API_BASE = 'https://api-inventory.isavralabel.com/wedding-app';
+const API_BASE = 'https://api-inventory.isavralabel.com/chekusphoto';
 function imageUrl(value) {
   if (!value) return '';
   if (value.startsWith('http')) return value;
@@ -149,8 +149,8 @@ const AdminGallery = () => {
     
     try {
       const url = editingCategory 
-        ? `https://api-inventory.isavralabel.com/wedding-app/api/gallery/categories/${editingCategory.id}`
-        : 'https://api-inventory.isavralabel.com/wedding-app/api/gallery/categories';
+        ? `https://api-inventory.isavralabel.com/chekusphoto/api/gallery/categories/${editingCategory.id}`
+        : 'https://api-inventory.isavralabel.com/chekusphoto/api/gallery/categories';
       
       const method = editingCategory ? 'PUT' : 'POST';
       

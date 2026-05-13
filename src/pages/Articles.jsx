@@ -11,7 +11,7 @@ const Articles = () => {
 
   const fetchArticles = async () => {
     try {
-      const response = await fetch('https://api-inventory.isavralabel.com/wedding-app/api/articles');
+      const response = await fetch('https://api-inventory.isavralabel.com/chekusphoto/api/articles');
       const data = await response.json();
       setArticles(data);
     } catch (error) {

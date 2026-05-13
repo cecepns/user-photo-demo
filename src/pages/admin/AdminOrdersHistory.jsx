@@ -32,7 +32,7 @@ const AdminOrdersHistory = () => {
     setLoading(true);
     try {
       const response = await fetch(
-        `https://api-inventory.isavralabel.com/wedding-app/api/orders?page=${ordersPagination.page}&limit=${ordersPagination.limit}&status=confirmed,completed,cancelled`,
+        `https://api-inventory.isavralabel.com/chekusphoto/api/orders?page=${ordersPagination.page}&limit=${ordersPagination.limit}&status=confirmed,completed,cancelled`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("admin_token")}`,
@@ -87,7 +87,7 @@ const AdminOrdersHistory = () => {
   const handleStatusUpdate = async (orderId, newStatus) => {
     try {
       const response = await fetch(
-        `https://api-inventory.isavralabel.com/wedding-app/api/orders/${orderId}/status`,
+        `https://api-inventory.isavralabel.com/chekusphoto/api/orders/${orderId}/status`,
         {
           method: "PUT",
           headers: {
@@ -149,7 +149,7 @@ const AdminOrdersHistory = () => {
 
     try {
       const response = await fetch(
-        `https://api-inventory.isavralabel.com/wedding-app/api/orders/${orderId}`,
+        `https://api-inventory.isavralabel.com/chekusphoto/api/orders/${orderId}`,
         {
           method: "DELETE",
           headers: {

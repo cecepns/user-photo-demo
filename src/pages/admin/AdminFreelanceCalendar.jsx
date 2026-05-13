@@ -6,7 +6,7 @@ import toast, { Toaster } from 'react-hot-toast';
 import AdminLayout from '../../components/AdminLayout';
 import { formatDate } from '../../utils/formatters';
 
-const API_BASE = 'https://api-inventory.isavralabel.com/wedding-app';
+const API_BASE = 'https://api-inventory.isavralabel.com/chekusphoto';
 
 const PHOTOGRAPHER_COLORS = [
   'bg-sky-600 text-white',

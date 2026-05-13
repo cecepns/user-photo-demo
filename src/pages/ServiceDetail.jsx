@@ -56,17 +56,17 @@ const ServiceDetail = () => {
   const fetchServiceData = async () => {
     try {
       // Fetch service details
-      const serviceResponse = await fetch(`https://api-inventory.isavralabel.com/wedding-app/api/services/${id}`);
+      const serviceResponse = await fetch(`https://api-inventory.isavralabel.com/chekusphoto/api/services/${id}`);
       const serviceData = await serviceResponse.json();
       setService(serviceData);
 
       // Fetch service items
-      const itemsResponse = await fetch(`https://api-inventory.isavralabel.com/wedding-app/api/services/${id}/items`);
+      const itemsResponse = await fetch(`https://api-inventory.isavralabel.com/chekusphoto/api/services/${id}/items`);
       const itemsData = await itemsResponse.json();
       setItems(itemsData);
 
       // Fetch service features
-      const featuresResponse = await fetch(`https://api-inventory.isavralabel.com/wedding-app/api/service-features`);
+      const featuresResponse = await fetch(`https://api-inventory.isavralabel.com/chekusphoto/api/service-features`);
       const featuresData = await featuresResponse.json();
       setFeatures(featuresData);
       // Don't auto-select items - start with empty selection
@@ -79,7 +79,7 @@ const ServiceDetail = () => {
 
   const fetchButtonContent = async () => {
     try {
-      const response = await fetch('https://api-inventory.isavralabel.com/wedding-app/api/content-sections/button_item_detail');
+      const response = await fetch('https://api-inventory.isavralabel.com/chekusphoto/api/content-sections/button_item_detail');
       if (response.ok) {
         const data = await response.json();
         setButtonContent(data);
@@ -615,7 +615,7 @@ const BookingModal = ({ service, selectedItems, onClose, onOrderSuccess }) => {
         booking_amount: parseFloat(formData.booking_amount)
       };
       
-      const response = await fetch('https://api-inventory.isavralabel.com/wedding-app/api/orders', {
+      const response = await fetch('https://api-inventory.isavralabel.com/chekusphoto/api/orders', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
