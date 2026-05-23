@@ -3269,52 +3269,103 @@ app.get('/api/admin/finance/orders', authenticateAdmin, async (req, res) => {
   }
 });
 
-app.put('/api/admin/finance/orders', authenticateAdmin, async (req, res) => {
-  const orderSource = parseOrderSource(req.body?.order_source);
-  const orderId = Number(req.body?.order_id);
-  const accommodationApplied = Boolean(req.body?.accommodation_applied);
-  const notes = req.body?.notes != null ? String(req.body.notes) : null;
-  const items = Array.isArray(req.body?.production_items) ? req.body.production_items : [];
+async function upsertOrderFinancialRecord(body, mode = 'upsert') {
+  const orderSource = parseOrderSource(body?.order_source);
+  const orderId = Number(body?.order_id);
+  const accommodationApplied = Boolean(body?.accommodation_applied);
+  const notes = body?.notes != null ? String(body.notes) : null;
+  const items = Array.isArray(body?.production_items) ? body.production_items : [];
 
+  if (!Number.isFinite(orderId) || orderId <= 0) {
+    const err = new Error('order_id tidak valid');
+    err.status = 400;
+    throw err;
+  }
+
+  const [existing] = await db.execute(
+    'SELECT id FROM order_financials WHERE order_source = ? AND order_id = ? LIMIT 1',
+    [orderSource, orderId]
+  );
+  let financialId = existing[0]?.id;
+
+  if (!financialId) {
+    const [ins] = await db.execute(
+      `INSERT INTO order_financials (order_source, order_id, accommodation_applied, notes)
+       VALUES (?, ?, ?, ?)`,
+      [orderSource, orderId, accommodationApplied ? 1 : 0, notes]
+    );
+    financialId = ins.insertId;
+  } else {
+    if (mode === 'create') {
+      const err = new Error('Catatan keuangan untuk pesanan ini sudah ada. Gunakan edit.');
+      err.status = 409;
+      err.financialId = financialId;
+      throw err;
+    }
+    await db.execute(
+      `UPDATE order_financials SET accommodation_applied = ?, notes = ? WHERE id = ?`,
+      [accommodationApplied ? 1 : 0, notes, financialId]
+    );
+    await db.execute('DELETE FROM production_cost_items WHERE order_financial_id = ?', [financialId]);
+  }
+
+  for (let i = 0; i < items.length; i += 1) {
+    const label = String(items[i]?.label || '').trim();
+    const amount = Number(items[i]?.amount);
+    if (!label || !Number.isFinite(amount)) continue;
+    await db.execute(
+      `INSERT INTO production_cost_items (order_financial_id, label, amount, sort_order)
+       VALUES (?, ?, ?, ?)`,
+      [financialId, label, amount, i]
+    );
+  }
+
+  return financialId;
+}
+
+app.put('/api/admin/finance/orders', authenticateAdmin, async (req, res) => {
+  try {
+    const financialId = await upsertOrderFinancialRecord(req.body || {}, 'upsert');
+    res.json({ message: 'Catatan keuangan disimpan', financial_id: financialId });
+  } catch (error) {
+    if (error.status) {
+      return res.status(error.status).json({ message: error.message, financial_id: error.financialId });
+    }
+    console.error('Finance order upsert error:', error);
+    res.status(500).json({ message: 'Database error' });
+  }
+});
+
+app.post('/api/admin/finance/orders', authenticateAdmin, async (req, res) => {
+  try {
+    const financialId = await upsertOrderFinancialRecord(req.body || {}, 'create');
+    res.json({ message: 'Catatan keuangan ditambahkan', financial_id: financialId });
+  } catch (error) {
+    if (error.status) {
+      return res.status(error.status).json({ message: error.message, financial_id: error.financialId });
+    }
+    console.error('Finance order create error:', error);
+    res.status(500).json({ message: 'Database error' });
+  }
+});
+
+app.delete('/api/admin/finance/orders', authenticateAdmin, async (req, res) => {
+  const orderSource = parseOrderSource(req.query.order_source || req.body?.order_source);
+  const orderId = Number(req.query.order_id ?? req.body?.order_id);
   if (!Number.isFinite(orderId) || orderId <= 0) {
     return res.status(400).json({ message: 'order_id tidak valid' });
   }
-
   try {
-    const [existing] = await db.execute(
-      'SELECT id FROM order_financials WHERE order_source = ? AND order_id = ? LIMIT 1',
+    const [result] = await db.execute(
+      'DELETE FROM order_financials WHERE order_source = ? AND order_id = ?',
       [orderSource, orderId]
     );
-    let financialId = existing[0]?.id;
-    if (!financialId) {
-      const [ins] = await db.execute(
-        `INSERT INTO order_financials (order_source, order_id, accommodation_applied, notes)
-         VALUES (?, ?, ?, ?)`,
-        [orderSource, orderId, accommodationApplied ? 1 : 0, notes]
-      );
-      financialId = ins.insertId;
-    } else {
-      await db.execute(
-        `UPDATE order_financials SET accommodation_applied = ?, notes = ? WHERE id = ?`,
-        [accommodationApplied ? 1 : 0, notes, financialId]
-      );
-      await db.execute('DELETE FROM production_cost_items WHERE order_financial_id = ?', [financialId]);
+    if (!result.affectedRows) {
+      return res.status(404).json({ message: 'Catatan keuangan tidak ditemukan' });
     }
-
-    for (let i = 0; i < items.length; i += 1) {
-      const label = String(items[i]?.label || '').trim();
-      const amount = Number(items[i]?.amount);
-      if (!label || !Number.isFinite(amount)) continue;
-      await db.execute(
-        `INSERT INTO production_cost_items (order_financial_id, label, amount, sort_order)
-         VALUES (?, ?, ?, ?)`,
-        [financialId, label, amount, i]
-      );
-    }
-
-    res.json({ message: 'Catatan keuangan disimpan', financial_id: financialId });
+    res.json({ message: 'Catatan keuangan dihapus' });
   } catch (error) {
-    console.error('Finance order upsert error:', error);
+    console.error('Finance order delete error:', error);
     res.status(500).json({ message: 'Database error' });
   }
 });

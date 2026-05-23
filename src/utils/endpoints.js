@@ -14,6 +14,7 @@ export const API_ENDPOINTS = {
   },
   ORDERS: {
     LIST: '/api/orders',
+    SEARCH: '/api/orders/search',
     CREATE: '/api/orders',
     VENDOR: (id) => `/api/orders/${id}/vendor`,
   },
