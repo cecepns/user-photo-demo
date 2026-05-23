@@ -5,44 +5,13 @@ import { ChevronLeft, ChevronRight, Edit, Trash2, Plus, X } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import AdminLayout from '../../components/AdminLayout';
 import { formatDate } from '../../utils/formatters';
-
-const API_BASE = 'https://api.kingcreativestudio.my.id/chekusphoto';
-
-const PHOTOGRAPHER_COLORS = [
-  'bg-sky-600 text-white',
-  'bg-indigo-600 text-white',
-  'bg-violet-600 text-white',
-  'bg-teal-600 text-white',
-  'bg-rose-600 text-white',
-  'bg-amber-700 text-white',
-  'bg-emerald-700 text-white',
-  'bg-cyan-700 text-white',
-];
-
-function dutyDateLabel(value) {
-  if (!value) return '';
-  const s = String(value).slice(0, 10);
-  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
-  try {
-    const d = new Date(value);
-    if (Number.isNaN(d.getTime())) return '';
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
-  } catch {
-    return '';
-  }
-}
-
-function colorForPhotographer(name) {
-  const key = String(name || '');
-  let h = 0;
-  for (let i = 0; i < key.length; i += 1) {
-    h = (h + key.charCodeAt(i) * (i + 3)) % 100000;
-  }
-  return PHOTOGRAPHER_COLORS[h % PHOTOGRAPHER_COLORS.length];
-}
+import { API_ENDPOINTS } from '../../utils/endpoints';
+import { apiGet, apiPost, apiPut, apiDelete } from '../../utils/request';
+import {
+  colorForPhotographer,
+  dutyDateLabel,
+  getCalendarDays,
+} from '../../utils/freelanceCalendar';
 
 const AdminFreelanceCalendar = () => {
   const [calendarMonth, setCalendarMonth] = useState(new Date());
@@ -52,8 +21,8 @@ const AdminFreelanceCalendar = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [selectedOrderOpt, setSelectedOrderOpt] = useState(null);
+  const [selectedFreelancerOpt, setSelectedFreelancerOpt] = useState(null);
   const [form, setForm] = useState({
-    photographer_name: '',
     duty_date: '',
     notes: '',
   });
@@ -64,14 +33,7 @@ const AdminFreelanceCalendar = () => {
   const fetchAssignments = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch(
-        `${API_BASE}/api/freelance-calendar?year=${year}&month=${month}`,
-        {
-          headers: { Authorization: `Bearer ${localStorage.getItem('admin_token')}` },
-        }
-      );
-      const data = await response.json();
-      if (!response.ok) throw new Error(data?.message || 'Gagal memuat jadwal');
+      const data = await apiGet(`${API_ENDPOINTS.FREELANCE_CALENDAR}?year=${year}&month=${month}`);
       setAssignments(Array.isArray(data.assignments) ? data.assignments : []);
     } catch (e) {
       console.error(e);
@@ -96,20 +58,6 @@ const AdminFreelanceCalendar = () => {
     }, {});
   }, [assignments]);
 
-  const getCalendarDays = () => {
-    const y = calendarMonth.getFullYear();
-    const m = calendarMonth.getMonth();
-    const firstDay = new Date(y, m, 1);
-    const lastDay = new Date(y, m + 1, 0);
-    const startWeekday = firstDay.getDay();
-    const days = [];
-    for (let i = 0; i < startWeekday; i += 1) days.push(null);
-    for (let d = 1; d <= lastDay.getDate(); d += 1) {
-      days.push(new Date(y, m, d));
-    }
-    return days;
-  };
-
   const changeMonth = (delta) => {
     setCalendarMonth((prev) => {
       const n = new Date(prev);
@@ -119,15 +67,20 @@ const AdminFreelanceCalendar = () => {
     setSelectedDateKey(null);
   };
 
-  const loadOrderOptions = async (inputValue) => {
-    const response = await fetch(
-      `${API_BASE}/api/orders/search?q=${encodeURIComponent(inputValue || '')}`,
-      {
-        headers: { Authorization: `Bearer ${localStorage.getItem('admin_token')}` },
-      }
+  const loadFreelancerOptions = async (inputValue) => {
+    const data = await apiGet(
+      `${API_ENDPOINTS.FREELANCERS.SEARCH}?q=${encodeURIComponent(inputValue || '')}&limit=20`,
     );
-    const data = await response.json();
-    const rows = Array.isArray(data) ? data : [];
+    const rows = data.data || [];
+    return rows.map((f) => ({
+      value: f.id,
+      label: f.phone ? `${f.name} · ${f.phone}` : f.name,
+      freelancer: f,
+    }));
+  };
+
+  const loadOrderOptions = async (inputValue) => {
+    const rows = await apiGet(`/api/orders/search?q=${encodeURIComponent(inputValue || '')}`);
     return rows.map((row) => {
       const isCustom = row.order_source === 'custom_request';
       const datePart = row.wedding_date ? formatDate(row.wedding_date) : '-';
@@ -151,7 +104,8 @@ const AdminFreelanceCalendar = () => {
   const openCreate = () => {
     setEditingId(null);
     setSelectedOrderOpt(null);
-    setForm({ photographer_name: '', duty_date: '', notes: '' });
+    setSelectedFreelancerOpt(null);
+    setForm({ duty_date: '', notes: '' });
     setShowModal(true);
   };
 
@@ -167,8 +121,18 @@ const AdminFreelanceCalendar = () => {
         wedding_date: row.order_wedding_date || '',
       },
     });
+    setSelectedFreelancerOpt(
+      row.freelancer_id
+        ? {
+            value: row.freelancer_id,
+            label: row.photographer_name || `Freelance #${row.freelancer_id}`,
+            freelancer: { id: row.freelancer_id, name: row.photographer_name },
+          }
+        : row.photographer_name
+          ? { value: `legacy:${row.photographer_name}`, label: row.photographer_name, freelancer: null }
+          : null,
+    );
     setForm({
-      photographer_name: row.photographer_name || '',
       duty_date: dutyDateLabel(row.duty_date),
       notes: row.notes || '',
     });
@@ -188,47 +152,36 @@ const AdminFreelanceCalendar = () => {
       toast.error('Pilih pesanan');
       return;
     }
-    const pname = form.photographer_name.trim();
-    const dd = form.duty_date.trim();
-    if (!pname) {
-      toast.error('Nama fotografer wajib diisi');
+    const freelancerId = Number(
+      selectedFreelancerOpt?.freelancer?.id ?? selectedFreelancerOpt?.value,
+    );
+    if (!Number.isFinite(freelancerId) || freelancerId <= 0) {
+      toast.error('Pilih freelance / fotografer dari database');
       return;
     }
+    const dd = form.duty_date.trim();
     if (!/^\d{4}-\d{2}-\d{2}$/.test(dd)) {
       toast.error('Tanggal bertugas tidak valid');
       return;
     }
 
-    const token = localStorage.getItem('admin_token');
+    const payload = {
+      freelancer_id: freelancerId,
+      duty_date: dd,
+      notes: form.notes.trim() || null,
+    };
+
     try {
       if (editingId) {
-        const res = await fetch(`${API_BASE}/api/freelance-calendar/${editingId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({
-            photographer_name: pname,
-            duty_date: dd,
-            notes: form.notes.trim() || null,
-          }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data?.message || 'Gagal menyimpan');
+        await apiPut(`${API_ENDPOINTS.FREELANCE_CALENDAR}/${editingId}`, payload);
         toast.success('Jadwal diperbarui');
       } else {
         const { source, id } = selectedOrderOpt.order;
-        const res = await fetch(`${API_BASE}/api/freelance-calendar`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({
-            order_source: source,
-            order_id: id,
-            photographer_name: pname,
-            duty_date: dd,
-            notes: form.notes.trim() || null,
-          }),
+        await apiPost(API_ENDPOINTS.FREELANCE_CALENDAR, {
+          order_source: source,
+          order_id: id,
+          ...payload,
         });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data?.message || 'Gagal menyimpan');
         toast.success('Jadwal ditambahkan');
       }
       setShowModal(false);
@@ -241,12 +194,7 @@ const AdminFreelanceCalendar = () => {
   const handleDelete = async (id) => {
     if (!window.confirm('Hapus jadwal freelance ini?')) return;
     try {
-      const res = await fetch(`${API_BASE}/api/freelance-calendar/${id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${localStorage.getItem('admin_token')}` },
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.message || 'Gagal menghapus');
+      await apiDelete(`${API_ENDPOINTS.FREELANCE_CALENDAR}/${id}`);
       toast.success('Dihapus');
       fetchAssignments();
     } catch (err) {
@@ -254,7 +202,7 @@ const AdminFreelanceCalendar = () => {
     }
   };
 
-  const days = getCalendarDays();
+  const days = getCalendarDays(calendarMonth);
   const selectedDayEvents = selectedDateKey ? eventsByDate[selectedDateKey] || [] : [];
 
   return (
@@ -525,15 +473,28 @@ const AdminFreelanceCalendar = () => {
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Nama fotografer *</label>
-                  <input
-                    type="text"
-                    value={form.photographer_name}
-                    onChange={(e) => setForm((f) => ({ ...f, photographer_name: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                    placeholder="Contoh: Budi (freelance)"
-                    required
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Freelance / Fotografer *</label>
+                  <AsyncSelect
+                    cacheOptions
+                    defaultOptions
+                    loadOptions={loadFreelancerOptions}
+                    value={selectedFreelancerOpt}
+                    onChange={setSelectedFreelancerOpt}
+                    placeholder="Cari freelance (nama, email)…"
+                    noOptionsMessage={() => 'Freelance tidak ditemukan'}
+                    classNamePrefix="rs"
+                    styles={{
+                      control: (base) => ({
+                        ...base,
+                        minHeight: 42,
+                        borderRadius: 8,
+                        borderColor: '#d1d5db',
+                      }),
+                    }}
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Data diambil dari menu Database Freelance Inhouse. Freelancer login untuk melihat jadwal ini.
+                  </p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Tanggal bertugas *</label>

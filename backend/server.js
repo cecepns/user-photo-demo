@@ -152,20 +152,46 @@ async function initializeDatabase() {
 // Initialize database on startup
 initializeDatabase();
 
-// Middleware to verify JWT token
-const authenticateToken = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
+function verifyJwt(req) {
+  const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.split(' ')[1];
-
   if (!token) {
-    return res.status(401).json({ message: 'Access token required' });
+    const err = new Error('Access token required');
+    err.status = 401;
+    throw err;
   }
-
-  jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) return res.status(403).json({ message: 'Invalid token' });
-    req.user = user;
-    next();
+  return new Promise((resolve, reject) => {
+    jwt.verify(token, JWT_SECRET, (err, user) => {
+      if (err) {
+        const e = new Error('Invalid token');
+        e.status = 403;
+        reject(e);
+        return;
+      }
+      resolve(user);
+    });
   });
+}
+
+const authenticateToken = async (req, res, next) => {
+  try {
+    req.user = await verifyJwt(req);
+    next();
+  } catch (e) {
+    res.status(e.status || 401).json({ message: e.message });
+  }
+};
+
+const authenticateAdmin = async (req, res, next) => {
+  try {
+    req.user = await verifyJwt(req);
+    if (req.user.role === 'freelancer') {
+      return res.status(403).json({ message: 'Akses admin diperlukan' });
+    }
+    next();
+  } catch (e) {
+    res.status(e.status || 401).json({ message: e.message });
+  }
 };
 
 const PHOTO_STATUSES = new Set([
@@ -197,7 +223,11 @@ app.post('/api/admin/login', async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    const token = jwt.sign({ id: admin.id, email: admin.email }, JWT_SECRET, { expiresIn: '24h' });
+    const token = jwt.sign(
+      { id: admin.id, email: admin.email, role: 'admin' },
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    );
     res.json({ token, admin: { id: admin.id, email: admin.email } });
   } catch (error) {
     console.error('Login error:', error);
@@ -205,7 +235,7 @@ app.post('/api/admin/login', async (req, res) => {
   }
 });
 
-app.put('/api/admin/password', authenticateToken, async (req, res) => {
+app.put('/api/admin/password', authenticateAdmin, async (req, res) => {
   const { currentPassword, newPassword } = req.body || {};
   if (!currentPassword || !newPassword) {
     return res.status(400).json({ message: 'Password saat ini dan password baru wajib diisi' });
@@ -229,7 +259,7 @@ app.put('/api/admin/password', authenticateToken, async (req, res) => {
 });
 
 // Get admin stats
-app.get('/api/admin/stats', authenticateToken, async (req, res) => {
+app.get('/api/admin/stats', authenticateAdmin, async (req, res) => {
   try {
     const stats = {};
 
@@ -253,7 +283,7 @@ app.get('/api/admin/stats', authenticateToken, async (req, res) => {
 });
 
 // Upload file (multer); store only filename; folder = uploads-weddingsapp
-app.post('/api/upload', authenticateToken, (req, res, next) => {
+app.post('/api/upload', authenticateAdmin, (req, res, next) => {
   uploadMiddleware.single('file')(req, res, (err) => {
     if (err) {
       if (err.code === 'LIMIT_FILE_SIZE') return res.status(400).json({ message: 'File terlalu besar (maks 10MB)' });
@@ -305,7 +335,7 @@ app.get('/api/services/:id', async (req, res) => {
   }
 });
 
-app.post('/api/services', authenticateToken, async (req, res) => {
+app.post('/api/services', authenticateAdmin, async (req, res) => {
   const { name, description, base_price, image } = req.body;
   
   try {
@@ -320,7 +350,7 @@ app.post('/api/services', authenticateToken, async (req, res) => {
   }
 });
 
-app.put('/api/services/:id', authenticateToken, async (req, res) => {
+app.put('/api/services/:id', authenticateAdmin, async (req, res) => {
   const { name, description, base_price, image } = req.body;
   const { id } = req.params;
   
@@ -343,7 +373,7 @@ app.put('/api/services/:id', authenticateToken, async (req, res) => {
   }
 });
 
-app.delete('/api/services/:id', authenticateToken, async (req, res) => {
+app.delete('/api/services/:id', authenticateAdmin, async (req, res) => {
   const { id } = req.params;
   
   try {
@@ -434,7 +464,7 @@ app.get('/api/items/:id', async (req, res) => {
   }
 });
 
-app.post('/api/items', authenticateToken, async (req, res) => {
+app.post('/api/items', authenticateAdmin, async (req, res) => {
   const { name, description, price, category, images } = req.body;
   const imagesJson = Array.isArray(images) ? JSON.stringify(images) : (images && typeof images === 'string' ? images : '[]');
   
@@ -458,7 +488,7 @@ app.post('/api/items', authenticateToken, async (req, res) => {
   }
 });
 
-app.put('/api/items/:id', authenticateToken, async (req, res) => {
+app.put('/api/items/:id', authenticateAdmin, async (req, res) => {
   const { name, description, price, category, is_active, images } = req.body;
   const { id } = req.params;
   const imagesJson = Array.isArray(images) ? JSON.stringify(images) : (images && typeof images === 'string' ? images : null);
@@ -509,7 +539,7 @@ app.put('/api/items/:id', authenticateToken, async (req, res) => {
   }
 });
 
-app.delete('/api/items/:id', authenticateToken, async (req, res) => {
+app.delete('/api/items/:id', authenticateAdmin, async (req, res) => {
   const { id } = req.params;
   
   try {
@@ -562,7 +592,7 @@ app.get('/api/services/:serviceId/items', async (req, res) => {
   }
 });
 
-app.post('/api/services/:serviceId/items', authenticateToken, async (req, res) => {
+app.post('/api/services/:serviceId/items', authenticateAdmin, async (req, res) => {
   const { serviceId } = req.params;
   const { item_id, custom_price, is_required, sort_order } = req.body;
   
@@ -594,7 +624,7 @@ app.post('/api/services/:serviceId/items', authenticateToken, async (req, res) =
   }
 });
 
-app.put('/api/service-items/:id', authenticateToken, async (req, res) => {
+app.put('/api/service-items/:id', authenticateAdmin, async (req, res) => {
   const { custom_price, is_required, sort_order } = req.body;
   const { id } = req.params;
   
@@ -615,7 +645,7 @@ app.put('/api/service-items/:id', authenticateToken, async (req, res) => {
   }
 });
 
-app.delete('/api/service-items/:id', authenticateToken, async (req, res) => {
+app.delete('/api/service-items/:id', authenticateAdmin, async (req, res) => {
   const { id } = req.params;
   
   try {
@@ -643,7 +673,7 @@ app.get('/api/payment-methods', async (req, res) => {
   }
 });
 
-app.post('/api/payment-methods', authenticateToken, async (req, res) => {
+app.post('/api/payment-methods', authenticateAdmin, async (req, res) => {
   const { type, name, account_number, details } = req.body;
   
   try {
@@ -658,7 +688,7 @@ app.post('/api/payment-methods', authenticateToken, async (req, res) => {
   }
 });
 
-app.put('/api/payment-methods/:id', authenticateToken, async (req, res) => {
+app.put('/api/payment-methods/:id', authenticateAdmin, async (req, res) => {
   const { type, name, account_number, details } = req.body;
   const { id } = req.params;
   
@@ -679,7 +709,7 @@ app.put('/api/payment-methods/:id', authenticateToken, async (req, res) => {
   }
 });
 
-app.delete('/api/payment-methods/:id', authenticateToken, async (req, res) => {
+app.delete('/api/payment-methods/:id', authenticateAdmin, async (req, res) => {
   const { id } = req.params;
   
   try {
@@ -697,7 +727,7 @@ app.delete('/api/payment-methods/:id', authenticateToken, async (req, res) => {
 });
 
 // Orders routes
-app.get('/api/orders', authenticateToken, async (req, res) => {
+app.get('/api/orders', authenticateAdmin, async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
@@ -1022,7 +1052,7 @@ app.put('/api/custom-requests/public/:id', async (req, res) => {
   }
 });
 
-app.get('/api/vendor-calendar', authenticateToken, async (req, res) => {
+app.get('/api/vendor-calendar', authenticateAdmin, async (req, res) => {
   try {
     const [toppingItems] = await db.execute(
       `SELECT id, name, category
@@ -1184,7 +1214,7 @@ app.get('/api/vendor-calendar', authenticateToken, async (req, res) => {
   }
 });
 
-app.put('/api/vendor-calendar/vendor-name', authenticateToken, async (req, res) => {
+app.put('/api/vendor-calendar/vendor-name', authenticateAdmin, async (req, res) => {
   const { event_type, source_id, vendor_key, wedding_date, vendor_name } = req.body || {};
   const normalizedEventType = String(event_type || '').trim();
   const normalizedVendorKey = String(vendor_key || '').trim();
@@ -1263,7 +1293,7 @@ app.post('/api/orders', async (req, res) => {
   }
 });
 
-app.put('/api/orders/:id/status', authenticateToken, async (req, res) => {
+app.put('/api/orders/:id/status', authenticateAdmin, async (req, res) => {
   const { status } = req.body;
   const { id } = req.params;
   
@@ -1284,7 +1314,7 @@ app.put('/api/orders/:id/status', authenticateToken, async (req, res) => {
   }
 });
 
-app.delete('/api/orders/:id', authenticateToken, async (req, res) => {
+app.delete('/api/orders/:id', authenticateAdmin, async (req, res) => {
   const { id } = req.params;
   
   try {
@@ -1301,7 +1331,7 @@ app.delete('/api/orders/:id', authenticateToken, async (req, res) => {
   }
 });
 
-app.put('/api/orders/:id/booking-amount', authenticateToken, async (req, res) => {
+app.put('/api/orders/:id/booking-amount', authenticateAdmin, async (req, res) => {
   const { booking_amount } = req.body;
   const { id } = req.params;
   
@@ -1322,7 +1352,7 @@ app.put('/api/orders/:id/booking-amount', authenticateToken, async (req, res) =>
   }
 });
 
-app.put('/api/orders/:id/selected-items', authenticateToken, async (req, res) => {
+app.put('/api/orders/:id/selected-items', authenticateAdmin, async (req, res) => {
   const { id } = req.params;
   const { selected_items } = req.body || {};
   const orderId = Number(id);
@@ -1581,7 +1611,7 @@ function findToppingByName(value, toppings) {
   return null;
 }
 
-app.get('/api/custom-requests', authenticateToken, async (req, res) => {
+app.get('/api/custom-requests', authenticateAdmin, async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
@@ -1647,7 +1677,7 @@ app.get('/api/custom-requests', authenticateToken, async (req, res) => {
   }
 });
 
-app.delete('/api/custom-requests/:id', authenticateToken, async (req, res) => {
+app.delete('/api/custom-requests/:id', authenticateAdmin, async (req, res) => {
   const { id } = req.params;
   
   try {
@@ -1664,7 +1694,7 @@ app.delete('/api/custom-requests/:id', authenticateToken, async (req, res) => {
   }
 });
 
-app.put('/api/custom-requests/:id/booking-amount', authenticateToken, async (req, res) => {
+app.put('/api/custom-requests/:id/booking-amount', authenticateAdmin, async (req, res) => {
   const { booking_amount } = req.body;
   const { id } = req.params;
   
@@ -1685,7 +1715,7 @@ app.put('/api/custom-requests/:id/booking-amount', authenticateToken, async (req
   }
 });
 
-app.put('/api/custom-requests/:id/status', authenticateToken, async (req, res) => {
+app.put('/api/custom-requests/:id/status', authenticateAdmin, async (req, res) => {
   const { status } = req.body;
   const { id } = req.params;
   
@@ -1741,7 +1771,7 @@ app.get('/api/articles/:id', async (req, res) => {
   }
 });
 
-app.post('/api/articles', authenticateToken, async (req, res) => {
+app.post('/api/articles', authenticateAdmin, async (req, res) => {
   const { title, content, excerpt, image, category } = req.body;
   
   try {
@@ -1756,7 +1786,7 @@ app.post('/api/articles', authenticateToken, async (req, res) => {
   }
 });
 
-app.put('/api/articles/:id', authenticateToken, async (req, res) => {
+app.put('/api/articles/:id', authenticateAdmin, async (req, res) => {
   const { title, content, excerpt, image, category } = req.body;
   const { id } = req.params;
   
@@ -1779,7 +1809,7 @@ app.put('/api/articles/:id', authenticateToken, async (req, res) => {
   }
 });
 
-app.delete('/api/articles/:id', authenticateToken, async (req, res) => {
+app.delete('/api/articles/:id', authenticateAdmin, async (req, res) => {
   const { id } = req.params;
   
   try {
@@ -1809,7 +1839,7 @@ app.get('/api/gallery/categories', async (req, res) => {
   }
 });
 
-app.post('/api/gallery/categories', authenticateToken, async (req, res) => {
+app.post('/api/gallery/categories', authenticateAdmin, async (req, res) => {
   const { name, description, sort_order } = req.body;
   
   try {
@@ -1824,7 +1854,7 @@ app.post('/api/gallery/categories', authenticateToken, async (req, res) => {
   }
 });
 
-app.put('/api/gallery/categories/:id', authenticateToken, async (req, res) => {
+app.put('/api/gallery/categories/:id', authenticateAdmin, async (req, res) => {
   const { name, description, is_active, sort_order } = req.body;
   const { id } = req.params;
   
@@ -1845,7 +1875,7 @@ app.put('/api/gallery/categories/:id', authenticateToken, async (req, res) => {
   }
 });
 
-app.delete('/api/gallery/categories/:id', authenticateToken, async (req, res) => {
+app.delete('/api/gallery/categories/:id', authenticateAdmin, async (req, res) => {
   const { id } = req.params;
   
   try {
@@ -1924,7 +1954,7 @@ app.get('/api/gallery/images/:id', async (req, res) => {
   }
 });
 
-app.post('/api/gallery/images', authenticateToken, async (req, res) => {
+app.post('/api/gallery/images', authenticateAdmin, async (req, res) => {
   const { title, description, image_url, category_id, is_featured, sort_order } = req.body;
   
   try {
@@ -1939,7 +1969,7 @@ app.post('/api/gallery/images', authenticateToken, async (req, res) => {
   }
 });
 
-app.put('/api/gallery/images/:id', authenticateToken, async (req, res) => {
+app.put('/api/gallery/images/:id', authenticateAdmin, async (req, res) => {
   const { title, description, image_url, category_id, is_featured, is_active, sort_order } = req.body;
   const { id } = req.params;
   
@@ -1962,7 +1992,7 @@ app.put('/api/gallery/images/:id', authenticateToken, async (req, res) => {
   }
 });
 
-app.delete('/api/gallery/images/:id', authenticateToken, async (req, res) => {
+app.delete('/api/gallery/images/:id', authenticateAdmin, async (req, res) => {
   const { id } = req.params;
   
   try {
@@ -2013,7 +2043,7 @@ app.get('/api/content-sections/:sectionName', async (req, res) => {
   }
 });
 
-app.post('/api/content-sections', authenticateToken, async (req, res) => {
+app.post('/api/content-sections', authenticateAdmin, async (req, res) => {
   const { section_name, title, subtitle, description, image_url, button_text, button_url, sort_order } = req.body;
   
   try {
@@ -2032,7 +2062,7 @@ app.post('/api/content-sections', authenticateToken, async (req, res) => {
   }
 });
 
-app.put('/api/content-sections/:id', authenticateToken, async (req, res) => {
+app.put('/api/content-sections/:id', authenticateAdmin, async (req, res) => {
   const { title, subtitle, description, image_url, button_text, button_url, is_active, sort_order } = req.body;
   const { id } = req.params;
   
@@ -2055,7 +2085,7 @@ app.put('/api/content-sections/:id', authenticateToken, async (req, res) => {
   }
 });
 
-app.delete('/api/content-sections/:id', authenticateToken, async (req, res) => {
+app.delete('/api/content-sections/:id', authenticateAdmin, async (req, res) => {
   const { id } = req.params;
   
   try {
@@ -2116,7 +2146,7 @@ app.get('/api/service-cards/:id', async (req, res) => {
   }
 });
 
-app.post('/api/service-cards', authenticateToken, async (req, res) => {
+app.post('/api/service-cards', authenticateAdmin, async (req, res) => {
   const { title, description, icon, image_url, button_text, button_url, card_type, sort_order } = req.body;
   
   try {
@@ -2131,7 +2161,7 @@ app.post('/api/service-cards', authenticateToken, async (req, res) => {
   }
 });
 
-app.put('/api/service-cards/:id', authenticateToken, async (req, res) => {
+app.put('/api/service-cards/:id', authenticateAdmin, async (req, res) => {
   const { title, description, icon, image_url, button_text, button_url, card_type, is_active, sort_order } = req.body;
   const { id } = req.params;
   
@@ -2154,7 +2184,7 @@ app.put('/api/service-cards/:id', authenticateToken, async (req, res) => {
   }
 });
 
-app.delete('/api/service-cards/:id', authenticateToken, async (req, res) => {
+app.delete('/api/service-cards/:id', authenticateAdmin, async (req, res) => {
   const { id } = req.params;
   
   try {
@@ -2202,7 +2232,7 @@ app.get('/api/service-features/:id', async (req, res) => {
   }
 });
 
-app.post('/api/service-features', authenticateToken, async (req, res) => {
+app.post('/api/service-features', authenticateAdmin, async (req, res) => {
   const { title, description, icon, sort_order } = req.body;
   
   try {
@@ -2217,7 +2247,7 @@ app.post('/api/service-features', authenticateToken, async (req, res) => {
   }
 });
 
-app.put('/api/service-features/:id', authenticateToken, async (req, res) => {
+app.put('/api/service-features/:id', authenticateAdmin, async (req, res) => {
   const { title, description, icon, is_active, sort_order } = req.body;
   const { id } = req.params;
   
@@ -2238,7 +2268,7 @@ app.put('/api/service-features/:id', authenticateToken, async (req, res) => {
   }
 });
 
-app.delete('/api/service-features/:id', authenticateToken, async (req, res) => {
+app.delete('/api/service-features/:id', authenticateAdmin, async (req, res) => {
   const { id } = req.params;
   
   try {
@@ -2258,7 +2288,7 @@ app.delete('/api/service-features/:id', authenticateToken, async (req, res) => {
 // About cards routes - REMOVED (now handled by unified service-cards endpoint)
 
 // Orders search route (for surat jalan dropdown) — orders + custom_requests
-app.get('/api/orders/search', authenticateToken, async (req, res) => {
+app.get('/api/orders/search', authenticateAdmin, async (req, res) => {
   try {
     const { q } = req.query;
     const hasQ = q && String(q).trim();
@@ -2337,7 +2367,7 @@ app.get('/api/orders/search', authenticateToken, async (req, res) => {
 });
 
 // Surat Jalan routes
-app.get('/api/surat-jalan', authenticateToken, async (req, res) => {
+app.get('/api/surat-jalan', authenticateAdmin, async (req, res) => {
   try {
     // Auto-delete surat jalan whose event date has passed (e.g. event Feb 7, on Feb 8 it is deleted)
     const [expiredRows] = await db.execute('SELECT plaminan_image, pintu_masuk_image, dekorasi_image FROM surat_jalan WHERE wedding_date < CURDATE()');
@@ -2389,7 +2419,7 @@ app.get('/api/surat-jalan', authenticateToken, async (req, res) => {
   }
 });
 
-app.get('/api/surat-jalan/:id', authenticateToken, async (req, res) => {
+app.get('/api/surat-jalan/:id', authenticateAdmin, async (req, res) => {
   const { id } = req.params;
   
   try {
@@ -2407,7 +2437,7 @@ app.get('/api/surat-jalan/:id', authenticateToken, async (req, res) => {
   }
 });
 
-app.post('/api/surat-jalan', authenticateToken, async (req, res) => {
+app.post('/api/surat-jalan', authenticateAdmin, async (req, res) => {
   const { 
     order_id, 
     custom_request_id,
@@ -2464,7 +2494,7 @@ app.post('/api/surat-jalan', authenticateToken, async (req, res) => {
   }
 });
 
-app.put('/api/surat-jalan/:id', authenticateToken, async (req, res) => {
+app.put('/api/surat-jalan/:id', authenticateAdmin, async (req, res) => {
   const { id } = req.params;
   const { 
     client_name, 
@@ -2515,7 +2545,7 @@ app.put('/api/surat-jalan/:id', authenticateToken, async (req, res) => {
   }
 });
 
-app.delete('/api/surat-jalan/:id', authenticateToken, async (req, res) => {
+app.delete('/api/surat-jalan/:id', authenticateAdmin, async (req, res) => {
   const { id } = req.params;
   
   try {
@@ -2545,7 +2575,7 @@ function normalizePhoneNumber(value) {
 
 const ALBUM_PROGRESS_STATUSES = new Set(['pending', 'diproses', 'selesai']);
 
-app.get('/api/album-progress', authenticateToken, async (req, res) => {
+app.get('/api/album-progress', authenticateAdmin, async (req, res) => {
   try {
     const page = parseInt(req.query.page, 10) || 1;
     const limit = parseInt(req.query.limit, 10) || 20;
@@ -2648,7 +2678,7 @@ app.get('/api/album-progress/public/:source/:id', async (req, res) => {
   }
 });
 
-app.post('/api/album-progress', authenticateToken, async (req, res) => {
+app.post('/api/album-progress', authenticateAdmin, async (req, res) => {
   const { order_source, order_id, status, estimated_completion, album_link } = req.body || {};
   const src = order_source === 'custom_request' ? 'custom_request' : order_source === 'order' ? 'order' : null;
   const oid = Number(order_id);
@@ -2688,7 +2718,7 @@ app.post('/api/album-progress', authenticateToken, async (req, res) => {
   }
 });
 
-app.put('/api/album-progress/:id', authenticateToken, async (req, res) => {
+app.put('/api/album-progress/:id', authenticateAdmin, async (req, res) => {
   const id = Number(req.params.id);
   if (!Number.isFinite(id) || id <= 0) {
     return res.status(400).json({ message: 'ID tidak valid' });
@@ -2746,7 +2776,7 @@ app.put('/api/album-progress/:id', authenticateToken, async (req, res) => {
   }
 });
 
-app.delete('/api/album-progress/:id', authenticateToken, async (req, res) => {
+app.delete('/api/album-progress/:id', authenticateAdmin, async (req, res) => {
   const id = Number(req.params.id);
   if (!Number.isFinite(id) || id <= 0) {
     return res.status(400).json({ message: 'ID tidak valid' });
@@ -2792,9 +2822,26 @@ app.get('/api/freelance-calendar', authenticateToken, async (req, res) => {
   const lastDom = new Date(year, month, 0).getDate();
   const ymdEnd = `${year}-${padYmPart(month)}-${padYmPart(lastDom)}`;
 
+  const params = [ymdStart, ymdEnd];
+  let freelancerFilter = '';
+  if (req.user.role === 'freelancer') {
+    const fid = Number(req.user.freelancerId || req.user.id);
+    if (!Number.isFinite(fid) || fid <= 0) {
+      return res.status(403).json({ message: 'Sesi freelance tidak valid' });
+    }
+    freelancerFilter = ` AND (
+      fa.freelancer_id = ?
+      OR (
+        fa.freelancer_id IS NULL
+        AND LOWER(TRIM(fa.photographer_name)) = LOWER(TRIM((SELECT name FROM freelancers_inhouse WHERE id = ? LIMIT 1)))
+      )
+    )`;
+    params.push(fid, fid);
+  }
+
   try {
     const [rows] = await db.execute(
-      `SELECT fa.id, fa.order_source, fa.order_id, fa.photographer_name,
+      `SELECT fa.id, fa.order_source, fa.order_id, fa.freelancer_id, fa.photographer_name,
         DATE_FORMAT(fa.duty_date, '%Y-%m-%d') AS duty_date,
         fa.notes, fa.created_at, fa.updated_at,
         CASE WHEN fa.order_source = 'order' THEN o.name ELSE cr.name END AS client_name,
@@ -2806,9 +2853,9 @@ app.get('/api/freelance-calendar', authenticateToken, async (req, res) => {
        FROM freelance_photographer_assignments fa
        LEFT JOIN orders o ON fa.order_source = 'order' AND fa.order_id = o.id
        LEFT JOIN custom_requests cr ON fa.order_source = 'custom_request' AND fa.order_id = cr.id
-       WHERE fa.duty_date >= ? AND fa.duty_date <= ?
+       WHERE fa.duty_date >= ? AND fa.duty_date <= ?${freelancerFilter}
        ORDER BY fa.duty_date ASC, fa.id ASC`,
-      [ymdStart, ymdEnd]
+      params
     );
     res.json({ assignments: rows });
   } catch (error) {
@@ -2817,11 +2864,25 @@ app.get('/api/freelance-calendar', authenticateToken, async (req, res) => {
   }
 });
 
-app.post('/api/freelance-calendar', authenticateToken, async (req, res) => {
-  const { order_source, order_id, photographer_name, duty_date, notes } = req.body || {};
+async function resolveFreelancerForAssignment(body) {
+  const freelancerId = Number(body?.freelancer_id);
+  if (Number.isFinite(freelancerId) && freelancerId > 0) {
+    const [rows] = await db.execute(
+      'SELECT id, name FROM freelancers_inhouse WHERE id = ? AND is_active = 1 LIMIT 1',
+      [freelancerId]
+    );
+    if (!rows[0]) return { error: 'Freelance tidak ditemukan atau tidak aktif' };
+    return { freelancerId: rows[0].id, photographerName: rows[0].name };
+  }
+  const pname = String(body?.photographer_name || '').trim();
+  if (!pname) return { error: 'Freelance / nama fotografer wajib dipilih' };
+  return { freelancerId: null, photographerName: pname };
+}
+
+app.post('/api/freelance-calendar', authenticateAdmin, async (req, res) => {
+  const { order_source, order_id, duty_date, notes } = req.body || {};
   const src = order_source === 'custom_request' ? 'custom_request' : order_source === 'order' ? 'order' : null;
   const oid = Number(order_id);
-  const pname = String(photographer_name || '').trim();
   const dd = String(duty_date || '').trim().slice(0, 10);
 
   if (!src) {
@@ -2830,14 +2891,14 @@ app.post('/api/freelance-calendar', authenticateToken, async (req, res) => {
   if (!Number.isFinite(oid) || oid <= 0) {
     return res.status(400).json({ message: 'order_id tidak valid' });
   }
-  if (!pname) {
-    return res.status(400).json({ message: 'Nama fotografer wajib diisi' });
-  }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dd)) {
     return res.status(400).json({ message: 'Tanggal bertugas tidak valid (YYYY-MM-DD)' });
   }
 
   try {
+    const resolved = await resolveFreelancerForAssignment(req.body);
+    if (resolved.error) return res.status(400).json({ message: resolved.error });
+
     const ok = await validateOrderExistsForFreelance(src, oid);
     if (!ok) {
       return res.status(404).json({ message: 'Pesanan tidak ditemukan' });
@@ -2845,9 +2906,16 @@ app.post('/api/freelance-calendar', authenticateToken, async (req, res) => {
 
     const [result] = await db.execute(
       `INSERT INTO freelance_photographer_assignments
-        (order_source, order_id, photographer_name, duty_date, notes)
-       VALUES (?, ?, ?, ?, ?)`,
-      [src, oid, pname, dd, notes != null ? String(notes).trim().slice(0, 4000) : null]
+        (order_source, order_id, freelancer_id, photographer_name, duty_date, notes)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        src,
+        oid,
+        resolved.freelancerId,
+        resolved.photographerName,
+        dd,
+        notes != null ? String(notes).trim().slice(0, 4000) : null,
+      ]
     );
     res.json({ id: result.insertId, message: 'Jadwal freelance disimpan' });
   } catch (error) {
@@ -2856,21 +2924,24 @@ app.post('/api/freelance-calendar', authenticateToken, async (req, res) => {
   }
 });
 
-app.put('/api/freelance-calendar/:id', authenticateToken, async (req, res) => {
+app.put('/api/freelance-calendar/:id', authenticateAdmin, async (req, res) => {
   const id = Number(req.params.id);
   if (!Number.isFinite(id) || id <= 0) {
     return res.status(400).json({ message: 'ID tidak valid' });
   }
-  const { photographer_name, duty_date, notes } = req.body || {};
+  const { photographer_name, freelancer_id, duty_date, notes } = req.body || {};
 
   try {
     const fields = [];
     const vals = [];
-    if (photographer_name !== undefined) {
-      const p = String(photographer_name || '').trim();
-      if (!p) return res.status(400).json({ message: 'Nama fotografer tidak boleh kosong' });
-      fields.push('photographer_name = ?');
-      vals.push(p);
+    if (freelancer_id !== undefined || photographer_name !== undefined) {
+      const resolved = await resolveFreelancerForAssignment({
+        freelancer_id,
+        photographer_name,
+      });
+      if (resolved.error) return res.status(400).json({ message: resolved.error });
+      fields.push('freelancer_id = ?', 'photographer_name = ?');
+      vals.push(resolved.freelancerId, resolved.photographerName);
     }
     if (duty_date !== undefined) {
       const dd = String(duty_date || '').trim().slice(0, 10);
@@ -2902,7 +2973,7 @@ app.put('/api/freelance-calendar/:id', authenticateToken, async (req, res) => {
   }
 });
 
-app.delete('/api/freelance-calendar/:id', authenticateToken, async (req, res) => {
+app.delete('/api/freelance-calendar/:id', authenticateAdmin, async (req, res) => {
   const id = Number(req.params.id);
   if (!Number.isFinite(id) || id <= 0) {
     return res.status(400).json({ message: 'ID tidak valid' });
@@ -2936,7 +3007,7 @@ app.post('/api/contact', async (req, res) => {
 });
 
 // Get contact messages with pagination
-app.get('/api/contact-messages', authenticateToken, async (req, res) => {
+app.get('/api/contact-messages', authenticateAdmin, async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
@@ -2968,7 +3039,7 @@ app.get('/api/contact-messages', authenticateToken, async (req, res) => {
 });
 
 // Delete contact message
-app.delete('/api/contact-messages/:id', authenticateToken, async (req, res) => {
+app.delete('/api/contact-messages/:id', authenticateAdmin, async (req, res) => {
   const { id } = req.params;
   
   try {
@@ -2987,7 +3058,7 @@ app.delete('/api/contact-messages/:id', authenticateToken, async (req, res) => {
 
 // Client features routes
 // --- Package sales chart ---
-app.get('/api/admin/package-sales', authenticateToken, async (req, res) => {
+app.get('/api/admin/package-sales', authenticateAdmin, async (req, res) => {
   try {
     const [rows] = await db.execute(
       `SELECT COALESCE(NULLIF(TRIM(service_name), ''), 'Tanpa nama paket') AS package_name,
@@ -3006,7 +3077,7 @@ app.get('/api/admin/package-sales', authenticateToken, async (req, res) => {
 });
 
 // --- Financial summary ---
-app.get('/api/admin/finance/summary', authenticateToken, async (req, res) => {
+app.get('/api/admin/finance/summary', authenticateAdmin, async (req, res) => {
   const period = String(req.query.period || 'monthly');
   const year = parseInt(req.query.year, 10) || new Date().getFullYear();
   const month = parseInt(req.query.month, 10) || (new Date().getMonth() + 1);
@@ -3083,7 +3154,7 @@ app.get('/api/admin/finance/summary', authenticateToken, async (req, res) => {
   }
 });
 
-app.get('/api/admin/finance/settings', authenticateToken, async (req, res) => {
+app.get('/api/admin/finance/settings', authenticateAdmin, async (req, res) => {
   try {
     const [rows] = await db.execute(
       'SELECT accommodation_cost FROM financial_settings WHERE id = 1 LIMIT 1'
@@ -3096,7 +3167,7 @@ app.get('/api/admin/finance/settings', authenticateToken, async (req, res) => {
   }
 });
 
-app.put('/api/admin/finance/settings', authenticateToken, async (req, res) => {
+app.put('/api/admin/finance/settings', authenticateAdmin, async (req, res) => {
   const cost = Number(req.body?.accommodation_cost);
   if (!Number.isFinite(cost) || cost < 0) {
     return res.status(400).json({ message: 'Biaya akomodasi tidak valid' });
@@ -3113,7 +3184,7 @@ app.put('/api/admin/finance/settings', authenticateToken, async (req, res) => {
   }
 });
 
-app.get('/api/admin/finance/orders', authenticateToken, async (req, res) => {
+app.get('/api/admin/finance/orders', authenticateAdmin, async (req, res) => {
   const page = Math.max(1, parseInt(req.query.page, 10) || 1);
   const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 10));
   const offset = (page - 1) * limit;
@@ -3198,7 +3269,7 @@ app.get('/api/admin/finance/orders', authenticateToken, async (req, res) => {
   }
 });
 
-app.put('/api/admin/finance/orders', authenticateToken, async (req, res) => {
+app.put('/api/admin/finance/orders', authenticateAdmin, async (req, res) => {
   const orderSource = parseOrderSource(req.body?.order_source);
   const orderId = Number(req.body?.order_id);
   const accommodationApplied = Boolean(req.body?.accommodation_applied);
@@ -3249,7 +3320,7 @@ app.put('/api/admin/finance/orders', authenticateToken, async (req, res) => {
 });
 
 // --- Vendors ---
-app.get('/api/vendors', authenticateToken, async (req, res) => {
+app.get('/api/vendors', authenticateAdmin, async (req, res) => {
   try {
     const [rows] = await db.execute(
       'SELECT * FROM vendors WHERE is_active = 1 ORDER BY name ASC'
@@ -3260,7 +3331,7 @@ app.get('/api/vendors', authenticateToken, async (req, res) => {
   }
 });
 
-app.get('/api/vendors/all', authenticateToken, async (req, res) => {
+app.get('/api/vendors/all', authenticateAdmin, async (req, res) => {
   try {
     const [rows] = await db.execute('SELECT * FROM vendors ORDER BY name ASC');
     res.json(rows);
@@ -3269,7 +3340,7 @@ app.get('/api/vendors/all', authenticateToken, async (req, res) => {
   }
 });
 
-app.post('/api/vendors', authenticateToken, async (req, res) => {
+app.post('/api/vendors', authenticateAdmin, async (req, res) => {
   const name = String(req.body?.name || '').trim();
   if (!name) return res.status(400).json({ message: 'Nama vendor wajib diisi' });
   try {
@@ -3280,7 +3351,7 @@ app.post('/api/vendors', authenticateToken, async (req, res) => {
   }
 });
 
-app.put('/api/vendors/:id', authenticateToken, async (req, res) => {
+app.put('/api/vendors/:id', authenticateAdmin, async (req, res) => {
   const { id } = req.params;
   const name = String(req.body?.name || '').trim();
   const isActive = req.body?.is_active !== false;
@@ -3295,7 +3366,7 @@ app.put('/api/vendors/:id', authenticateToken, async (req, res) => {
   }
 });
 
-app.delete('/api/vendors/:id', authenticateToken, async (req, res) => {
+app.delete('/api/vendors/:id', authenticateAdmin, async (req, res) => {
   try {
     await db.execute('UPDATE vendors SET is_active = 0 WHERE id = ?', [req.params.id]);
     res.json({ message: 'Vendor dinonaktifkan' });
@@ -3304,7 +3375,7 @@ app.delete('/api/vendors/:id', authenticateToken, async (req, res) => {
   }
 });
 
-app.put('/api/orders/:id/vendor', authenticateToken, async (req, res) => {
+app.put('/api/orders/:id/vendor', authenticateAdmin, async (req, res) => {
   const vendorId = req.body?.vendor_id != null ? Number(req.body.vendor_id) : null;
   try {
     await db.execute('UPDATE orders SET vendor_id = ? WHERE id = ?', [vendorId || null, req.params.id]);
@@ -3314,7 +3385,7 @@ app.put('/api/orders/:id/vendor', authenticateToken, async (req, res) => {
   }
 });
 
-app.put('/api/custom-requests/:id/vendor', authenticateToken, async (req, res) => {
+app.put('/api/custom-requests/:id/vendor', authenticateAdmin, async (req, res) => {
   const vendorId = req.body?.vendor_id != null ? Number(req.body.vendor_id) : null;
   try {
     await db.execute('UPDATE custom_requests SET vendor_id = ? WHERE id = ?', [
@@ -3327,7 +3398,7 @@ app.put('/api/custom-requests/:id/vendor', authenticateToken, async (req, res) =
 });
 
 // --- Order progress ---
-app.get('/api/order-progress', authenticateToken, async (req, res) => {
+app.get('/api/order-progress', authenticateAdmin, async (req, res) => {
   const page = Math.max(1, parseInt(req.query.page, 10) || 1);
   const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 15));
   const offset = (page - 1) * limit;
@@ -3411,7 +3482,7 @@ app.get('/api/order-progress/public/:source/:id', async (req, res) => {
   }
 });
 
-app.post('/api/order-progress', authenticateToken, async (req, res) => {
+app.post('/api/order-progress', authenticateAdmin, async (req, res) => {
   const orderSource = parseOrderSource(req.body?.order_source);
   const orderId = Number(req.body?.order_id);
   const photoStatus = req.body?.photo_status || 'photo_progress';
@@ -3442,7 +3513,7 @@ app.post('/api/order-progress', authenticateToken, async (req, res) => {
   }
 });
 
-app.put('/api/order-progress/:id', authenticateToken, async (req, res) => {
+app.put('/api/order-progress/:id', authenticateAdmin, async (req, res) => {
   const { id } = req.params;
   const fields = [];
   const params = [];
@@ -3485,7 +3556,7 @@ app.put('/api/order-progress/:id', authenticateToken, async (req, res) => {
   }
 });
 
-app.delete('/api/order-progress/:id', authenticateToken, async (req, res) => {
+app.delete('/api/order-progress/:id', authenticateAdmin, async (req, res) => {
   try {
     await db.execute('DELETE FROM order_progress WHERE id = ?', [req.params.id]);
     res.json({ message: 'Progress dihapus' });
@@ -3557,7 +3628,7 @@ function serializeDetailAcaraRow(row) {
   return { ...row, maps };
 }
 
-app.get('/api/detail-acara', authenticateToken, async (req, res) => {
+app.get('/api/detail-acara', authenticateAdmin, async (req, res) => {
   const page = Math.max(1, parseInt(req.query.page, 10) || 1);
   const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 10));
   const offset = (page - 1) * limit;
@@ -3595,7 +3666,7 @@ app.get('/api/detail-acara', authenticateToken, async (req, res) => {
   }
 });
 
-app.get('/api/detail-acara/:id', authenticateToken, async (req, res) => {
+app.get('/api/detail-acara/:id', authenticateAdmin, async (req, res) => {
   try {
     const [rows] = await db.execute('SELECT * FROM detail_acara WHERE id = ?', [req.params.id]);
     if (!rows[0]) return res.status(404).json({ message: 'Tidak ditemukan' });
@@ -3605,7 +3676,7 @@ app.get('/api/detail-acara/:id', authenticateToken, async (req, res) => {
   }
 });
 
-app.post('/api/detail-acara', authenticateToken, async (req, res) => {
+app.post('/api/detail-acara', authenticateAdmin, async (req, res) => {
   const b = req.body || {};
   const orderSource = b.order_source ? parseOrderSource(b.order_source) : null;
   const orderId = b.order_id != null ? Number(b.order_id) : null;
@@ -3649,7 +3720,7 @@ app.post('/api/detail-acara', authenticateToken, async (req, res) => {
   }
 });
 
-app.put('/api/detail-acara/:id', authenticateToken, async (req, res) => {
+app.put('/api/detail-acara/:id', authenticateAdmin, async (req, res) => {
   const b = req.body || {};
   try {
     const [existingRows] = await db.execute('SELECT * FROM detail_acara WHERE id = ?', [req.params.id]);
@@ -3684,7 +3755,7 @@ app.put('/api/detail-acara/:id', authenticateToken, async (req, res) => {
   }
 });
 
-app.delete('/api/detail-acara/:id', authenticateToken, async (req, res) => {
+app.delete('/api/detail-acara/:id', authenticateAdmin, async (req, res) => {
   try {
     await db.execute('DELETE FROM detail_acara WHERE id = ?', [req.params.id]);
     res.json({ message: 'Detail acara dihapus' });
@@ -3693,7 +3764,7 @@ app.delete('/api/detail-acara/:id', authenticateToken, async (req, res) => {
   }
 });
 
-app.post('/api/detail-acara/from-order', authenticateToken, async (req, res) => {
+app.post('/api/detail-acara/from-order', authenticateAdmin, async (req, res) => {
   const orderSource = parseOrderSource(req.body?.order_source);
   const orderId = Number(req.body?.order_id);
   if (!Number.isFinite(orderId)) {
@@ -3746,7 +3817,143 @@ app.post('/api/detail-acara/from-order', authenticateToken, async (req, res) => 
 });
 
 // --- Freelancers inhouse ---
-app.get('/api/freelancers-inhouse', authenticateToken, async (req, res) => {
+function normalizeFreelancerPhone(phone) {
+  return String(phone || '').replace(/\D/g, '');
+}
+
+function generateFreelancerPassword() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let pwd = '';
+  for (let i = 0; i < 8; i += 1) {
+    pwd += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return pwd;
+}
+
+function phoneSqlNormalized(column = 'phone') {
+  return `REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(${column}, ' ', ''), '-', ''), '+', ''), '.', ''), '(', ''), ')', '')`;
+}
+
+function sanitizeFreelancerRow(row) {
+  if (!row) return row;
+  const { password, login_password_plain, ...safe } = row;
+  return {
+    ...safe,
+    has_login: Boolean(password),
+    login_password: login_password_plain || null,
+  };
+}
+
+async function setFreelancerPassword(freelancerId, plainPassword) {
+  const hash = bcrypt.hashSync(plainPassword, 10);
+  await db.execute(
+    'UPDATE freelancers_inhouse SET password = ?, login_password_plain = ? WHERE id = ?',
+    [hash, plainPassword, freelancerId]
+  );
+  return plainPassword;
+}
+
+async function isPhoneTaken(phoneNormalized, excludeId = null) {
+  if (!phoneNormalized) return false;
+  let sql = `SELECT id FROM freelancers_inhouse WHERE ${phoneSqlNormalized()} = ? AND is_active = 1`;
+  const params = [phoneNormalized];
+  if (excludeId) {
+    sql += ' AND id != ?';
+    params.push(excludeId);
+  }
+  sql += ' LIMIT 1';
+  const [rows] = await db.execute(sql, params);
+  return Boolean(rows[0]);
+}
+
+app.post('/api/freelancer/login', async (req, res) => {
+  const phone = normalizeFreelancerPhone(req.body?.phone);
+  const password = String(req.body?.password || '');
+  if (!phone || phone.length < 8) {
+    return res.status(400).json({ message: 'Nomor HP wajib diisi (min. 8 digit)' });
+  }
+  if (!password) {
+    return res.status(400).json({ message: 'Password wajib diisi' });
+  }
+  try {
+    const [rows] = await db.execute(
+      `SELECT id, name, phone, password, photo_price, video_price
+       FROM freelancers_inhouse
+       WHERE ${phoneSqlNormalized()} = ? AND is_active = 1 LIMIT 1`,
+      [phone]
+    );
+    const freelancer = rows[0];
+    if (!freelancer?.password || !bcrypt.compareSync(password, freelancer.password)) {
+      return res.status(401).json({ message: 'Nomor HP atau password salah' });
+    }
+    const token = jwt.sign(
+      {
+        id: freelancer.id,
+        freelancerId: freelancer.id,
+        phone: freelancer.phone,
+        name: freelancer.name,
+        role: 'freelancer',
+      },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+    res.json({
+      token,
+      freelancer: {
+        id: freelancer.id,
+        name: freelancer.name,
+        phone: freelancer.phone,
+        photo_price: freelancer.photo_price,
+        video_price: freelancer.video_price,
+      },
+    });
+  } catch (error) {
+    console.error('Freelancer login error:', error);
+    res.status(500).json({ message: 'Database error' });
+  }
+});
+
+app.get('/api/freelancer/me', authenticateToken, async (req, res) => {
+  if (req.user.role !== 'freelancer') {
+    return res.status(403).json({ message: 'Akses freelance diperlukan' });
+  }
+  try {
+    const fid = Number(req.user.freelancerId || req.user.id);
+    const [rows] = await db.execute(
+      'SELECT id, name, email, phone, photo_price, video_price, is_active FROM freelancers_inhouse WHERE id = ? LIMIT 1',
+      [fid]
+    );
+    if (!rows[0] || !rows[0].is_active) {
+      return res.status(404).json({ message: 'Freelance tidak ditemukan' });
+    }
+    res.json(rows[0]);
+  } catch (error) {
+    res.status(500).json({ message: 'Database error' });
+  }
+});
+
+app.get('/api/freelancers-inhouse/search', authenticateAdmin, async (req, res) => {
+  const q = String(req.query.q || req.query.search || '').trim();
+  const limit = Math.min(50, Math.max(1, parseInt(req.query.limit, 10) || 20));
+  try {
+    let sql = `SELECT id, name, email, phone, photo_price, video_price
+               FROM freelancers_inhouse WHERE is_active = 1`;
+    const params = [];
+    if (q) {
+      sql += ' AND (name LIKE ? OR email LIKE ? OR phone LIKE ?)';
+      const pattern = `%${q}%`;
+      params.push(pattern, pattern, pattern);
+    }
+    sql += ' ORDER BY name ASC LIMIT ?';
+    params.push(limit);
+    const [rows] = await db.execute(sql, params);
+    res.json({ success: true, data: rows });
+  } catch (error) {
+    res.status(500).json({ message: 'Database error' });
+  }
+});
+
+app.get('/api/freelancers-inhouse', authenticateAdmin, async (req, res) => {
   const page = Math.max(1, parseInt(req.query.page, 10) || 1);
   const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 10));
   const offset = (page - 1) * limit;
@@ -3756,20 +3963,23 @@ app.get('/api/freelancers-inhouse', authenticateToken, async (req, res) => {
     let where = 'is_active = 1';
     const params = [];
     if (q) {
-      where += ' AND name LIKE ?';
-      params.push(`%${q}%`);
+      where += ' AND (name LIKE ? OR email LIKE ? OR phone LIKE ?)';
+      const pattern = `%${q}%`;
+      params.push(pattern, pattern, pattern);
     }
     const [countRows] = await db.execute(
       `SELECT COUNT(*) AS total FROM freelancers_inhouse WHERE ${where}`,
       params
     );
     const [rows] = await db.execute(
-      `SELECT * FROM freelancers_inhouse WHERE ${where} ORDER BY name ASC LIMIT ? OFFSET ?`,
+      `SELECT id, name, email, phone, photo_price, video_price, is_active, password,
+        login_password_plain, created_at, updated_at
+       FROM freelancers_inhouse WHERE ${where} ORDER BY name ASC LIMIT ? OFFSET ?`,
       [...params, limit, offset]
     );
     res.json({
       success: true,
-      data: rows,
+      data: rows.map(sanitizeFreelancerRow),
       pagination: {
         page,
         limit,
@@ -3782,49 +3992,104 @@ app.get('/api/freelancers-inhouse', authenticateToken, async (req, res) => {
   }
 });
 
-app.get('/api/freelancers-inhouse/all', authenticateToken, async (req, res) => {
+app.get('/api/freelancers-inhouse/all', authenticateAdmin, async (req, res) => {
   try {
-    const [rows] = await db.execute('SELECT * FROM freelancers_inhouse ORDER BY name ASC');
+    const [rows] = await db.execute(
+      `SELECT id, name, email, phone, photo_price, video_price, is_active
+       FROM freelancers_inhouse WHERE is_active = 1 ORDER BY name ASC`
+    );
     res.json(rows);
   } catch (error) {
     res.status(500).json({ message: 'Database error' });
   }
 });
 
-app.post('/api/freelancers-inhouse', authenticateToken, async (req, res) => {
+app.post('/api/freelancers-inhouse', authenticateAdmin, async (req, res) => {
   const name = String(req.body?.name || '').trim();
+  const email = String(req.body?.email || '').trim().toLowerCase() || null;
+  const phone = String(req.body?.phone || '').trim();
+  const phoneNorm = normalizeFreelancerPhone(phone);
   const photoPrice = Number(req.body?.photo_price) || 0;
   const videoPrice = Number(req.body?.video_price) || 0;
   if (!name) return res.status(400).json({ message: 'Nama freelance wajib diisi' });
+  if (!phoneNorm || phoneNorm.length < 8) {
+    return res.status(400).json({ message: 'Nomor HP login wajib diisi (min. 8 digit)' });
+  }
   try {
+    if (await isPhoneTaken(phoneNorm)) {
+      return res.status(409).json({ message: 'Nomor HP sudah digunakan freelance lain' });
+    }
+    const plainPassword = generateFreelancerPassword();
+    const hash = bcrypt.hashSync(plainPassword, 10);
     const [result] = await db.execute(
-      'INSERT INTO freelancers_inhouse (name, photo_price, video_price) VALUES (?, ?, ?)',
-      [name, photoPrice, videoPrice]
+      `INSERT INTO freelancers_inhouse
+        (name, email, password, login_password_plain, phone, photo_price, video_price)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [name, email, hash, plainPassword, phone, photoPrice, videoPrice]
     );
-    res.json({ id: result.insertId, message: 'Freelance ditambahkan' });
+    res.json({
+      id: result.insertId,
+      message: 'Freelance ditambahkan',
+      login_password: plainPassword,
+    });
   } catch (error) {
+    console.error('Create freelancer error:', error);
     res.status(500).json({ message: 'Database error' });
   }
 });
 
-app.put('/api/freelancers-inhouse/:id', authenticateToken, async (req, res) => {
+app.put('/api/freelancers-inhouse/:id', authenticateAdmin, async (req, res) => {
   const name = String(req.body?.name || '').trim();
+  const email = String(req.body?.email || '').trim().toLowerCase() || null;
+  const phone = String(req.body?.phone || '').trim();
+  const phoneNorm = normalizeFreelancerPhone(phone);
   const photoPrice = Number(req.body?.photo_price) || 0;
   const videoPrice = Number(req.body?.video_price) || 0;
   const isActive = req.body?.is_active !== false;
+  const regeneratePassword = Boolean(req.body?.regenerate_password);
   if (!name) return res.status(400).json({ message: 'Nama freelance wajib diisi' });
+  if (!phoneNorm || phoneNorm.length < 8) {
+    return res.status(400).json({ message: 'Nomor HP login wajib diisi (min. 8 digit)' });
+  }
   try {
+    if (await isPhoneTaken(phoneNorm, req.params.id)) {
+      return res.status(409).json({ message: 'Nomor HP sudah digunakan freelance lain' });
+    }
+    let loginPassword = null;
+    if (regeneratePassword) {
+      loginPassword = await setFreelancerPassword(req.params.id, generateFreelancerPassword());
+    }
     await db.execute(
-      'UPDATE freelancers_inhouse SET name = ?, photo_price = ?, video_price = ?, is_active = ? WHERE id = ?',
-      [name, photoPrice, videoPrice, isActive ? 1 : 0, req.params.id]
+      `UPDATE freelancers_inhouse SET name = ?, email = ?, phone = ?,
+        photo_price = ?, video_price = ?, is_active = ? WHERE id = ?`,
+      [name, email, phone, photoPrice, videoPrice, isActive ? 1 : 0, req.params.id]
     );
-    res.json({ message: 'Freelance diperbarui' });
+    res.json({
+      message: 'Freelance diperbarui',
+      ...(loginPassword ? { login_password: loginPassword } : {}),
+    });
   } catch (error) {
+    console.error('Update freelancer error:', error);
     res.status(500).json({ message: 'Database error' });
   }
 });
 
-app.delete('/api/freelancers-inhouse/:id', authenticateToken, async (req, res) => {
+app.post('/api/freelancers-inhouse/:id/regenerate-password', authenticateAdmin, async (req, res) => {
+  try {
+    const [rows] = await db.execute(
+      'SELECT id FROM freelancers_inhouse WHERE id = ? AND is_active = 1 LIMIT 1',
+      [req.params.id]
+    );
+    if (!rows[0]) return res.status(404).json({ message: 'Freelance tidak ditemukan' });
+    const loginPassword = await setFreelancerPassword(req.params.id, generateFreelancerPassword());
+    res.json({ message: 'Password baru dibuat', login_password: loginPassword });
+  } catch (error) {
+    console.error('Regenerate freelancer password error:', error);
+    res.status(500).json({ message: 'Database error' });
+  }
+});
+
+app.delete('/api/freelancers-inhouse/:id', authenticateAdmin, async (req, res) => {
   try {
     await db.execute('UPDATE freelancers_inhouse SET is_active = 0 WHERE id = ?', [req.params.id]);
     res.json({ message: 'Freelance dinonaktifkan' });

@@ -1,0 +1,231 @@
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Helmet } from 'react-helmet-async';
+import { ChevronLeft, ChevronRight, X, Calendar } from 'lucide-react';
+import toast from 'react-hot-toast';
+import FreelancerLayout from '../../components/FreelancerLayout';
+import { formatDate } from '../../utils/formatters';
+import { API_ENDPOINTS } from '../../utils/endpoints';
+import { freelancerGet } from '../../utils/request';
+import {
+  colorForPhotographer,
+  dutyDateLabel,
+  getCalendarDays,
+} from '../../utils/freelanceCalendar';
+
+const FreelancerCalendar = () => {
+  const [calendarMonth, setCalendarMonth] = useState(new Date());
+  const [assignments, setAssignments] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedDateKey, setSelectedDateKey] = useState(null);
+
+  const year = calendarMonth.getFullYear();
+  const month = calendarMonth.getMonth() + 1;
+
+  const fetchAssignments = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await freelancerGet(
+        `${API_ENDPOINTS.FREELANCE_CALENDAR}?year=${year}&month=${month}`,
+      );
+      setAssignments(Array.isArray(data.assignments) ? data.assignments : []);
+    } catch (e) {
+      toast.error(e.message || 'Gagal memuat jadwal');
+      setAssignments([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [year, month]);
+
+  useEffect(() => {
+    fetchAssignments();
+  }, [fetchAssignments]);
+
+  const eventsByDate = useMemo(
+    () =>
+      assignments.reduce((acc, row) => {
+        const key = dutyDateLabel(row.duty_date);
+        if (!key) return acc;
+        if (!acc[key]) acc[key] = [];
+        acc[key].push(row);
+        return acc;
+      }, {}),
+    [assignments],
+  );
+
+  const changeMonth = (delta) => {
+    setCalendarMonth((prev) => {
+      const n = new Date(prev);
+      n.setMonth(prev.getMonth() + delta);
+      return n;
+    });
+    setSelectedDateKey(null);
+  };
+
+  const days = getCalendarDays(calendarMonth);
+  const selectedDayEvents = selectedDateKey ? eventsByDate[selectedDateKey] || [] : [];
+  const freelancerName = localStorage.getItem('freelancer_name') || 'Anda';
+
+  return (
+    <>
+      <Helmet>
+        <title>Kalender Penugasan Saya</title>
+      </Helmet>
+      <FreelancerLayout>
+        <div className="mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">Kalender Penugasan</h1>
+          <p className="text-gray-600">
+            Jadwal tugas untuk <span className="font-medium text-gray-800">{freelancerName}</span> — hanya penugasan yang ditetapkan kepada Anda.
+          </p>
+        </div>
+
+        <div className="grid lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 bg-white rounded-xl shadow-lg border border-gray-100 p-4 md:p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                <Calendar size={20} /> Kalender
+              </h2>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => changeMonth(-1)}
+                  className="p-2 rounded-full border border-gray-300 text-gray-600 hover:bg-gray-100"
+                >
+                  <ChevronLeft size={18} />
+                </button>
+                <span className="text-sm font-medium text-gray-700 min-w-[140px] text-center">
+                  {calendarMonth.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => changeMonth(1)}
+                  className="p-2 rounded-full border border-gray-300 text-gray-600 hover:bg-gray-100"
+                >
+                  <ChevronRight size={18} />
+                </button>
+              </div>
+            </div>
+
+            {loading ? (
+              <div className="py-16 text-center text-gray-500">Memuat…</div>
+            ) : (
+              <>
+                <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-semibold text-gray-500 mb-2">
+                  {['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'].map((d) => (
+                    <div key={d}>{d}</div>
+                  ))}
+                </div>
+                <div className="grid grid-cols-7 gap-1">
+                  {days.map((d, idx) => {
+                    if (!d) {
+                      return <div key={`pad-${idx}`} className="min-h-[72px] rounded-lg bg-gray-50/50" />;
+                    }
+                    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                    const list = eventsByDate[key] || [];
+                    const isSelected = selectedDateKey === key;
+                    return (
+                      <button
+                        type="button"
+                        key={key}
+                        onClick={() => setSelectedDateKey(isSelected ? null : key)}
+                        className={`min-h-[72px] rounded-lg border p-1 text-left text-xs transition-colors ${
+                          isSelected
+                            ? 'border-primary-500 bg-primary-50 ring-2 ring-primary-200'
+                            : list.length
+                              ? 'border-primary-200 bg-primary-50/40 hover:bg-primary-50'
+                              : 'border-gray-200 hover:bg-gray-50'
+                        }`}
+                      >
+                        <span className="font-semibold text-gray-700">{d.getDate()}</span>
+                        {list.length > 0 && (
+                          <span className="mt-1 block text-[10px] font-medium text-primary-700">
+                            {list.length} tugas
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
+
+          <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-4 md:p-6">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-lg font-semibold text-gray-800">Detail hari</h2>
+              {selectedDateKey && (
+                <button type="button" onClick={() => setSelectedDateKey(null)} className="text-gray-500 p-1">
+                  <X size={18} />
+                </button>
+              )}
+            </div>
+            {!selectedDateKey ? (
+              <p className="text-sm text-gray-500">Klik tanggal di kalender untuk melihat penugasan Anda.</p>
+            ) : selectedDayEvents.length === 0 ? (
+              <p className="text-sm text-gray-500">Tidak ada penugasan di {formatDate(selectedDateKey)}.</p>
+            ) : (
+              <ul className="space-y-3 max-h-[420px] overflow-y-auto">
+                {selectedDayEvents.map((ev) => (
+                  <li key={ev.id} className="rounded-lg border border-gray-200 p-3 text-sm">
+                    <p className="font-medium text-gray-900">
+                      {ev.client_name || '-'} · #
+                      {ev.order_source === 'custom_request' ? `C${ev.order_id}` : ev.order_id}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">{ev.client_phone}</p>
+                    {ev.service_label ? (
+                      <p className="text-xs text-gray-600 mt-1">{ev.service_label}</p>
+                    ) : null}
+                    {ev.notes ? (
+                      <p className="text-xs text-gray-600 mt-2 whitespace-pre-wrap border-t pt-2">{ev.notes}</p>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-6 bg-white rounded-xl border border-gray-100 shadow p-4">
+          <h3 className="text-sm font-semibold text-gray-800 mb-2">Semua penugasan bulan ini</h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm min-w-[520px]">
+              <thead>
+                <tr className="text-left text-gray-500 border-b">
+                  <th className="py-2 pr-2">Tanggal</th>
+                  <th className="py-2 pr-2">Klien / Pesanan</th>
+                  <th className="py-2 pr-2">Catatan</th>
+                </tr>
+              </thead>
+              <tbody>
+                {assignments.length === 0 ? (
+                  <tr>
+                    <td colSpan={3} className="py-8 text-center text-gray-500">
+                      Belum ada penugasan untuk Anda bulan ini
+                    </td>
+                  </tr>
+                ) : (
+                  assignments.map((row) => (
+                    <tr key={row.id} className="border-b border-gray-100">
+                      <td className="py-2 pr-2 whitespace-nowrap">{formatDate(row.duty_date)}</td>
+                      <td className="py-2 pr-2">
+                        <span
+                          className={`inline-block rounded px-2 py-0.5 text-xs font-semibold mr-2 ${colorForPhotographer(row.photographer_name)}`}
+                        >
+                          {row.photographer_name}
+                        </span>
+                        {row.client_name || '-'} · #
+                        {row.order_source === 'custom_request' ? `C${row.order_id}` : row.order_id}
+                      </td>
+                      <td className="py-2 pr-2 text-gray-600">{row.notes || '-'}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </FreelancerLayout>
+    </>
+  );
+};
+
+export default FreelancerCalendar;

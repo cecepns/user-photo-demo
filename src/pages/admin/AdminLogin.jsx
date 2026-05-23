@@ -115,11 +115,16 @@ const AdminLogin = () => {
             </button>
           </form>
 
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-500">
-              Kredensial demo:<br />
-              Email: admin@userwedding.com<br />
-              Password: admin123
+          <div className="mt-6 text-center text-sm text-gray-500 space-y-2">
+            <p>
+              Freelance?{' '}
+              <a href="/freelancer/login" className="text-primary-600 hover:underline">
+                Masuk portal freelance
+              </a>
+            </p>
+            <p>
+              Kredensial demo admin:<br />
+              Email: admin@userwedding.com · Password: admin123
             </p>
           </div>
         </div>

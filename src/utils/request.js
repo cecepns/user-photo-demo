@@ -6,3 +6,7 @@ export const apiPost = (path, body, options) =>
 export const apiPut = (path, body, options) =>
   apiFetch(path, { ...options, method: 'PUT', body: JSON.stringify(body) });
 export const apiDelete = (path, options) => apiFetch(path, { ...options, method: 'DELETE' });
+
+export const freelancerGet = (path, options) => apiFetch(path, { ...options, method: 'GET', tokenKey: 'freelancer_token' });
+export const freelancerPost = (path, body, options) =>
+  apiFetch(path, { ...options, method: 'POST', body: JSON.stringify(body), tokenKey: 'freelancer_token' });

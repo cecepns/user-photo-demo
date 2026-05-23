@@ -47,10 +47,17 @@ export const API_ENDPOINTS = {
   },
   FREELANCERS: {
     LIST: '/api/freelancers-inhouse',
+    SEARCH: '/api/freelancers-inhouse/search',
     ALL: '/api/freelancers-inhouse/all',
     CREATE: '/api/freelancers-inhouse',
     UPDATE: (id) => `/api/freelancers-inhouse/${id}`,
+    REGENERATE_PASSWORD: (id) => `/api/freelancers-inhouse/${id}/regenerate-password`,
     DELETE: (id) => `/api/freelancers-inhouse/${id}`,
   },
+  FREELANCER_AUTH: {
+    LOGIN: '/api/freelancer/login',
+    ME: '/api/freelancer/me',
+  },
+  FREELANCE_CALENDAR: '/api/freelance-calendar',
   REFERENCE_SOURCES: '/api/reference-sources',
 };

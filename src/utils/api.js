@@ -5,14 +5,15 @@ export function buildUrl(path) {
 }
 
 export async function apiFetch(path, options = {}) {
-  const token = localStorage.getItem('admin_token');
+  const { tokenKey = 'admin_token', ...fetchOptions } = options;
+  const token = localStorage.getItem(tokenKey);
   const headers = {
     'Content-Type': 'application/json',
-    ...(options.headers || {}),
+    ...(fetchOptions.headers || {}),
   };
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const response = await fetch(buildUrl(path), { ...options, headers });
+  const response = await fetch(buildUrl(path), { ...fetchOptions, headers });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     const err = new Error(data?.message || 'Request failed');
