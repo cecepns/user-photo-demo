@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import AdminLayout from '../../components/AdminLayout';
+import PackageSalesChart from '../../components/admin/PackageSalesChart';
 import { formatRupiah } from '../../utils/formatters';
 import { API_ENDPOINTS } from '../../utils/endpoints';
 import { apiGet } from '../../utils/request';
@@ -36,8 +37,6 @@ const AdminDashboard = () => {
       console.error('Error fetching package sales:', error);
     }
   };
-
-  const maxCount = Math.max(...packageSales.map((p) => Number(p.order_count) || 0), 1);
 
   return (
     <>
@@ -75,26 +74,7 @@ const AdminDashboard = () => {
           {packageSales.length === 0 ? (
             <p className="text-gray-500 text-sm">Belum ada data penjualan paket.</p>
           ) : (
-            <div className="space-y-4">
-              {packageSales.map((pkg) => {
-                const count = Number(pkg.order_count) || 0;
-                const width = `${Math.round((count / maxCount) * 100)}%`;
-                return (
-                  <div key={pkg.package_name}>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="font-medium text-gray-700 truncate pr-4">{pkg.package_name}</span>
-                      <span className="text-gray-500 shrink-0">{count} pesanan · {formatRupiah(pkg.total_revenue)}</span>
-                    </div>
-                    <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-primary-500 to-secondary-500 rounded-full transition-all"
-                        style={{ width }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            <PackageSalesChart data={packageSales} />
           )}
         </div>
 

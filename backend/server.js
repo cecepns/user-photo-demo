@@ -3495,6 +3495,68 @@ app.delete('/api/order-progress/:id', authenticateToken, async (req, res) => {
 });
 
 // --- Detail acara ---
+const MAX_DETAIL_ACARA_MAPS = 20;
+
+function detailAcaraMapsFromRow(row) {
+  if (row?.maps_json) {
+    try {
+      const raw = typeof row.maps_json === 'string' ? JSON.parse(row.maps_json) : row.maps_json;
+      if (Array.isArray(raw) && raw.length) {
+        return raw.map((m) => ({
+          url: String(m?.url || '').trim(),
+          note: String(m?.note || '').trim(),
+        }));
+      }
+    } catch (_) {
+      /* legacy fallback */
+    }
+  }
+  const maps = [];
+  for (let n = 1; n <= 4; n += 1) {
+    const url = String(row?.[`map${n}_url`] || '').trim();
+    const note = String(row?.[`map${n}_note`] || '').trim();
+    if (url || note) maps.push({ url, note });
+  }
+  return maps;
+}
+
+function normalizeDetailAcaraMaps(body, row = null) {
+  if (Array.isArray(body?.maps)) {
+    return body.maps
+      .slice(0, MAX_DETAIL_ACARA_MAPS)
+      .map((m) => ({
+        url: String(m?.url || '').trim(),
+        note: String(m?.note || '').trim(),
+      }))
+      .filter((m) => m.url || m.note);
+  }
+  const maps = [];
+  for (let n = 1; n <= 4; n += 1) {
+    const url = String(body?.[`map${n}_url`] || '').trim();
+    const note = String(body?.[`map${n}_note`] || '').trim();
+    if (url || note) maps.push({ url, note });
+  }
+  if (!maps.length && row) {
+    return detailAcaraMapsFromRow(row).filter((m) => m.url || m.note);
+  }
+  return maps;
+}
+
+function detailAcaraLegacyMapColumns(maps) {
+  const cols = {};
+  for (let n = 1; n <= 4; n += 1) {
+    const m = maps[n - 1] || {};
+    cols[`map${n}_url`] = m.url || null;
+    cols[`map${n}_note`] = m.note || null;
+  }
+  return cols;
+}
+
+function serializeDetailAcaraRow(row) {
+  const maps = detailAcaraMapsFromRow(row);
+  return { ...row, maps };
+}
+
 app.get('/api/detail-acara', authenticateToken, async (req, res) => {
   const page = Math.max(1, parseInt(req.query.page, 10) || 1);
   const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 10));
@@ -3520,7 +3582,7 @@ app.get('/api/detail-acara', authenticateToken, async (req, res) => {
     );
 
     res.json({
-      items: rows,
+      items: rows.map(serializeDetailAcaraRow),
       pagination: {
         page,
         limit,
@@ -3537,7 +3599,7 @@ app.get('/api/detail-acara/:id', authenticateToken, async (req, res) => {
   try {
     const [rows] = await db.execute('SELECT * FROM detail_acara WHERE id = ?', [req.params.id]);
     if (!rows[0]) return res.status(404).json({ message: 'Tidak ditemukan' });
-    res.json(rows[0]);
+    res.json(serializeDetailAcaraRow(rows[0]));
   } catch (error) {
     res.status(500).json({ message: 'Database error' });
   }
@@ -3559,20 +3621,25 @@ app.post('/api/detail-acara', authenticateToken, async (req, res) => {
       }
     }
 
+    const maps = normalizeDetailAcaraMaps(b);
+    const legacy = detailAcaraLegacyMapColumns(maps);
+    const mapsJson = maps.length ? JSON.stringify(maps) : null;
+
     const [result] = await db.execute(
       `INSERT INTO detail_acara (
         order_source, order_id, client_name, client_phone, client_address,
-        bride_name, groom_name, wedding_date, package_name,
+        bride_name, groom_name, wedding_date, package_name, maps_json,
         map1_url, map1_note, map2_url, map2_note, map3_url, map3_note, map4_url, map4_note, notes
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         orderSource, orderId,
         b.client_name || null, b.client_phone || null, b.client_address || null,
         b.bride_name || null, b.groom_name || null, b.wedding_date || null, b.package_name || null,
-        b.map1_url || null, b.map1_note || null,
-        b.map2_url || null, b.map2_note || null,
-        b.map3_url || null, b.map3_note || null,
-        b.map4_url || null, b.map4_note || null,
+        mapsJson,
+        legacy.map1_url, legacy.map1_note,
+        legacy.map2_url, legacy.map2_note,
+        legacy.map3_url, legacy.map3_note,
+        legacy.map4_url, legacy.map4_note,
         b.notes || null
       ]
     );
@@ -3585,20 +3652,27 @@ app.post('/api/detail-acara', authenticateToken, async (req, res) => {
 app.put('/api/detail-acara/:id', authenticateToken, async (req, res) => {
   const b = req.body || {};
   try {
+    const [existingRows] = await db.execute('SELECT * FROM detail_acara WHERE id = ?', [req.params.id]);
+    const maps = normalizeDetailAcaraMaps(b, existingRows[0]);
+    const legacy = detailAcaraLegacyMapColumns(maps);
+    const mapsJson = maps.length ? JSON.stringify(maps) : null;
+
     const [result] = await db.execute(
       `UPDATE detail_acara SET
         client_name = ?, client_phone = ?, client_address = ?,
         bride_name = ?, groom_name = ?, wedding_date = ?, package_name = ?,
+        maps_json = ?,
         map1_url = ?, map1_note = ?, map2_url = ?, map2_note = ?,
         map3_url = ?, map3_note = ?, map4_url = ?, map4_note = ?, notes = ?
        WHERE id = ?`,
       [
         b.client_name || null, b.client_phone || null, b.client_address || null,
         b.bride_name || null, b.groom_name || null, b.wedding_date || null, b.package_name || null,
-        b.map1_url || null, b.map1_note || null,
-        b.map2_url || null, b.map2_note || null,
-        b.map3_url || null, b.map3_note || null,
-        b.map4_url || null, b.map4_note || null,
+        mapsJson,
+        legacy.map1_url, legacy.map1_note,
+        legacy.map2_url, legacy.map2_note,
+        legacy.map3_url, legacy.map3_note,
+        legacy.map4_url, legacy.map4_note,
         b.notes || null,
         req.params.id
       ]

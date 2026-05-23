@@ -271,10 +271,6 @@ const AdminFreelanceCalendar = () => {
               Atur jadwal fotografer freelance yang terjun / bertugas pada tanggal tertentu untuk setiap
               pesanan (biasa maupun custom). Mirip staff field: satu pesanan bisa punya beberapa penugasan.
             </p>
-            <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mt-3 inline-block">
-              Kalender vendor topping lama tetap ada di URL{' '}
-              <code className="text-xs">/admin/vendor-calendar</code> (tanpa menu).
-            </p>
           </div>
           <button type="button" onClick={openCreate} className="btn-primary flex items-center gap-2 shrink-0">
             <Plus size={18} /> Tambah penugasan

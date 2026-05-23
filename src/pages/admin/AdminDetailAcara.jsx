@@ -1,12 +1,36 @@
 import { useCallback, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Helmet } from 'react-helmet-async';
-import { Download, Plus, Edit, Trash2 } from 'lucide-react';
+import { Download, Plus, Edit, Trash2, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
 import AdminLayout from '../../components/AdminLayout';
 import { formatDate } from '../../utils/formatters';
 import { API_ENDPOINTS } from '../../utils/endpoints';
 import { apiGet, apiPost, apiPut, apiDelete } from '../../utils/request';
+
+const MAX_MAPS = 20;
+
+const FIELD_LABELS = {
+  client_name: 'Nama Client',
+  client_phone: 'Telepon',
+  bride_name: 'Nama Pengantin Wanita',
+  groom_name: 'Nama Pengantin Pria',
+  wedding_date: 'Tanggal Acara',
+  package_name: 'Nama Paket',
+};
+
+const emptyMap = () => ({ url: '', note: '' });
+
+const mapsFromRow = (row) => {
+  if (Array.isArray(row?.maps) && row.maps.length) {
+    return row.maps.map((m) => ({ url: m.url || '', note: m.note || '' }));
+  }
+  const legacy = [1, 2, 3, 4]
+    .map((n) => ({ url: row[`map${n}_url`] || '', note: row[`map${n}_note`] || '' }))
+    .filter((m) => m.url || m.note);
+  return legacy.length ? legacy : [emptyMap()];
+};
 
 const emptyForm = () => ({
   client_name: '',
@@ -16,10 +40,7 @@ const emptyForm = () => ({
   groom_name: '',
   wedding_date: '',
   package_name: '',
-  map1_url: '', map1_note: '',
-  map2_url: '', map2_note: '',
-  map3_url: '', map3_note: '',
-  map4_url: '', map4_note: '',
+  maps: [emptyMap()],
   notes: '',
 });
 
@@ -68,33 +89,46 @@ const AdminDetailAcara = () => {
       groom_name: row.groom_name || '',
       wedding_date: row.wedding_date ? String(row.wedding_date).slice(0, 10) : '',
       package_name: row.package_name || '',
-      map1_url: row.map1_url || '', map1_note: row.map1_note || '',
-      map2_url: row.map2_url || '', map2_note: row.map2_note || '',
-      map3_url: row.map3_url || '', map3_note: row.map3_note || '',
-      map4_url: row.map4_url || '', map4_note: row.map4_note || '',
+      maps: mapsFromRow(row),
       notes: row.notes || '',
     });
     setShowModal(true);
   };
 
+  const buildPayload = () => ({
+    client_name: form.client_name,
+    client_phone: form.client_phone,
+    client_address: form.client_address,
+    bride_name: form.bride_name,
+    groom_name: form.groom_name,
+    wedding_date: form.wedding_date,
+    package_name: form.package_name,
+    notes: form.notes,
+    maps: form.maps
+      .map((m) => ({ url: m.url.trim(), note: m.note.trim() }))
+      .filter((m) => m.url || m.note),
+  });
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      const payload = buildPayload();
       if (editingId) {
-        await apiPut(API_ENDPOINTS.DETAIL_ACARA.UPDATE(editingId), form);
+        await apiPut(API_ENDPOINTS.DETAIL_ACARA.UPDATE(editingId), payload);
         toast.success('Detail acara diperbarui');
       } else {
-        await apiPost(API_ENDPOINTS.DETAIL_ACARA.CREATE, form);
+        await apiPost(API_ENDPOINTS.DETAIL_ACARA.CREATE, payload);
         toast.success('Detail acara dibuat');
       }
       setShowModal(false);
       fetchList();
-    } catch (e) {
-      toast.error(e.message);
+    } catch (err) {
+      toast.error(err.message);
     }
   };
 
   const generatePdf = (row) => {
+    const maps = mapsFromRow(row);
     const doc = new jsPDF();
     let y = 20;
     doc.setFontSize(16);
@@ -111,17 +145,14 @@ const AdminDetailAcara = () => {
     ];
     lines.forEach((line) => { doc.text(line, 20, y); y += 7; });
     y += 5;
-    [1, 2, 3, 4].forEach((n) => {
-      const url = row[`map${n}_url`];
-      const note = row[`map${n}_note`];
-      if (url || note) {
-        doc.setFont('helvetica', 'bold');
-        doc.text(`Lokasi ${n}:`, 20, y);
-        y += 6;
-        doc.setFont('helvetica', 'normal');
-        if (url) { doc.text(`Maps: ${url}`, 20, y); y += 6; }
-        if (note) { doc.text(`Catatan: ${note}`, 20, y); y += 6; }
-      }
+    maps.forEach((m, index) => {
+      if (!m.url && !m.note) return;
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Lokasi ${index + 1}:`, 20, y);
+      y += 6;
+      doc.setFont('helvetica', 'normal');
+      if (m.url) { doc.text(`Maps: ${m.url}`, 20, y); y += 6; }
+      if (m.note) { doc.text(`Catatan: ${m.note}`, 20, y); y += 6; }
     });
     if (row.notes) {
       doc.text(`Catatan umum: ${row.notes}`, 20, y);
@@ -135,12 +166,160 @@ const AdminDetailAcara = () => {
       await apiDelete(API_ENDPOINTS.DETAIL_ACARA.DELETE(id));
       toast.success('Dihapus');
       fetchList();
-    } catch (e) {
-      toast.error(e.message);
+    } catch (err) {
+      toast.error(err.message);
     }
   };
 
   const setField = (name, value) => setForm((f) => ({ ...f, [name]: value }));
+
+  const setMapField = (index, field, value) => {
+    setForm((f) => {
+      const maps = [...f.maps];
+      maps[index] = { ...maps[index], [field]: value };
+      return { ...f, maps };
+    });
+  };
+
+  const addMap = () => {
+    if (form.maps.length >= MAX_MAPS) {
+      toast.error(`Maksimal ${MAX_MAPS} lokasi maps`);
+      return;
+    }
+    setForm((f) => ({ ...f, maps: [...f.maps, emptyMap()] }));
+  };
+
+  const removeMap = (index) => {
+    setForm((f) => {
+      if (f.maps.length <= 1) return f;
+      return { ...f, maps: f.maps.filter((_, i) => i !== index) };
+    });
+  };
+
+  const modal = showModal ? (
+    <div className="fixed inset-0 z-[100] overflow-y-auto">
+      <div className="flex min-h-full items-center justify-center p-4 sm:p-6">
+        <button
+          type="button"
+          className="fixed inset-0 bg-black/50"
+          aria-label="Tutup"
+          onClick={() => setShowModal(false)}
+        />
+        <div className="relative bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[min(90vh,100dvh-2rem)] flex flex-col">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
+            <h3 className="text-lg font-semibold text-gray-800">
+              {editingId ? 'Edit' : 'Tambah'} Detail Acara
+            </h3>
+            <button
+              type="button"
+              onClick={() => setShowModal(false)}
+              className="p-1 rounded-lg text-gray-500 hover:bg-gray-100"
+              aria-label="Tutup"
+            >
+              <X size={20} />
+            </button>
+          </div>
+
+          <form id="detail-acara-form" onSubmit={handleSubmit} className="overflow-y-auto px-6 py-4 flex-1">
+            <div className="grid sm:grid-cols-2 gap-4">
+              {Object.keys(FIELD_LABELS).map((field) => (
+                <div key={field}>
+                  <label className="text-sm font-medium text-gray-700">{FIELD_LABELS[field]}</label>
+                  <input
+                    type={field === 'wedding_date' ? 'date' : 'text'}
+                    value={form[field]}
+                    onChange={(e) => setField(field, e.target.value)}
+                    className="w-full border rounded-lg px-3 py-2 mt-1"
+                    required={['client_name', 'bride_name', 'groom_name'].includes(field)}
+                  />
+                </div>
+              ))}
+
+              <div className="sm:col-span-2">
+                <label className="text-sm font-medium text-gray-700">Alamat</label>
+                <textarea
+                  value={form.client_address}
+                  onChange={(e) => setField('client_address', e.target.value)}
+                  className="w-full border rounded-lg px-3 py-2 mt-1"
+                  rows={2}
+                />
+              </div>
+
+              <div className="sm:col-span-2 border-t border-gray-100 pt-4">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="font-medium text-gray-800">Lokasi Maps</p>
+                  <button
+                    type="button"
+                    onClick={addMap}
+                    disabled={form.maps.length >= MAX_MAPS}
+                    className="inline-flex items-center gap-1 text-sm text-primary-600 hover:text-primary-700 disabled:opacity-50"
+                  >
+                    <Plus size={16} /> Tambah Maps
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  {form.maps.map((map, index) => (
+                    <div key={index} className="rounded-lg border border-gray-200 p-3 bg-gray-50/50">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-700">Maps {index + 1}</span>
+                        {form.maps.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeMap(index)}
+                            className="inline-flex items-center gap-1 text-xs text-red-600 hover:text-red-700"
+                          >
+                            <Trash2 size={14} /> Hapus
+                          </button>
+                        )}
+                      </div>
+                      <div className="grid sm:grid-cols-2 gap-2">
+                        <input
+                          placeholder="URL Google Maps"
+                          value={map.url}
+                          onChange={(e) => setMapField(index, 'url', e.target.value)}
+                          className="border rounded-lg px-3 py-2 bg-white text-sm"
+                        />
+                        <input
+                          placeholder="Keterangan lokasi"
+                          value={map.note}
+                          onChange={(e) => setMapField(index, 'note', e.target.value)}
+                          className="border rounded-lg px-3 py-2 bg-white text-sm"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="text-sm font-medium text-gray-700">Catatan Umum</label>
+                <textarea
+                  value={form.notes}
+                  onChange={(e) => setField('notes', e.target.value)}
+                  className="w-full border rounded-lg px-3 py-2 mt-1"
+                  rows={2}
+                />
+              </div>
+            </div>
+          </form>
+
+          <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-2 shrink-0">
+            <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 border rounded-lg">
+              Batal
+            </button>
+            <button
+              type="submit"
+              form="detail-acara-form"
+              className="px-4 py-2 bg-primary-600 text-white rounded-lg"
+            >
+              Simpan
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  ) : null;
 
   return (
     <>
@@ -193,48 +372,7 @@ const AdminDetailAcara = () => {
           </table>
         </div>
 
-        {showModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 overflow-y-auto">
-            <div className="bg-white rounded-xl max-w-2xl w-full p-6 my-8">
-              <h3 className="text-lg font-semibold mb-4">{editingId ? 'Edit' : 'Tambah'} Detail Acara</h3>
-              <form onSubmit={handleSubmit} className="grid sm:grid-cols-2 gap-4">
-                {['client_name', 'client_phone', 'bride_name', 'groom_name', 'wedding_date', 'package_name'].map((field) => (
-                  <div key={field} className={field === 'client_address' ? 'sm:col-span-2' : ''}>
-                    <label className="text-sm capitalize">{field.replace(/_/g, ' ')}</label>
-                    <input
-                      type={field === 'wedding_date' ? 'date' : 'text'}
-                      value={form[field]}
-                      onChange={(e) => setField(field, e.target.value)}
-                      className="w-full border rounded-lg px-3 py-2 mt-1"
-                      required={['client_name', 'bride_name', 'groom_name'].includes(field)}
-                    />
-                  </div>
-                ))}
-                <div className="sm:col-span-2">
-                  <label className="text-sm">Alamat</label>
-                  <textarea value={form.client_address} onChange={(e) => setField('client_address', e.target.value)} className="w-full border rounded-lg px-3 py-2 mt-1" rows={2} />
-                </div>
-                {[1, 2, 3, 4].map((n) => (
-                  <div key={n} className="sm:col-span-2 border-t pt-3">
-                    <p className="font-medium text-sm mb-2">Maps {n}</p>
-                    <div className="grid sm:grid-cols-2 gap-2">
-                      <input placeholder="URL Maps" value={form[`map${n}_url`]} onChange={(e) => setField(`map${n}_url`, e.target.value)} className="border rounded-lg px-3 py-2" />
-                      <input placeholder="Keterangan" value={form[`map${n}_note`]} onChange={(e) => setField(`map${n}_note`, e.target.value)} className="border rounded-lg px-3 py-2" />
-                    </div>
-                  </div>
-                ))}
-                <div className="sm:col-span-2">
-                  <label className="text-sm">Catatan</label>
-                  <textarea value={form.notes} onChange={(e) => setField('notes', e.target.value)} className="w-full border rounded-lg px-3 py-2 mt-1" rows={2} />
-                </div>
-                <div className="sm:col-span-2 flex justify-end gap-2">
-                  <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 border rounded-lg">Batal</button>
-                  <button type="submit" className="px-4 py-2 bg-primary-600 text-white rounded-lg">Simpan</button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
+        {typeof document !== 'undefined' && createPortal(modal, document.body)}
       </AdminLayout>
     </>
   );
