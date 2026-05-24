@@ -5,7 +5,7 @@ import { Edit, Trash2, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import AdminLayout from '../../components/AdminLayout';
 import { formatDate } from '../../utils/formatters';
-import { API_ENDPOINTS, API_BASE } from '../../utils/endpoints';
+import { API_ENDPOINTS } from '../../utils/endpoints';
 import { apiGet, apiPost, apiPut, apiDelete } from '../../utils/request';
 import {
   PHOTO_STATUS_OPTIONS,
@@ -57,7 +57,7 @@ const AdminOrderProgress = () => {
   }, [fetchList]);
 
   const loadOrderOptions = async (inputValue) => {
-    const data = await apiGet(`${API_BASE}/api/orders/search?q=${encodeURIComponent(inputValue || '')}`);
+    const data = await apiGet(`${API_ENDPOINTS.ORDERS.SEARCH}?q=${encodeURIComponent(inputValue || '')}`);
     const rows = Array.isArray(data) ? data : [];
     return rows.map((row) => {
       const isCustom = row.order_source === 'custom_request';
