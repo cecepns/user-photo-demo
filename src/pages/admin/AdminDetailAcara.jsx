@@ -34,6 +34,8 @@ const mapsFromRow = (row) => {
 };
 
 const emptyForm = () => ({
+  order_source: null,
+  order_id: null,
   client_name: '',
   client_phone: '',
   client_address: '',
@@ -44,6 +46,7 @@ const emptyForm = () => ({
   maps: [emptyMap()],
   notes: '',
 });
+
 
 const AdminDetailAcara = () => {
   const [items, setItems] = useState([]);
@@ -112,6 +115,8 @@ const AdminDetailAcara = () => {
   const openEdit = (row) => {
     setEditingId(row.id);
     setForm({
+      order_source: row.order_source || null,
+      order_id: row.order_id || null,
       client_name: row.client_name || '',
       client_phone: row.client_phone || '',
       client_address: row.client_address || '',
@@ -122,10 +127,37 @@ const AdminDetailAcara = () => {
       maps: mapsFromRow(row),
       notes: row.notes || '',
     });
+    
+    // Set auto-select field state if order reference exists
+    if (row.order_id && row.order_source) {
+      const isCustom = row.order_source === 'custom_request';
+      const prefix = isCustom ? 'C' : '';
+      const tag = isCustom ? 'Custom' : 'Biasa';
+      setSelectedOrderOpt({
+        value: isCustom ? `custom:${row.order_id}` : `order:${row.order_id}`,
+        label: `#${prefix}${row.order_id} — ${row.client_name || '-'} — ${row.package_name || '-'} (${tag})`,
+        order: {
+          id: row.order_id,
+          source: row.order_source,
+          name: row.client_name,
+          phone: row.client_phone,
+          address: row.client_address,
+          bride_name: row.bride_name,
+          groom_name: row.groom_name,
+          wedding_date: row.wedding_date ? String(row.wedding_date).slice(0, 10) : '',
+          package_name: row.package_name
+        }
+      });
+    } else {
+      setSelectedOrderOpt(null);
+    }
     setShowModal(true);
   };
 
+
   const buildPayload = () => ({
+    order_source: form.order_source,
+    order_id: form.order_id,
     client_name: form.client_name,
     client_phone: form.client_phone,
     client_address: form.client_address,
@@ -138,6 +170,7 @@ const AdminDetailAcara = () => {
       .map((m) => ({ url: m.url.trim(), note: m.note.trim() }))
       .filter((m) => m.url || m.note),
   });
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -359,6 +392,8 @@ const AdminDetailAcara = () => {
                     setSelectedOrderOpt(opt);
                     if (opt?.order) {
                       setForm({
+                        order_source: opt.order.source || null,
+                        order_id: opt.order.id || null,
                         client_name: opt.order.name || '',
                         client_phone: opt.order.phone || '',
                         client_address: opt.order.address || '',
@@ -366,11 +401,14 @@ const AdminDetailAcara = () => {
                         groom_name: opt.order.groom_name || '',
                         wedding_date: opt.order.wedding_date || '',
                         package_name: opt.order.package_name || '',
-                        maps: [emptyMap()],
-                        notes: ''
+                        maps: form.maps,
+                        notes: form.notes
                       });
+                    } else {
+                      setForm((f) => ({ ...f, order_source: null, order_id: null }));
                     }
                   }}
+
                   placeholder="Ketik nama client / HP..."
                   classNamePrefix="rs"
                   styles={{
