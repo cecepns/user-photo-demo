@@ -340,7 +340,7 @@ const AdminFinance = () => {
               <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
-                <YAxis tickFormatter={(val) => `Rp ${(val / 1000000).toFixed(0)}M`} />
+                <YAxis tickFormatter={(val) => `Rp ${(val / 1000000).toFixed(0)}jt`} />
                 <Tooltip formatter={(value) => formatRupiah(value)} />
                 <Bar dataKey="Pendapatan" fill="#4f46e5" radius={[4, 4, 0, 0]} />
               </BarChart>
@@ -730,22 +730,11 @@ const AdminFinance = () => {
                 </div>
                 {summary && (
                   <div className="p-6 space-y-4">
-                    <div className="flex justify-between border-b pb-2 text-sm">
-                      <span className="text-gray-600 font-medium">Uang Masuk (Kotor)</span>
-                      <span className="font-bold text-green-600">{formatRupiah(summary.grossIncome)}</span>
-                    </div>
-                    <div className="flex justify-between border-b pb-2 text-sm">
-                      <span className="text-gray-600 font-medium">Biaya Produksi</span>
-                      <span className="font-bold text-red-600">- {formatRupiah(summary.productionTotal)}</span>
-                    </div>
-                    <div className="flex justify-between border-b pb-2 text-sm">
-                      <span className="text-gray-600 font-medium">Akomodasi</span>
-                      <span className="font-bold text-red-600">- {formatRupiah(summary.accommodationTotal)}</span>
-                    </div>
-                    <div className="flex justify-between pt-2 text-base font-bold">
+                    <div className="flex justify-between pb-2 text-base font-bold border-b">
                       <span className="text-gray-800">Pendapatan Bersih</span>
                       <span className="text-primary-600">{formatRupiah(summary.netIncome)}</span>
                     </div>
+
                     <div className="bg-blue-50 rounded-lg p-3 text-xs text-blue-700 mt-2">
                       <span className="font-semibold">Info:</span> Pendapatan bersih diperoleh dari total Uang Masuk dikurangi total Biaya Produksi dan biaya Akomodasi.
                     </div>
