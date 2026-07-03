@@ -22,7 +22,7 @@ const AdminServiceFeatures = () => {
 
   const fetchFeatures = async () => {
     try {
-      const token = localStorage.getItem("adminToken");
+      const token = localStorage.getItem("admin_token");
       const response = await fetch(
         "https://api.kingcreativestudio.my.id/user-photo/api/service-features",
         {
@@ -50,13 +50,17 @@ const AdminServiceFeatures = () => {
     e.preventDefault();
 
     try {
-      const token = localStorage.getItem("adminToken");
+      const token = localStorage.getItem("admin_token");
       const url = editingFeature
         ? `https://api.kingcreativestudio.my.id/user-photo/api/service-features/${editingFeature.id}`
         : "https://api.kingcreativestudio.my.id/user-photo/api/service-features";
 
       const method = editingFeature ? "PUT" : "POST";
-      const body = editingFeature ? { ...formData, is_active: true } : formData;
+      const postData = {
+        ...formData,
+        sort_order: formData.sort_order === "" ? 0 : parseInt(formData.sort_order) || 0,
+      };
+      const body = editingFeature ? { ...postData, is_active: true } : postData;
 
       const response = await fetch(url, {
         method,
@@ -105,7 +109,7 @@ const AdminServiceFeatures = () => {
     }
 
     try {
-      const token = localStorage.getItem("adminToken");
+      const token = localStorage.getItem("admin_token");
       const response = await fetch(
         `https://api.kingcreativestudio.my.id/user-photo/api/service-features/${id}`,
         {
@@ -329,7 +333,7 @@ const AdminServiceFeatures = () => {
                         onChange={(e) =>
                           setFormData({
                             ...formData,
-                            sort_order: parseInt(e.target.value) || 0,
+                            sort_order: e.target.value === "" ? "" : parseInt(e.target.value) || 0,
                           })
                         }
                         min="0"
