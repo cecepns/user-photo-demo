@@ -14,6 +14,16 @@ import {
   formatVideoStatus,
 } from '../../constants/orderProgress';
 
+// Status yang termasuk kategori "Progres"
+const PROGRESS_PHOTO_STATUSES = ['photo_progress', 'editing', 'draft_album', 'printing', 'shipping'];
+const PROGRESS_VIDEO_STATUSES = ['video_progress', 'processing', 'revision'];
+
+const FILTER_TABS = [
+  { id: 'all', label: 'Semua' },
+  { id: 'progress', label: 'Progres' },
+  { id: 'done', label: 'Selesai' },
+];
+
 const AdminOrderProgress = () => {
   const [items, setItems] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 15, total: 0, totalPages: 1 });
@@ -22,6 +32,7 @@ const AdminOrderProgress = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [selectedOrderOpt, setSelectedOrderOpt] = useState(null);
+  const [activeFilter, setActiveFilter] = useState('all');
   const [form, setForm] = useState({
     photo_status: 'photo_progress',
     video_status: 'video_progress',
@@ -55,6 +66,22 @@ const AdminOrderProgress = () => {
     const t = setTimeout(() => fetchList(), 300);
     return () => clearTimeout(t);
   }, [fetchList]);
+
+  // Filter items berdasarkan tab aktif
+  const filteredItems = items.filter((row) => {
+    if (activeFilter === 'all') return true;
+    const photoInProgress = PROGRESS_PHOTO_STATUSES.includes(row.photo_status);
+    const videoInProgress = PROGRESS_VIDEO_STATUSES.includes(row.video_status);
+    const photoDone = row.photo_status === 'completed';
+    const videoDone = row.video_status === 'completed';
+    if (activeFilter === 'progress') {
+      return photoInProgress || videoInProgress;
+    }
+    if (activeFilter === 'done') {
+      return photoDone && videoDone;
+    }
+    return true;
+  });
 
   const loadOrderOptions = async (inputValue) => {
     const data = await apiGet(`${API_ENDPOINTS.ORDERS.SEARCH}?q=${encodeURIComponent(inputValue || '')}`);
@@ -135,6 +162,13 @@ const AdminOrderProgress = () => {
     }
   };
 
+  const getStatusBadgeColor = (status, type) => {
+    if (status === 'completed') return 'bg-green-100 text-green-800';
+    if (type === 'photo' && PROGRESS_PHOTO_STATUSES.includes(status)) return 'bg-blue-100 text-blue-800';
+    if (type === 'video' && PROGRESS_VIDEO_STATUSES.includes(status)) return 'bg-purple-100 text-purple-800';
+    return 'bg-gray-100 text-gray-700';
+  };
+
   return (
     <>
       <Helmet><title>Progress Pesanan - Admin</title></Helmet>
@@ -142,11 +176,46 @@ const AdminOrderProgress = () => {
         <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-800">Progress Pesanan</h1>
-            <p className="text-gray-600">Status progres foto & video per pesanan.</p>
+            <p className="text-gray-600">Status progres foto &amp; video per pesanan.</p>
           </div>
           <button type="button" onClick={openCreate} className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg">
             <Plus size={18} /> Tambah Progress
           </button>
+        </div>
+
+        {/* Filter Tabs */}
+        <div className="flex gap-2 mb-4">
+          {FILTER_TABS.map((tab) => {
+            const count = items.filter((row) => {
+              if (tab.id === 'all') return true;
+              const photoInProg = PROGRESS_PHOTO_STATUSES.includes(row.photo_status);
+              const videoInProg = PROGRESS_VIDEO_STATUSES.includes(row.video_status);
+              const photoDone = row.photo_status === 'completed';
+              const videoDone = row.video_status === 'completed';
+              if (tab.id === 'progress') return photoInProg || videoInProg;
+              if (tab.id === 'done') return photoDone && videoDone;
+              return true;
+            }).length;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveFilter(tab.id)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                  activeFilter === tab.id
+                    ? 'bg-primary-600 text-white shadow-sm'
+                    : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                }`}
+              >
+                {tab.label}
+                <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${
+                  activeFilter === tab.id ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'
+                }`}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
         <input
@@ -171,21 +240,33 @@ const AdminOrderProgress = () => {
             <tbody>
               {loading ? (
                 <tr><td colSpan={5} className="p-8 text-center">Memuat...</td></tr>
-              ) : items.length === 0 ? (
-                <tr><td colSpan={5} className="p-8 text-center text-gray-500">Belum ada data</td></tr>
+              ) : filteredItems.length === 0 ? (
+                <tr><td colSpan={5} className="p-8 text-center text-gray-500">
+                  {activeFilter === 'progress' ? 'Tidak ada pesanan yang sedang progres' :
+                   activeFilter === 'done' ? 'Tidak ada pesanan yang selesai' : 'Belum ada data'}
+                </td></tr>
               ) : (
-                items.map((row) => (
-                  <tr key={row.id} className="border-t">
-                    <td className="px-4 py-3">{row.client_name}</td>
-                    <td className="px-4 py-3">{formatPhotoStatus(row.photo_status)}</td>
-                    <td className="px-4 py-3">{formatVideoStatus(row.video_status)}</td>
-                    <td className="px-4 py-3 text-xs">
-                      {row.photo_link && <a href={row.photo_link} target="_blank" rel="noreferrer" className="text-primary-600 block">Foto</a>}
-                      {row.video_link && <a href={row.video_link} target="_blank" rel="noreferrer" className="text-primary-600 block">Video</a>}
+                filteredItems.map((row) => (
+                  <tr key={row.id} className="border-t hover:bg-gray-50/60">
+                    <td className="px-4 py-3 font-medium text-gray-900">{row.client_name}</td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeColor(row.photo_status, 'photo')}`}>
+                        {formatPhotoStatus(row.photo_status)}
+                      </span>
                     </td>
-                    <td className="px-4 py-3 flex gap-2">
-                      <button type="button" onClick={() => openEdit(row)} className="text-primary-600"><Edit size={18} /></button>
-                      <button type="button" onClick={() => handleDelete(row.id)} className="text-red-600"><Trash2 size={18} /></button>
+                    <td className="px-4 py-3">
+                      <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeColor(row.video_status, 'video')}`}>
+                        {formatVideoStatus(row.video_status)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-xs">
+                      {row.photo_link && <a href={row.photo_link} target="_blank" rel="noreferrer" className="text-primary-600 block hover:underline">📷 Foto</a>}
+                      {row.video_link && <a href={row.video_link} target="_blank" rel="noreferrer" className="text-primary-600 block hover:underline">🎬 Video</a>}
+                      {!row.photo_link && !row.video_link && <span className="text-gray-400">–</span>}
+                    </td>
+                    <td className="px-4 py-3 flex gap-2 justify-center">
+                      <button type="button" onClick={() => openEdit(row)} className="text-primary-600 p-1 rounded hover:bg-primary-50"><Edit size={18} /></button>
+                      <button type="button" onClick={() => handleDelete(row.id)} className="text-red-600 p-1 rounded hover:bg-red-50"><Trash2 size={18} /></button>
                     </td>
                   </tr>
                 ))
@@ -193,6 +274,32 @@ const AdminOrderProgress = () => {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination */}
+        {!loading && pagination.total > pagination.limit && (
+          <div className="mt-4 flex items-center justify-between text-sm text-gray-600">
+            <span>Total: {pagination.total} data</span>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                disabled={pagination.page <= 1}
+                onClick={() => setPagination((p) => ({ ...p, page: p.page - 1 }))}
+                className="px-3 py-1 border rounded disabled:opacity-40"
+              >
+                ← Sebelumnya
+              </button>
+              <span className="px-3 py-1">Hal {pagination.page}/{pagination.totalPages}</span>
+              <button
+                type="button"
+                disabled={pagination.page >= pagination.totalPages}
+                onClick={() => setPagination((p) => ({ ...p, page: p.page + 1 }))}
+                className="px-3 py-1 border rounded disabled:opacity-40"
+              >
+                Berikutnya →
+              </button>
+            </div>
+          </div>
+        )}
 
         {showModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -243,6 +350,7 @@ const AdminOrderProgress = () => {
                     value={form.photo_link}
                     onChange={(e) => setForm({ ...form, photo_link: e.target.value })}
                     className="w-full border rounded-lg px-3 py-2 mt-1"
+                    placeholder="https://..."
                   />
                 </div>
                 <div>
@@ -252,6 +360,7 @@ const AdminOrderProgress = () => {
                     value={form.video_link}
                     onChange={(e) => setForm({ ...form, video_link: e.target.value })}
                     className="w-full border rounded-lg px-3 py-2 mt-1"
+                    placeholder="https://..."
                   />
                 </div>
                 <div className="flex gap-2 justify-end">

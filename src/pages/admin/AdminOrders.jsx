@@ -69,6 +69,12 @@ const AdminOrders = () => {
   const [showDuplicatesOnly, setShowDuplicatesOnly] = useState(false);
   const [editableOrderItems, setEditableOrderItems] = useState([]);
   const [savingOrderItems, setSavingOrderItems] = useState(false);
+  const [vendorsList, setVendorsList] = useState([]);
+  const [selectedVendorFilter, setSelectedVendorFilter] = useState("all");
+  const [freelancersList, setFreelancersList] = useState([]);
+  const [assignedFreelancers, setAssignedFreelancers] = useState([]);
+  const [calendarSearch, setCalendarSearch] = useState("");
+  const [activeYear, setActiveYear] = useState(new Date().getFullYear());
   const { appName, contact: siteContact } = useSiteIdentity();
 
   // Kunci duplikat: email + wedding_date sama = kemungkinan pesanan ganda
@@ -99,9 +105,20 @@ const AdminOrders = () => {
       if (!rawDate) return false;
       const d = new Date(rawDate);
       if (isNaN(d.getTime())) return false;
+
+      // Filter by selected vendor
+      if (selectedVendorFilter !== "all" && String(order.vendor_id) !== String(selectedVendorFilter)) {
+        return false;
+      }
+
+      // Filter by search name
+      if (calendarSearch.trim() && !order.name.toLowerCase().includes(calendarSearch.toLowerCase())) {
+        return false;
+      }
+
       return d.getFullYear() === year && d.getMonth() === month;
     });
-  }, [combinedOrders, calendarMonth]);
+  }, [combinedOrders, calendarMonth, selectedVendorFilter, calendarSearch]);
 
   // Set kunci yang punya lebih dari satu pesanan (kemungkinan duplikat)
   const duplicateKeysSet = useMemo(() => {
@@ -193,6 +210,54 @@ const AdminOrders = () => {
   useEffect(() => {
     fetchPaymentMethods();
   }, []);
+
+  useEffect(() => {
+    const initFilters = async () => {
+      try {
+        const token = localStorage.getItem("admin_token");
+        const headers = { Authorization: `Bearer ${token}` };
+        const [vRes, fRes] = await Promise.all([
+          fetch(`${API_BASE}/vendors/all`, { headers }),
+          fetch(`${API_BASE}/freelancers-inhouse/all`, { headers })
+        ]);
+        const vData = await vRes.json();
+        const fData = await fRes.json();
+        setVendorsList(Array.isArray(vData) ? vData : []);
+        setFreelancersList(Array.isArray(fData) ? fData : []);
+      } catch (e) {
+        console.error("Error fetching filters:", e);
+      }
+    };
+    initFilters();
+  }, []);
+
+  const fetchAssignedFreelancers = async () => {
+    if (!selectedOrder) {
+      setAssignedFreelancers([]);
+      return;
+    }
+    try {
+      const token = localStorage.getItem("admin_token");
+      const d = new Date(selectedOrder.wedding_date);
+      const y = d.getFullYear();
+      const m = d.getMonth() + 1;
+      const res = await fetch(`${API_BASE}/freelance-calendar?year=${y}&month=${m}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      const list = Array.isArray(data.assignments) ? data.assignments : [];
+      const match = list.filter(
+        (a) => String(a.order_id) === String(selectedOrder.id) && a.order_source === selectedOrder.orderType
+      );
+      setAssignedFreelancers(match);
+    } catch (e) {
+      console.error("Error fetching assigned freelancers:", e);
+    }
+  };
+
+  useEffect(() => {
+    fetchAssignedFreelancers();
+  }, [selectedOrder]);
 
   const fetchPaymentMethods = async () => {
     try {
@@ -662,6 +727,9 @@ const AdminOrders = () => {
   };
 
   const handlePelunasan = async (item) => {
+    if (!window.confirm("Apakah Anda yakin ingin memberi centang lunas pada invoice ini?")) {
+      return;
+    }
     const invoiceTotal = calculateInvoiceTotal(item);
     const currentBooking = toNumber(item.booking_amount || 0);
     const remaining = Math.max(0, invoiceTotal - currentBooking);
@@ -1025,13 +1093,67 @@ const AdminOrders = () => {
           </p>
         </div>
 
+        {/* Year Calendar Picker */}
+        <div className="mb-6 bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-800">
+              Kalender Tahunan ({activeYear})
+            </h2>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setActiveYear(prev => prev - 1)}
+                className="px-3 py-1 border rounded hover:bg-gray-50 text-sm font-medium text-gray-600"
+              >
+                Sebelumnya
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveYear(prev => prev + 1)}
+                className="px-3 py-1 border rounded hover:bg-gray-50 text-sm font-medium text-gray-600"
+              >
+                Berikutnya
+              </button>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4">
+            {["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"].map((mName, mIdx) => {
+              const count = combinedOrders.filter((order) => {
+                if (!order.wedding_date) return false;
+                const d = new Date(order.wedding_date);
+                return d.getFullYear() === activeYear && d.getMonth() === mIdx;
+              }).length;
+              const isActive = calendarMonth.getFullYear() === activeYear && calendarMonth.getMonth() === mIdx;
+              return (
+                <button
+                  key={mIdx}
+                  type="button"
+                  onClick={() => {
+                    setCalendarMonth(new Date(activeYear, mIdx, 1));
+                  }}
+                  className={`p-3 rounded-lg border text-center transition-all ${
+                    isActive
+                      ? "border-primary-500 bg-primary-50 ring-2 ring-primary-500 font-semibold"
+                      : "border-gray-200 hover:border-primary-300"
+                  }`}
+                >
+                  <p className="text-xs text-gray-700">{mName}</p>
+                  <span className={`inline-block mt-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${count > 0 ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500'}`}>
+                    {count} Pesanan
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Booking Calendar */}
         <div className="mb-8 bg-white rounded-xl shadow-lg p-6 border border-gray-100">
           <div className="flex flex-col lg:flex-row lg:items-start gap-6">
             <div className="flex-1">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
                 <h2 className="text-lg font-semibold text-gray-800">
-                  Kalender Booking
+                  Kalender Bulanan
                 </h2>
                 <div className="flex items-center gap-2">
                   <button
@@ -1056,6 +1178,32 @@ const AdminOrders = () => {
                   </button>
                 </div>
               </div>
+
+              {/* Filters & Search in Calendar */}
+              <div className="flex flex-wrap items-center gap-3 mb-4">
+                <div className="flex-1 min-w-[200px]">
+                  <input
+                    type="text"
+                    placeholder="Cari nama client di kalender..."
+                    value={calendarSearch}
+                    onChange={(e) => setCalendarSearch(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  />
+                </div>
+                <div className="min-w-[180px]">
+                  <select
+                    value={selectedVendorFilter}
+                    onChange={(e) => setSelectedVendorFilter(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  >
+                    <option value="all">Semua Vendor</option>
+                    {vendorsList.map(v => (
+                      <option key={v.id} value={v.id}>{v.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
               <p className="text-xs text-gray-500 mb-3">
                 Total client: {uniqueCalendarClients}
               </p>
@@ -1502,7 +1650,137 @@ const AdminOrders = () => {
                         <span className="font-medium text-gray-700">
                           {selectedOrder.orderType === "custom_request" ? "Permintaan tambahan:" : "Alamat:"}
                         </span>
-                        <p className="text-gray-900">{selectedOrder.address || "-"}</p>
+                        <p className="text-gray-900 mb-4">{selectedOrder.address || "-"}</p>
+                      </div>
+
+                      <div>
+                        <span className="font-medium text-gray-700 font-semibold mb-1 block">
+                          Vendor ditugaskan:
+                        </span>
+                        <select
+                          value={selectedOrder.vendor_id || ""}
+                          onChange={async (e) => {
+                            const vId = e.target.value ? Number(e.target.value) : null;
+                            try {
+                              const url = selectedOrder.orderType === "custom_request"
+                                ? `${API_BASE}/custom-requests/${selectedOrder.id}/vendor`
+                                : `${API_BASE}/orders/${selectedOrder.id}/vendor`;
+                              const res = await fetch(url, {
+                                method: "PUT",
+                                headers: {
+                                  "Content-Type": "application/json",
+                                  Authorization: `Bearer ${localStorage.getItem("admin_token")}`
+                                },
+                                body: JSON.stringify({ vendor_id: vId })
+                              });
+                              if (res.ok) {
+                                toast.success("Vendor berhasil diupdate");
+                                setSelectedOrder(prev => ({ ...prev, vendor_id: vId }));
+                                fetchOrders();
+                              } else {
+                                toast.error("Gagal update vendor");
+                              }
+                            } catch (err) {
+                              toast.error("Gagal update vendor");
+                            }
+                          }}
+                          className="w-full border rounded-lg px-2.5 py-1.5 text-sm"
+                        >
+                          <option value="">-- Tanpa Vendor (Internal) --</option>
+                          {vendorsList.map(v => (
+                            <option key={v.id} value={v.id}>{v.name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="mt-4 border-t pt-4">
+                        <span className="font-medium text-gray-700 font-semibold mb-1 block">
+                          Petugas Freelance:
+                        </span>
+                        <div className="flex gap-2 mb-2">
+                          <select
+                            id="modal-freelancer-select"
+                            className="flex-1 border rounded-lg px-2.5 py-1.5 text-sm"
+                          >
+                            <option value="">-- Pilih Freelancer --</option>
+                            {freelancersList.map(f => (
+                              <option key={f.id} value={f.id}>{f.name}</option>
+                            ))}
+                          </select>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              const fId = document.getElementById("modal-freelancer-select").value;
+                              if (!fId) {
+                                toast.error("Pilih freelance terlebih dahulu");
+                                return;
+                              }
+                              try {
+                                const fl = freelancersList.find(x => String(x.id) === String(fId));
+                                const ymd = new Date(selectedOrder.wedding_date).toISOString().split('T')[0];
+                                const res = await fetch(`${API_BASE}/freelance-calendar`, {
+                                  method: "POST",
+                                  headers: {
+                                    "Content-Type": "application/json",
+                                    Authorization: `Bearer ${localStorage.getItem("admin_token")}`
+                                  },
+                                  body: JSON.stringify({
+                                    order_source: selectedOrder.orderType,
+                                    order_id: selectedOrder.id,
+                                    freelancer_id: Number(fId),
+                                    photographer_name: fl.name,
+                                    duty_date: ymd,
+                                    notes: "Ditugaskan dari detail pesanan admin"
+                                  })
+                                });
+                                if (res.ok) {
+                                  toast.success("Freelancer ditugaskan");
+                                  fetchAssignedFreelancers();
+                                } else {
+                                  toast.error("Gagal menugaskan freelancer");
+                                }
+                              } catch (err) {
+                                toast.error("Error menugaskan freelancer");
+                              }
+                            }}
+                            className="px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-xs font-medium"
+                          >
+                            Tugaskan
+                          </button>
+                        </div>
+                        <div className="space-y-1 max-h-32 overflow-y-auto">
+                          {assignedFreelancers.map(af => (
+                            <div key={af.id} className="flex justify-between items-center bg-gray-50 px-2 py-1 rounded text-xs">
+                              <span>{af.photographer_name}</span>
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  if (!window.confirm(`Hapus penugasan ${af.photographer_name}?`)) return;
+                                  try {
+                                    const res = await fetch(`${API_BASE}/freelance-calendar/${af.id}`, {
+                                      method: "DELETE",
+                                      headers: { Authorization: `Bearer ${localStorage.getItem("admin_token")}` }
+                                    });
+                                    if (res.ok) {
+                                      toast.success("Penugasan dibatalkan");
+                                      fetchAssignedFreelancers();
+                                    } else {
+                                      toast.error("Gagal membatalkan");
+                                    }
+                                  } catch (err) {
+                                    toast.error("Error");
+                                  }
+                                }}
+                                className="text-red-500 hover:text-red-700 font-semibold"
+                              >
+                                Hapus
+                              </button>
+                            </div>
+                          ))}
+                          {assignedFreelancers.length === 0 && (
+                            <p className="text-xs text-gray-400 italic">Belum ada freelance yang ditugaskan.</p>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Helmet } from 'react-helmet-async';
 import { Download, Plus, Edit, Trash2, X } from 'lucide-react';
+import AsyncSelect from 'react-select/async';
 import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
 import AdminLayout from '../../components/AdminLayout';
@@ -50,6 +51,7 @@ const AdminDetailAcara = () => {
   const [q, setQ] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [selectedOrderOpt, setSelectedOrderOpt] = useState(null);
   const [form, setForm] = useState(emptyForm());
   const [loading, setLoading] = useState(false);
 
@@ -73,8 +75,36 @@ const AdminDetailAcara = () => {
     return () => clearTimeout(t);
   }, [fetchList]);
 
+  const loadOrderOptions = async (inputValue) => {
+    const data = await apiGet(`${API_ENDPOINTS.ORDERS.SEARCH}?q=${encodeURIComponent(inputValue || '')}`);
+    const rows = Array.isArray(data) ? data : [];
+    return rows.map((row) => {
+      const isCustom = row.order_source === 'custom_request';
+      const datePart = row.wedding_date ? formatDate(row.wedding_date) : '-';
+      const svc = row.service_name || (isCustom ? 'Layanan custom' : '-');
+      const prefix = isCustom ? 'C' : '';
+      const tag = isCustom ? 'Custom' : 'Biasa';
+      return {
+        value: isCustom ? `custom:${row.id}` : `order:${row.id}`,
+        label: `#${prefix}${row.id} — ${row.name || '-'} — ${svc} (${tag}) · ${datePart}`,
+        order: {
+          id: row.id,
+          source: isCustom ? 'custom_request' : 'order',
+          name: row.name,
+          phone: row.phone,
+          address: row.address,
+          bride_name: row.bride_name,
+          groom_name: row.groom_name,
+          wedding_date: row.wedding_date ? String(row.wedding_date).slice(0, 10) : '',
+          package_name: svc
+        }
+      };
+    });
+  };
+
   const openCreate = () => {
     setEditingId(null);
+    setSelectedOrderOpt(null);
     setForm(emptyForm());
     setShowModal(true);
   };
@@ -221,6 +251,43 @@ const AdminDetailAcara = () => {
           </div>
 
           <form id="detail-acara-form" onSubmit={handleSubmit} className="overflow-y-auto px-6 py-4 flex-1">
+            {!editingId && (
+              <div className="sm:col-span-2 mb-4">
+                <label className="text-sm font-medium text-gray-700 block mb-1">Cari &amp; Isi Otomatis dari Pesanan</label>
+                <AsyncSelect
+                  cacheOptions
+                  defaultOptions
+                  loadOptions={loadOrderOptions}
+                  value={selectedOrderOpt}
+                  onChange={(opt) => {
+                    setSelectedOrderOpt(opt);
+                    if (opt?.order) {
+                      setForm({
+                        client_name: opt.order.name || '',
+                        client_phone: opt.order.phone || '',
+                        client_address: opt.order.address || '',
+                        bride_name: opt.order.bride_name || '',
+                        groom_name: opt.order.groom_name || '',
+                        wedding_date: opt.order.wedding_date || '',
+                        package_name: opt.order.package_name || '',
+                        maps: [emptyMap()],
+                        notes: ''
+                      });
+                    }
+                  }}
+                  placeholder="Ketik nama client / HP..."
+                  classNamePrefix="rs"
+                  styles={{
+                    control: (base) => ({
+                      ...base,
+                      borderRadius: 8,
+                      borderColor: '#d1d5db',
+                      minHeight: 42,
+                    }),
+                  }}
+                />
+              </div>
+            )}
             <div className="grid sm:grid-cols-2 gap-4">
               {Object.keys(FIELD_LABELS).map((field) => (
                 <div key={field}>

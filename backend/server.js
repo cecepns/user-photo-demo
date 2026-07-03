@@ -2849,10 +2849,12 @@ app.get('/api/freelance-calendar', authenticateToken, async (req, res) => {
         CASE WHEN fa.order_source = 'order' THEN o.service_name ELSE cr.services END AS service_label,
         CASE WHEN fa.order_source = 'order'
           THEN DATE_FORMAT(o.wedding_date, '%Y-%m-%d')
-          ELSE DATE_FORMAT(cr.wedding_date, '%Y-%m-%d') END AS order_wedding_date
+          ELSE DATE_FORMAT(cr.wedding_date, '%Y-%m-%d') END AS order_wedding_date,
+        da.id AS detail_acara_id
        FROM freelance_photographer_assignments fa
        LEFT JOIN orders o ON fa.order_source = 'order' AND fa.order_id = o.id
        LEFT JOIN custom_requests cr ON fa.order_source = 'custom_request' AND fa.order_id = cr.id
+       LEFT JOIN detail_acara da ON fa.order_source = da.order_source AND fa.order_id = da.order_id
        WHERE fa.duty_date >= ? AND fa.duty_date <= ?${freelancerFilter}
        ORDER BY fa.duty_date ASC, fa.id ASC`,
       params
@@ -3717,7 +3719,7 @@ app.get('/api/detail-acara', authenticateAdmin, async (req, res) => {
   }
 });
 
-app.get('/api/detail-acara/:id', authenticateAdmin, async (req, res) => {
+app.get('/api/detail-acara/:id', authenticateToken, async (req, res) => {
   try {
     const [rows] = await db.execute('SELECT * FROM detail_acara WHERE id = ?', [req.params.id]);
     if (!rows[0]) return res.status(404).json({ message: 'Tidak ditemukan' });

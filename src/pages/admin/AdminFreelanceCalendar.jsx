@@ -22,6 +22,8 @@ const AdminFreelanceCalendar = () => {
   const [editingId, setEditingId] = useState(null);
   const [selectedOrderOpt, setSelectedOrderOpt] = useState(null);
   const [selectedFreelancerOpt, setSelectedFreelancerOpt] = useState(null);
+  const [freelancersList, setFreelancersList] = useState([]);
+  const [freelancerFilter, setFreelancerFilter] = useState("all");
   const [form, setForm] = useState({
     duty_date: '',
     notes: '',
@@ -44,19 +46,34 @@ const AdminFreelanceCalendar = () => {
     }
   }, [year, month]);
 
+  const fetchFreelancers = useCallback(async () => {
+    try {
+      const data = await apiGet(API_ENDPOINTS.FREELANCERS.ALL);
+      setFreelancersList(Array.isArray(data) ? data : []);
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
+
   useEffect(() => {
     fetchAssignments();
-  }, [fetchAssignments]);
+    fetchFreelancers();
+  }, [fetchAssignments, fetchFreelancers]);
+
+  const filteredAssignments = useMemo(() => {
+    if (freelancerFilter === "all") return assignments;
+    return assignments.filter(a => String(a.freelancer_id) === String(freelancerFilter));
+  }, [assignments, freelancerFilter]);
 
   const eventsByDate = useMemo(() => {
-    return assignments.reduce((acc, row) => {
+    return filteredAssignments.reduce((acc, row) => {
       const key = dutyDateLabel(row.duty_date);
       if (!key) return acc;
       if (!acc[key]) acc[key] = [];
       acc[key].push(row);
       return acc;
     }, {});
-  }, [assignments]);
+  }, [filteredAssignments]);
 
   const changeMonth = (delta) => {
     setCalendarMonth((prev) => {
@@ -227,28 +244,42 @@ const AdminFreelanceCalendar = () => {
 
         <div className="grid lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 bg-white rounded-xl shadow-lg border border-gray-100 p-4 md:p-6">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
               <h2 className="text-lg font-semibold text-gray-800">Kalender</h2>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => changeMonth(-1)}
-                  className="p-2 rounded-full border border-gray-300 text-gray-600 hover:bg-gray-100"
-                  aria-label="Bulan sebelumnya"
-                >
-                  <ChevronLeft size={18} />
-                </button>
-                <span className="text-sm font-medium text-gray-700 min-w-[140px] text-center">
-                  {calendarMonth.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => changeMonth(1)}
-                  className="p-2 rounded-full border border-gray-300 text-gray-600 hover:bg-gray-100"
-                  aria-label="Bulan berikutnya"
-                >
-                  <ChevronRight size={18} />
-                </button>
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="min-w-[180px]">
+                  <select
+                    value={freelancerFilter}
+                    onChange={(e) => setFreelancerFilter(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  >
+                    <option value="all">Semua Freelance</option>
+                    {freelancersList.map(f => (
+                      <option key={f.id} value={f.id}>{f.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => changeMonth(-1)}
+                    className="p-2 rounded-full border border-gray-300 text-gray-600 hover:bg-gray-100"
+                    aria-label="Bulan sebelumnya"
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+                  <span className="text-sm font-medium text-gray-700 min-w-[140px] text-center">
+                    {calendarMonth.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => changeMonth(1)}
+                    className="p-2 rounded-full border border-gray-300 text-gray-600 hover:bg-gray-100"
+                    aria-label="Bulan berikutnya"
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+                </div>
               </div>
             </div>
 

@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { ChevronLeft, ChevronRight, X, Calendar } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Calendar, Download } from 'lucide-react';
 import toast from 'react-hot-toast';
+import jsPDF from 'jspdf';
 import FreelancerLayout from '../../components/FreelancerLayout';
 import { formatDate } from '../../utils/formatters';
 import { API_ENDPOINTS } from '../../utils/endpoints';
@@ -59,6 +60,58 @@ const FreelancerCalendar = () => {
       return n;
     });
     setSelectedDateKey(null);
+  };
+
+  const handleDownloadPdf = async (detailAcaraId) => {
+    try {
+      const data = await freelancerGet(`/api/detail-acara/${detailAcaraId}`);
+      if (!data) {
+        toast.error("Gagal memuat detail acara");
+        return;
+      }
+      
+      const doc = new jsPDF();
+      let y = 20;
+      doc.setFontSize(16);
+      doc.text('Detail Acara', 105, y, { align: 'center' });
+      y += 12;
+      doc.setFontSize(10);
+      const lines = [
+        `Nama Client: ${data.client_name || '-'}`,
+        `Telepon: ${data.client_phone || '-'}`,
+        `Alamat: ${data.client_address || '-'}`,
+        `Pasangan: ${data.bride_name || '-'} & ${data.groom_name || '-'}`,
+        `Tanggal Acara: ${data.wedding_date ? formatDate(data.wedding_date) : '-'}`,
+        `Paket: ${data.package_name || '-'}`,
+      ];
+      lines.forEach((line) => { doc.text(line, 20, y); y += 7; });
+      y += 5;
+      
+      const maps = Array.isArray(data.maps) && data.maps.length ? data.maps : [
+        { url: data.map1_url || '', note: data.map1_note || '' },
+        { url: data.map2_url || '', note: data.map2_note || '' },
+        { url: data.map3_url || '', note: data.map3_note || '' },
+        { url: data.map4_url || '', note: data.map4_note || '' },
+      ].filter((m) => m.url || m.note);
+
+      maps.forEach((m, index) => {
+        if (!m.url && !m.note) return;
+        doc.setFont('helvetica', 'bold');
+        doc.text(`Lokasi ${index + 1}:`, 20, y);
+        y += 6;
+        doc.setFont('helvetica', 'normal');
+        if (m.url) { doc.text(`Maps: ${m.url}`, 20, y); y += 6; }
+        if (m.note) { doc.text(`Catatan: ${m.note}`, 20, y); y += 6; }
+      });
+      
+      if (data.notes) {
+        doc.text(`Catatan umum: ${data.notes}`, 20, y);
+      }
+      doc.save(`detail-acara-${data.id}.pdf`);
+      toast.success("PDF Detail Acara berhasil diunduh");
+    } catch (err) {
+      toast.error("Gagal mengunduh PDF");
+    }
   };
 
   const days = getCalendarDays(calendarMonth);
@@ -177,6 +230,21 @@ const FreelancerCalendar = () => {
                     {ev.notes ? (
                       <p className="text-xs text-gray-600 mt-2 whitespace-pre-wrap border-t pt-2">{ev.notes}</p>
                     ) : null}
+                    <div className="mt-3">
+                      {ev.detail_acara_id ? (
+                        <button
+                          type="button"
+                          onClick={() => handleDownloadPdf(ev.detail_acara_id)}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-primary-600 hover:bg-primary-700 text-white rounded text-xs font-semibold"
+                        >
+                          <Download size={13} /> Unduh PDF Acara
+                        </button>
+                      ) : (
+                        <span className="inline-block px-2 py-0.5 bg-yellow-100 text-yellow-800 text-[10px] font-bold rounded-full">
+                          📌 Tanda Penugasan (Detail belum diisi)
+                        </span>
+                      )}
+                    </div>
                   </li>
                 ))}
               </ul>
