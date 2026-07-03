@@ -105,6 +105,16 @@ const AdminOrders = () => {
     );
   }, [orders, customRequests]);
 
+  // Total order/client dalam 1 tahun terpilih
+  const yearlyTotalOrders = useMemo(() => {
+    return combinedOrders.filter((order) => {
+      if (!order.wedding_date) return false;
+      const d = new Date(order.wedding_date);
+      return d.getFullYear() === activeYear;
+    }).length;
+  }, [combinedOrders, activeYear]);
+
+
   // Kalender: pesanan (order + custom request) untuk bulan yang dipilih
   const calendarOrders = useMemo(() => {
     const year = calendarMonth.getFullYear();
@@ -1225,9 +1235,13 @@ const AdminOrders = () => {
         {/* Year Calendar Picker */}
         <div className="mb-6 bg-white rounded-xl shadow-lg p-6 border border-gray-100">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-800">
+            <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
               Kalender Tahunan ({activeYear})
+              <span className="inline-block text-xs font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">
+                Total: {yearlyTotalOrders} Client
+              </span>
             </h2>
+
             <div className="flex items-center gap-2">
               <button
                 type="button"
