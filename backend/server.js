@@ -3882,6 +3882,9 @@ app.post('/api/detail-acara', authenticateAdmin, async (req, res) => {
 
 app.put('/api/detail-acara/:id', authenticateAdmin, async (req, res) => {
   const b = req.body || {};
+  const orderSource = b.order_source ? parseOrderSource(b.order_source) : null;
+  const orderId = b.order_id != null ? Number(b.order_id) : null;
+
   try {
     const [existingRows] = await db.execute('SELECT * FROM detail_acara WHERE id = ?', [req.params.id]);
     const maps = normalizeDetailAcaraMaps(b, existingRows[0]);
@@ -3890,6 +3893,7 @@ app.put('/api/detail-acara/:id', authenticateAdmin, async (req, res) => {
 
     const [result] = await db.execute(
       `UPDATE detail_acara SET
+        order_source = ?, order_id = ?,
         client_name = ?, client_phone = ?, client_address = ?,
         bride_name = ?, groom_name = ?, wedding_date = ?, package_name = ?,
         maps_json = ?,
@@ -3897,6 +3901,7 @@ app.put('/api/detail-acara/:id', authenticateAdmin, async (req, res) => {
         map3_url = ?, map3_note = ?, map4_url = ?, map4_note = ?, notes = ?
        WHERE id = ?`,
       [
+        orderSource, orderId,
         b.client_name || null, b.client_phone || null, b.client_address || null,
         b.bride_name || null, b.groom_name || null, b.wedding_date || null, b.package_name || null,
         mapsJson,
@@ -3910,6 +3915,7 @@ app.put('/api/detail-acara/:id', authenticateAdmin, async (req, res) => {
     );
     if (!result.affectedRows) return res.status(404).json({ message: 'Tidak ditemukan' });
     res.json({ message: 'Detail acara diperbarui' });
+
   } catch (error) {
     res.status(500).json({ message: 'Database error' });
   }
