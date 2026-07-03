@@ -545,9 +545,14 @@ const AdminOrders = () => {
       if (res.ok) {
         toast.success("Biaya produksi & akomodasi disimpan ke keuangan!");
         fetchOrderFinance(selectedOrder);
+        setTimeout(() => {
+          const targetId = selectedOrder.orderType === "order" ? "save-items-button" : "close-modal-button";
+          document.getElementById(targetId)?.scrollIntoView({ behavior: "smooth" });
+        }, 100);
       } else {
         toast.error(data.message || "Gagal menyimpan data keuangan");
       }
+
     } catch (err) {
       console.error(err);
       toast.error("Gagal menghubungkan ke server");
@@ -644,6 +649,7 @@ const AdminOrders = () => {
           : prev
       );
       toast.success("Item layanan berhasil diperbarui");
+      setShowDetailModal(false);
     } catch (error) {
       console.error("Error saving selected items:", error);
       toast.error(error.message || "Gagal menyimpan item layanan");
@@ -2138,6 +2144,7 @@ const AdminOrders = () => {
                   {selectedOrder.orderType === "order" && (
                     <div className="mt-3 flex justify-end">
                       <button
+                        id="save-items-button"
                         type="button"
                         onClick={handleSaveEditableItems}
                         disabled={savingOrderItems}
@@ -2151,11 +2158,13 @@ const AdminOrders = () => {
 
                 <div className="flex justify-end space-x-3">
                   <button
+                    id="close-modal-button"
                     onClick={() => setShowDetailModal(false)}
                     className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
                   >
                     Tutup
                   </button>
+
                   <button
                     onClick={async () => {
                       const confirmed = await new Promise((resolve) => {
