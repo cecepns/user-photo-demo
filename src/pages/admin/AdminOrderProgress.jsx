@@ -246,7 +246,7 @@ const AdminOrderProgress = () => {
                 <th className="px-4 py-3 text-left">Video</th>
                 <th className="px-4 py-3 text-left">Link</th>
                 <th className="px-4 py-3 text-left">Status Album</th>
-                <th className="px-4 py-3">Aksi</th>
+                <th className="px-4 py-3">Edit</th>
 
               </tr>
             </thead>
@@ -294,7 +294,11 @@ const AdminOrderProgress = () => {
                       )}
                     </td>
                     <td className="px-4 py-3 flex gap-2 justify-center">
-                      <button type="button" onClick={() => openEdit(row)} className="text-primary-600 p-1 rounded hover:bg-primary-50"><Edit size={18} /></button>
+                      {row.photo_status === 'completed' && row.video_status === 'completed' ? (
+                        <span className="text-gray-300 p-1 cursor-not-allowed" title="Selesai (tidak dapat diedit)"><Edit size={18} /></span>
+                      ) : (
+                        <button type="button" onClick={() => openEdit(row)} className="text-primary-600 p-1 rounded hover:bg-primary-50" title="Edit"><Edit size={18} /></button>
+                      )}
                       <button type="button" onClick={() => handleDelete(row.id)} className="text-red-600 p-1 rounded hover:bg-red-50"><Trash2 size={18} /></button>
                     </td>
 

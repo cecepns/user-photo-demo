@@ -382,9 +382,9 @@ const AdminFreelanceCalendar = () => {
               pesanan (biasa maupun custom). Mirip staff field: satu pesanan bisa punya beberapa penugasan.
             </p>
           </div>
-          <button type="button" onClick={openCreate} className="btn-primary flex items-center gap-2 shrink-0">
+          {/* <button type="button" onClick={openCreate} className="btn-primary flex items-center gap-2 shrink-0">
             <Plus size={18} /> Tambah penugasan
-          </button>
+          </button> */}
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
@@ -433,7 +433,7 @@ const AdminFreelanceCalendar = () => {
             ) : (
               <>
                 <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-semibold text-gray-500 mb-2">
-                  {['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'].map((d) => (
+                  {['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'].map((d) => (
                     <div key={d}>{d}</div>
                   ))}
                 </div>
@@ -547,7 +547,7 @@ const AdminFreelanceCalendar = () => {
                             </button>
                           </>
                         ) : null}
-                        <button
+                        {/* <button
                           type="button"
                           onClick={() => openEdit(ev)}
                           className="p-1.5 rounded-lg text-[#2f4274] bg-[#2f4274]/10 hover:bg-[#2f4274]/20"
@@ -562,7 +562,7 @@ const AdminFreelanceCalendar = () => {
                           title="Hapus"
                         >
                           <Trash2 size={14} />
-                        </button>
+                        </button> */}
                       </div>
 
                     </div>

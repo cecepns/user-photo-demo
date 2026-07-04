@@ -1,6 +1,6 @@
 export const PHOTO_STATUS_OPTIONS = [
   { value: 'photo_progress', label: 'Progres Photo' },
-  { value: 'editing', label: 'Proses Editing' },
+  { value: 'editing', label: 'proses editing' },
   { value: 'draft_album', label: 'Progres Draf Album' },
   { value: 'printing', label: 'Proses Cetak Album' },
   { value: 'shipping', label: 'Pengiriman' },

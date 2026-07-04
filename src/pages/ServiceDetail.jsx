@@ -302,11 +302,11 @@ const ServiceDetail = () => {
                   {/* Pricing Card */}
                   <div className="bg-gradient-to-br from-primary-50 to-secondary-50 rounded-2xl p-4 sm:p-6 shadow-lg mb-6" data-aos="fade-left">
                     <h3 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4">
-                      Harga Layanan
+                      Harga Paket
                     </h3>
                     <div className="space-y-4">
                       <div className="flex justify-between items-center">
-                        <span className="text-gray-600">Harga Dasar:</span>
+                        <span className="text-gray-600">Harga:</span>
                         <span className="text-xl sm:text-2xl font-bold text-primary-600">
                           {formatPrice(service.base_price)}
                         </span>

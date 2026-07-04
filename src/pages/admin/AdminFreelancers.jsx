@@ -13,8 +13,8 @@ const emptyForm = () => ({
   name: '',
   phone: '',
   email: '',
-  photo_price: '',
-  video_price: '',
+  rekening: '',
+  rates: [{ label: 'Foto', price: '' }, { label: 'Video', price: '' }],
 });
 
 const PasswordBadge = ({ value, highlight }) => {
@@ -116,12 +116,19 @@ const AdminFreelancers = () => {
 
   const openEdit = (row) => {
     setEditingId(row.id);
+    let initialRates = Array.isArray(row.rates) ? row.rates : [];
+    if (initialRates.length === 0) {
+      initialRates = [
+        { label: 'Foto', price: row.photo_price ?? '' },
+        { label: 'Video', price: row.video_price ?? '' }
+      ];
+    }
     setForm({
       name: row.name || '',
       phone: row.phone || '',
       email: row.email || '',
-      photo_price: row.photo_price ?? '',
-      video_price: row.video_price ?? '',
+      rekening: row.rekening || '',
+      rates: initialRates,
     });
     setShowModal(true);
   };
@@ -132,8 +139,10 @@ const AdminFreelancers = () => {
       name: form.name.trim(),
       phone: form.phone.trim(),
       email: form.email.trim() || null,
-      photo_price: Number(form.photo_price) || 0,
-      video_price: Number(form.video_price) || 0,
+      rekening: form.rekening.trim() || null,
+      rates: form.rates
+        .filter(r => r.label.trim())
+        .map(r => ({ label: r.label.trim(), price: Number(r.price) || 0 })),
     };
     try {
       if (editingId) {
@@ -213,10 +222,10 @@ const AdminFreelancers = () => {
                 <tr>
                   <th className="px-4 py-3 text-left font-semibold text-gray-700">Nama</th>
                   <th className="px-4 py-3 text-left font-semibold text-gray-700">No. HP (login)</th>
+                  <th className="px-4 py-3 text-left font-semibold text-gray-700">No. Rekening</th>
                   <th className="px-4 py-3 text-left font-semibold text-gray-700">Password login</th>
-                  <th className="px-4 py-3 text-right font-semibold text-gray-700">Harga Foto</th>
-                  <th className="px-4 py-3 text-right font-semibold text-gray-700">Harga Video</th>
-                  <th className="px-4 py-3 text-center font-semibold text-gray-700 w-36">Aksi</th>
+                  <th className="px-4 py-3 text-left font-semibold text-gray-700">Daftar Tugas &amp; Harga</th>
+                  <th className="px-4 py-3 text-center font-semibold text-gray-700 w-36">Edit</th>
                 </tr>
               </thead>
               <tbody>
@@ -243,14 +252,33 @@ const AdminFreelancers = () => {
                           {f.phone || '—'}
                         </span>
                       </td>
+                      <td className="px-4 py-3 text-gray-700">{f.rekening || '—'}</td>
                       <td className="px-4 py-3">
                         <PasswordBadge
                           value={f.login_password}
                           highlight={highlightIds.has(f.id)}
                         />
                       </td>
-                      <td className="px-4 py-3 text-right text-gray-700">{formatRupiah(f.photo_price)}</td>
-                      <td className="px-4 py-3 text-right text-gray-700">{formatRupiah(f.video_price)}</td>
+                      <td className="px-4 py-3 text-gray-700">
+                        <div className="flex flex-wrap gap-1">
+                          {f.rates?.length > 0 ? (
+                            f.rates.map((r, idx) => (
+                              <span key={idx} className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 border border-blue-100">
+                                {r.label}: {formatRupiah(r.price)}
+                              </span>
+                            ))
+                          ) : (
+                            <>
+                              <span className="inline-flex items-center rounded-full bg-gray-50 px-2 py-0.5 text-xs font-medium text-gray-700 border border-gray-150">
+                                Foto: {formatRupiah(f.photo_price)}
+                              </span>
+                              <span className="inline-flex items-center rounded-full bg-gray-50 px-2 py-0.5 text-xs font-medium text-gray-700 border border-gray-150">
+                                Video: {formatRupiah(f.video_price)}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-center gap-1">
                           <button
@@ -321,22 +349,22 @@ const AdminFreelancers = () => {
 
         {showModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 overflow-y-auto">
-            <div className="bg-white rounded-xl max-w-md w-full p-6 my-8">
+            <div className="bg-white rounded-xl max-w-lg w-full p-6 my-8 max-h-[90vh] overflow-y-auto">
               <h3 className="text-lg font-semibold mb-1">{editingId ? 'Edit' : 'Tambah'} Freelance</h3>
               <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-4">
                 Password login dibuat <strong>otomatis</strong> oleh sistem. Setelah simpan, password muncul di tabel (kolom kuning).
               </p>
-              <form onSubmit={handleSubmit} className="space-y-3">
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label className="text-sm font-medium text-gray-700">Nama *</label>
-                  <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full border rounded-lg px-3 py-2 mt-1" required />
+                  <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full border rounded-lg px-3 py-2 mt-1 focus:ring-1 focus:ring-primary-500 focus:outline-none" required />
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-700">No. HP (untuk login) *</label>
                   <input
                     value={form.phone}
                     onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                    className="w-full border rounded-lg px-3 py-2 mt-1"
+                    className="w-full border rounded-lg px-3 py-2 mt-1 focus:ring-1 focus:ring-primary-500 focus:outline-none"
                     placeholder="08xxxxxxxxxx"
                     required
                   />
@@ -347,15 +375,74 @@ const AdminFreelancers = () => {
                     type="email"
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    className="w-full border rounded-lg px-3 py-2 mt-1"
+                    className="w-full border rounded-lg px-3 py-2 mt-1 focus:ring-1 focus:ring-primary-500 focus:outline-none"
                     placeholder="Untuk catatan internal"
                   />
                 </div>
-                <input type="number" placeholder="Harga Foto" value={form.photo_price} onChange={(e) => setForm({ ...form, photo_price: e.target.value })} className="w-full border rounded-lg px-3 py-2" />
-                <input type="number" placeholder="Harga Video" value={form.video_price} onChange={(e) => setForm({ ...form, video_price: e.target.value })} className="w-full border rounded-lg px-3 py-2" />
-                <div className="flex gap-2 justify-end pt-2">
-                  <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 border rounded-lg">Batal</button>
-                  <button type="submit" className="px-4 py-2 bg-primary-600 text-white rounded-lg">Simpan</button>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">No. Rekening (opsional)</label>
+                  <input
+                    value={form.rekening}
+                    onChange={(e) => setForm({ ...form, rekening: e.target.value })}
+                    className="w-full border rounded-lg px-3 py-2 mt-1 focus:ring-1 focus:ring-primary-500 focus:outline-none"
+                    placeholder="Contoh: BCA 1234567890 a/n Edo"
+                  />
+                </div>
+
+                <div className="space-y-2 border-t pt-3">
+                  <label className="text-sm font-medium text-gray-700 block">Daftar Tugas &amp; Harga</label>
+                  {form.rates.map((rate, idx) => (
+                    <div key={idx} className="flex gap-2 items-center">
+                      <input
+                        placeholder="Nama tugas (misal: Akad Foto/Video)"
+                        value={rate.label}
+                        onChange={(e) => {
+                          const next = [...form.rates];
+                          next[idx] = { ...next[idx], label: e.target.value };
+                          setForm({ ...form, rates: next });
+                        }}
+                        className="flex-1 border rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-primary-500 focus:outline-none"
+                        required
+                      />
+                      <input
+                        type="number"
+                        min={0}
+                        placeholder="Harga (Rp)"
+                        value={rate.price}
+                        onChange={(e) => {
+                          const next = [...form.rates];
+                          next[idx] = { ...next[idx], price: e.target.value };
+                          setForm({ ...form, rates: next });
+                        }}
+                        className="w-32 border rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-primary-500 focus:outline-none"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const next = form.rates.filter((_, i) => i !== idx);
+                          setForm({ ...form, rates: next });
+                        }}
+                        disabled={form.rates.length <= 1}
+                        className="p-2 rounded-lg text-red-600 bg-red-50 hover:bg-red-100 disabled:opacity-50"
+                        title="Hapus baris"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setForm({ ...form, rates: [...form.rates, { label: '', price: '' }] })}
+                    className="text-xs text-primary-600 flex items-center gap-1 font-semibold hover:text-primary-700 transition-colors mt-1"
+                  >
+                    <Plus size={14} /> Tambah tugas &amp; rate baru
+                  </button>
+                </div>
+
+                <div className="flex gap-2 justify-end pt-3 border-t">
+                  <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 border rounded-lg hover:bg-gray-50 transition-colors">Batal</button>
+                  <button type="submit" className="px-4 py-2 bg-primary-600 text-white hover:bg-primary-700 transition-colors rounded-lg">Simpan</button>
                 </div>
               </form>
             </div>

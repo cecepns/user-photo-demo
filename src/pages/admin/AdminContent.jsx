@@ -466,6 +466,18 @@ const AdminContent = () => {
                         />
                       </div>
                       <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Teks / Link Website di Invoice</label>
+                        <input
+                          type="text"
+                          value={siteContactDraft.invoiceWebsiteText || ''}
+                          onChange={(e) =>
+                            setSiteContactDraft((p) => ({ ...p, invoiceWebsiteText: e.target.value }))
+                          }
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white"
+                          placeholder="Contoh: https://sites.google.com/... atau PT Wedding Organizer"
+                        />
+                      </div>
+                      <div className="md:col-span-2">
                         <label className="block text-sm font-medium text-gray-700 mb-1">URL embed Google Maps (iframe src)</label>
                         <input
                           type="url"

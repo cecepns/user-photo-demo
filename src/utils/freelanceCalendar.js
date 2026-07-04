@@ -40,8 +40,9 @@ export function getCalendarDays(calendarMonth) {
   const firstDay = new Date(y, m, 1);
   const lastDay = new Date(y, m + 1, 0);
   const startWeekday = firstDay.getDay();
+  const offset = startWeekday === 0 ? 6 : startWeekday - 1;
   const days = [];
-  for (let i = 0; i < startWeekday; i += 1) days.push(null);
+  for (let i = 0; i < offset; i += 1) days.push(null);
   for (let d = 1; d <= lastDay.getDate(); d += 1) {
     days.push(new Date(y, m, d));
   }

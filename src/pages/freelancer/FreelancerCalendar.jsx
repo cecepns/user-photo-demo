@@ -3,6 +3,7 @@ import { Helmet } from 'react-helmet-async';
 import { ChevronLeft, ChevronRight, X, Calendar, Download, Copy } from 'lucide-react';
 import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
+import QRCode from 'qrcode';
 import FreelancerLayout from '../../components/FreelancerLayout';
 import { formatDate } from '../../utils/formatters';
 import { API_ENDPOINTS } from '../../utils/endpoints';
@@ -136,9 +137,17 @@ const FreelancerCalendar = () => {
         { url: data.map4_url || '', note: data.map4_note || '' },
       ].filter((m) => m.url || m.note);
 
-      maps.forEach((m, index) => {
-        if (!m.url && !m.note) return;
-        if (y > 270) {
+      for (let index = 0; index < maps.length; index++) {
+        const m = maps[index];
+        if (!m.url && !m.note) continue;
+        
+        const qrHeight = m.url ? 35 : 0;
+        const noteLines = m.note ? doc.splitTextToSize(`Catatan: ${m.note}`, 170) : [];
+        const noteHeight = noteLines.length * 5;
+        const textHeight = m.url ? doc.splitTextToSize(`Maps: ${m.url}`, 170).length * 5 : 0;
+        const totalBlockHeight = 6 + textHeight + qrHeight + noteHeight + 4;
+
+        if (y + totalBlockHeight > 280) {
           doc.addPage();
           y = 20;
         }
@@ -150,18 +159,27 @@ const FreelancerCalendar = () => {
           const urlLines = doc.splitTextToSize(`Maps: ${m.url}`, 170);
           doc.text(urlLines, 20, y); 
           y += urlLines.length * 5; 
+          
+          try {
+            const qrDataUrl = await QRCode.toDataURL(m.url, { margin: 1, width: 100 });
+            doc.addImage(qrDataUrl, 'PNG', 20, y, 30, 30);
+            y += 32;
+          } catch (qrErr) {
+            console.error("Error generating QR code:", qrErr);
+          }
         }
         if (m.note) { 
-          const noteLines = doc.splitTextToSize(`Catatan: ${m.note}`, 170);
           doc.text(noteLines, 20, y); 
-          y += noteLines.length * 5; 
+          y += noteHeight; 
         }
         y += 2;
-      });
+      }
 
       if (data.notes) {
         y += 4;
-        if (y > 270) {
+        const notesLines = doc.splitTextToSize(data.notes, 170);
+        const notesHeight = notesLines.length * 5 + 6;
+        if (y + notesHeight > 280) {
           doc.addPage();
           y = 20;
         }
@@ -169,7 +187,6 @@ const FreelancerCalendar = () => {
         doc.text("Catatan Umum:", 20, y);
         y += 6;
         doc.setFont('helvetica', 'normal');
-        const notesLines = doc.splitTextToSize(data.notes, 170);
         doc.text(notesLines, 20, y);
         y += notesLines.length * 5;
       }
@@ -322,7 +339,7 @@ const FreelancerCalendar = () => {
             ) : (
               <>
                 <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-semibold text-gray-500 mb-2">
-                  {['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'].map((d) => (
+                  {['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'].map((d) => (
                     <div key={d}>{d}</div>
                   ))}
                 </div>

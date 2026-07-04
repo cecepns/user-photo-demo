@@ -5,6 +5,7 @@ import { Download, Plus, Edit, Trash2, X, Copy } from 'lucide-react';
 import AsyncSelect from 'react-select/async';
 import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
+import QRCode from 'qrcode';
 import AdminLayout from '../../components/AdminLayout';
 import { formatDate } from '../../utils/formatters';
 import { API_ENDPOINTS } from '../../utils/endpoints';
@@ -190,7 +191,7 @@ const AdminDetailAcara = () => {
     }
   };
 
-  const generatePdf = (row) => {
+  const generatePdf = async (row) => {
     const maps = mapsFromRow(row);
     const doc = new jsPDF();
     
@@ -251,9 +252,18 @@ const AdminDetailAcara = () => {
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
 
-    maps.forEach((m, index) => {
-      if (!m.url && !m.note) return;
-      if (y > 270) {
+    for (let index = 0; index < maps.length; index++) {
+      const m = maps[index];
+      if (!m.url && !m.note) continue;
+      
+      // Calculate required height for this location block
+      const qrHeight = m.url ? 35 : 0;
+      const noteLines = m.note ? doc.splitTextToSize(`Catatan: ${m.note}`, 170) : [];
+      const noteHeight = noteLines.length * 5;
+      const textHeight = m.url ? doc.splitTextToSize(`Maps: ${m.url}`, 170).length * 5 : 0;
+      const totalBlockHeight = 6 + textHeight + qrHeight + noteHeight + 4;
+
+      if (y + totalBlockHeight > 280) {
         doc.addPage();
         y = 20;
       }
@@ -264,19 +274,28 @@ const AdminDetailAcara = () => {
       if (m.url) { 
         const urlLines = doc.splitTextToSize(`Maps: ${m.url}`, 170);
         doc.text(urlLines, 20, y); 
-        y += urlLines.length * 5; 
+        y += urlLines.length * 5;
+        
+        try {
+          const qrDataUrl = await QRCode.toDataURL(m.url, { margin: 1, width: 100 });
+          doc.addImage(qrDataUrl, 'PNG', 20, y, 30, 30);
+          y += 32;
+        } catch (qrErr) {
+          console.error("Error generating QR code:", qrErr);
+        }
       }
       if (m.note) { 
-        const noteLines = doc.splitTextToSize(`Catatan: ${m.note}`, 170);
         doc.text(noteLines, 20, y); 
-        y += noteLines.length * 5; 
+        y += noteHeight; 
       }
       y += 2;
-    });
+    }
 
     if (row.notes) {
       y += 4;
-      if (y > 270) {
+      const notesLines = doc.splitTextToSize(row.notes, 170);
+      const notesHeight = notesLines.length * 5 + 6;
+      if (y + notesHeight > 280) {
         doc.addPage();
         y = 20;
       }
@@ -284,7 +303,6 @@ const AdminDetailAcara = () => {
       doc.text("Catatan Umum:", 20, y);
       y += 6;
       doc.setFont('helvetica', 'normal');
-      const notesLines = doc.splitTextToSize(row.notes, 170);
       doc.text(notesLines, 20, y);
       y += notesLines.length * 5;
     }
@@ -551,7 +569,7 @@ const AdminDetailAcara = () => {
                 <th className="px-4 py-3 text-left">Client</th>
                 <th className="px-4 py-3 text-left">Pasangan</th>
                 <th className="px-4 py-3 text-left">Tanggal</th>
-                <th className="px-4 py-3">Aksi</th>
+                <th className="px-4 py-3">Edit</th>
               </tr>
             </thead>
             <tbody>

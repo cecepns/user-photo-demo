@@ -207,15 +207,16 @@ const AdminVendorCalendar = () => {
     return result;
   }, [selectedDateEvents]);
 
-  const getCalendarDays = () => {
+   const getCalendarDays = () => {
     const year = calendarMonth.getFullYear();
     const month = calendarMonth.getMonth();
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
     const startWeekday = firstDay.getDay();
+    const offset = startWeekday === 0 ? 6 : startWeekday - 1;
 
     const days = [];
-    for (let i = 0; i < startWeekday; i++) days.push(null);
+    for (let i = 0; i < offset; i++) days.push(null);
     for (let d = 1; d <= lastDay.getDate(); d++) {
       days.push(new Date(year, month, d));
     }
@@ -381,7 +382,7 @@ const AdminVendorCalendar = () => {
 
           <div className="border border-gray-200 rounded-xl overflow-hidden">
             <div className="grid grid-cols-7 bg-gray-50 text-xs font-semibold text-gray-600">
-              {["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"].map((day) => (
+              {["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"].map((day) => (
                 <div key={day} className="px-2 py-2 text-center uppercase tracking-wide">
                   {day}
                 </div>

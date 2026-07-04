@@ -3,6 +3,7 @@ import { Helmet } from 'react-helmet-async';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import AdminLayout from '../../components/AdminLayout';
 import PackageSalesChart from '../../components/admin/PackageSalesChart';
+import VendorJobsChart from '../../components/admin/VendorJobsChart';
 import { formatRupiah, formatDate } from '../../utils/formatters';
 import { API_ENDPOINTS, API_BASE } from '../../utils/endpoints';
 import { apiGet } from '../../utils/request';
@@ -28,6 +29,7 @@ const StatModal = ({ title, onClose, children }) => (
 const AdminDashboard = () => {
   const [stats, setStats] = useState({ orders: 0, services: 0, customRequests: 0, revenue: 0 });
   const [packageSales, setPackageSales] = useState([]);
+  const [vendorJobs, setVendorJobs] = useState([]);
   const [activeModal, setActiveModal] = useState(null); // 'orders' | 'services' | 'custom' | 'revenue'
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
@@ -43,6 +45,7 @@ const AdminDashboard = () => {
   useEffect(() => {
     fetchStats();
     fetchPackageSales();
+    fetchVendorJobs();
   }, []);
 
   const fetchStats = async () => {
@@ -60,6 +63,15 @@ const AdminDashboard = () => {
       setPackageSales(data.data || []);
     } catch (error) {
       console.error('Error fetching package sales:', error);
+    }
+  };
+
+  const fetchVendorJobs = async () => {
+    try {
+      const data = await apiGet('/admin/vendor-jobs');
+      setVendorJobs(data.data || []);
+    } catch (error) {
+      console.error('Error fetching vendor jobs stats:', error);
     }
   };
 
@@ -378,6 +390,15 @@ const AdminDashboard = () => {
                   <p className="text-gray-400 text-sm">Belum ada data.</p>
                 ) : (
                   <PackageSalesChart data={packageSales} />
+                )}
+              </div>
+
+              <div className="mt-6 border-t pt-6">
+                <h3 className="font-semibold text-gray-800 mb-3">Vendor Teraktif (Terbanyak Ngasih Job)</h3>
+                {vendorJobs.length === 0 ? (
+                  <p className="text-gray-400 text-sm">Belum ada data.</p>
+                ) : (
+                  <VendorJobsChart data={vendorJobs} />
                 )}
               </div>
             </div>

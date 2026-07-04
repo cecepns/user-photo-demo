@@ -241,7 +241,7 @@ const AdminOrdersHistory = () => {
                       Pelanggan
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-white/95">
-                      Layanan
+                      Paket
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-white/95">
                       Tanggal Pernikahan
@@ -256,7 +256,7 @@ const AdminOrdersHistory = () => {
                       Status
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-white/95 w-24">
-                      Aksi
+                      Edit
                     </th>
                   </tr>
                 </thead>
@@ -500,7 +500,7 @@ const AdminOrdersHistory = () => {
                     <div className="space-y-3">
                       <div>
                         <span className="font-medium text-gray-700">
-                          Layanan:
+                          Paket:
                         </span>
                         <p className="text-gray-900">
                           {selectedOrder.service_name}

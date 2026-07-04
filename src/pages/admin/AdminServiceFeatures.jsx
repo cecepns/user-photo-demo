@@ -13,7 +13,7 @@ const AdminServiceFeatures = () => {
     title: "",
     description: "",
     icon: "",
-    sort_order: 0,
+    sort_order: "",
   });
 
   useEffect(() => {
@@ -79,7 +79,7 @@ const AdminServiceFeatures = () => {
         );
         setShowModal(false);
         setEditingFeature(null);
-        setFormData({ title: "", description: "", icon: "", sort_order: 0 });
+        setFormData({ title: "", description: "", icon: "", sort_order: "" });
         fetchFeatures();
       } else {
         toast.error("Gagal menyimpan fitur layanan");
@@ -96,7 +96,7 @@ const AdminServiceFeatures = () => {
       title: feature.title,
       description: feature.description || "",
       icon: feature.icon || "",
-      sort_order: feature.sort_order || 0,
+      sort_order: feature.sort_order ?? "",
     });
     setShowModal(true);
   };
@@ -134,7 +134,7 @@ const AdminServiceFeatures = () => {
 
   const handleAddNew = () => {
     setEditingFeature(null);
-    setFormData({ title: "", description: "", icon: "", sort_order: 0 });
+    setFormData({ title: "", description: "", icon: "", sort_order: "" });
     setShowModal(true);
   };
 
@@ -178,7 +178,7 @@ const AdminServiceFeatures = () => {
                     <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-white/95">Judul</th>
                     <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-white/95">Deskripsi</th>
                     <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-white/95">Status</th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-white/95 w-24">Aksi</th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-white/95 w-24">Edit</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-100">
@@ -333,7 +333,7 @@ const AdminServiceFeatures = () => {
                         onChange={(e) =>
                           setFormData({
                             ...formData,
-                            sort_order: e.target.value === "" ? "" : parseInt(e.target.value) || 0,
+                            sort_order: e.target.value,
                           })
                         }
                         min="0"

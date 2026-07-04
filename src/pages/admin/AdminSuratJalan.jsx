@@ -215,9 +215,10 @@ const AdminSuratJalan = () => {
     const firstDayOfMonth = new Date(year, month, 1);
     const lastDayOfMonth = new Date(year, month + 1, 0);
     const startWeekday = firstDayOfMonth.getDay();
+    const offset = startWeekday === 0 ? 6 : startWeekday - 1;
 
     const days = [];
-    for (let i = 0; i < startWeekday; i++) {
+    for (let i = 0; i < offset; i++) {
       days.push(null);
     }
     for (let d = 1; d <= lastDayOfMonth.getDate(); d++) {
@@ -1052,7 +1053,7 @@ const AdminSuratJalan = () => {
 
                 <div className="border border-gray-200 rounded-xl overflow-hidden">
                   <div className="grid grid-cols-7 bg-gray-50 text-xs font-semibold text-gray-600">
-                    {["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"].map(
+                    {["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"].map(
                       (day) => (
                         <div
                           key={day}
@@ -1202,7 +1203,7 @@ const AdminSuratJalan = () => {
                   <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-white/95">No. Surat</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-white/95">Paket</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-white/95">Vendor</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-white/95 w-36">Aksi</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-white/95 w-36">Edit</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-100">

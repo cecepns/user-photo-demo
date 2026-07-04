@@ -3133,6 +3133,28 @@ app.get('/api/admin/package-sales', authenticateAdmin, async (req, res) => {
   }
 });
 
+// --- Vendor jobs chart ---
+app.get('/api/admin/vendor-jobs', authenticateAdmin, async (req, res) => {
+  try {
+    const [rows] = await db.execute(
+      `SELECT v.name AS vendor_name, CAST(COUNT(combined.id) AS UNSIGNED) AS job_count
+       FROM vendors v
+       INNER JOIN (
+         SELECT id, vendor_id FROM orders WHERE status IN ('pending', 'confirmed', 'completed') AND vendor_id IS NOT NULL
+         UNION ALL
+         SELECT id, vendor_id FROM custom_requests WHERE status IN ('pending', 'confirmed', 'completed') AND vendor_id IS NOT NULL
+       ) AS combined ON combined.vendor_id = v.id
+       GROUP BY v.id, v.name
+       ORDER BY job_count DESC`
+    );
+
+    res.json({ success: true, data: rows });
+  } catch (error) {
+    console.error('Vendor jobs error:', error);
+    res.status(500).json({ message: 'Database error' });
+  }
+});
+
 // --- Financial summary ---
 app.get('/api/admin/finance/summary', authenticateAdmin, async (req, res) => {
   const period = String(req.query.period || 'monthly');
@@ -4003,8 +4025,17 @@ function phoneSqlNormalized(column = 'phone') {
 function sanitizeFreelancerRow(row) {
   if (!row) return row;
   const { password, login_password_plain, ...safe } = row;
+  let parsedRates = [];
+  try {
+    if (row.rates) {
+      parsedRates = typeof row.rates === 'string' ? JSON.parse(row.rates) : row.rates;
+    }
+  } catch (e) {
+    console.error("Error parsing freelancer rates JSON:", e);
+  }
   return {
     ...safe,
+    rates: parsedRates,
     has_login: Boolean(password),
     login_password: login_password_plain || null,
   };
@@ -4139,7 +4170,7 @@ app.get('/api/freelancers-inhouse', authenticateAdmin, async (req, res) => {
     );
     const [rows] = await db.execute(
       `SELECT id, name, email, phone, photo_price, video_price, is_active, password,
-        login_password_plain, created_at, updated_at
+        login_password_plain, rekening, rates, created_at, updated_at
        FROM freelancers_inhouse WHERE ${where} ORDER BY name ASC LIMIT ? OFFSET ?`,
       [...params, limit, offset]
     );
@@ -4161,10 +4192,10 @@ app.get('/api/freelancers-inhouse', authenticateAdmin, async (req, res) => {
 app.get('/api/freelancers-inhouse/all', authenticateAdmin, async (req, res) => {
   try {
     const [rows] = await db.execute(
-      `SELECT id, name, email, phone, photo_price, video_price, is_active
+      `SELECT id, name, email, phone, photo_price, video_price, is_active, rekening, rates
        FROM freelancers_inhouse WHERE is_active = 1 ORDER BY name ASC`
     );
-    res.json(rows);
+    res.json(rows.map(sanitizeFreelancerRow));
   } catch (error) {
     res.status(500).json({ message: 'Database error' });
   }
@@ -4175,8 +4206,27 @@ app.post('/api/freelancers-inhouse', authenticateAdmin, async (req, res) => {
   const email = String(req.body?.email || '').trim().toLowerCase() || null;
   const phone = String(req.body?.phone || '').trim();
   const phoneNorm = normalizeFreelancerPhone(phone);
-  const photoPrice = Number(req.body?.photo_price) || 0;
-  const videoPrice = Number(req.body?.video_price) || 0;
+  const rekening = req.body?.rekening ? String(req.body.rekening).trim() : null;
+  
+  // Dynamic rates handling
+  const ratesInput = req.body?.rates || [];
+  const ratesArr = Array.isArray(ratesInput) ? ratesInput : [];
+  const ratesStr = ratesArr.length > 0 ? JSON.stringify(ratesArr) : null;
+
+  // Extract photo & video price for legacy compatibility
+  let photoPrice = 0;
+  let videoPrice = 0;
+  ratesArr.forEach(r => {
+    const lbl = String(r.label || '').toLowerCase();
+    if (lbl.includes('foto') || lbl.includes('photo')) {
+      if (!photoPrice) photoPrice = Number(r.price) || 0;
+    } else if (lbl.includes('video') || lbl.includes('film')) {
+      if (!videoPrice) videoPrice = Number(r.price) || 0;
+    }
+  });
+  if (!photoPrice && ratesArr.length > 0) photoPrice = Number(ratesArr[0].price) || 0;
+  if (!videoPrice && ratesArr.length > 1) videoPrice = Number(ratesArr[1].price) || 0;
+
   if (!name) return res.status(400).json({ message: 'Nama freelance wajib diisi' });
   if (!phoneNorm || phoneNorm.length < 8) {
     return res.status(400).json({ message: 'Nomor HP login wajib diisi (min. 8 digit)' });
@@ -4189,9 +4239,9 @@ app.post('/api/freelancers-inhouse', authenticateAdmin, async (req, res) => {
     const hash = bcrypt.hashSync(plainPassword, 10);
     const [result] = await db.execute(
       `INSERT INTO freelancers_inhouse
-        (name, email, password, login_password_plain, phone, photo_price, video_price)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [name, email, hash, plainPassword, phone, photoPrice, videoPrice]
+        (name, email, password, login_password_plain, phone, photo_price, video_price, rekening, rates)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [name, email, hash, plainPassword, phone, photoPrice, videoPrice, rekening, ratesStr]
     );
     res.json({
       id: result.insertId,
@@ -4209,10 +4259,29 @@ app.put('/api/freelancers-inhouse/:id', authenticateAdmin, async (req, res) => {
   const email = String(req.body?.email || '').trim().toLowerCase() || null;
   const phone = String(req.body?.phone || '').trim();
   const phoneNorm = normalizeFreelancerPhone(phone);
-  const photoPrice = Number(req.body?.photo_price) || 0;
-  const videoPrice = Number(req.body?.video_price) || 0;
+  const rekening = req.body?.rekening ? String(req.body.rekening).trim() : null;
   const isActive = req.body?.is_active !== false;
   const regeneratePassword = Boolean(req.body?.regenerate_password);
+
+  // Dynamic rates handling
+  const ratesInput = req.body?.rates || [];
+  const ratesArr = Array.isArray(ratesInput) ? ratesInput : [];
+  const ratesStr = ratesArr.length > 0 ? JSON.stringify(ratesArr) : null;
+
+  // Extract photo & video price for legacy compatibility
+  let photoPrice = 0;
+  let videoPrice = 0;
+  ratesArr.forEach(r => {
+    const lbl = String(r.label || '').toLowerCase();
+    if (lbl.includes('foto') || lbl.includes('photo')) {
+      if (!photoPrice) photoPrice = Number(r.price) || 0;
+    } else if (lbl.includes('video') || lbl.includes('film')) {
+      if (!videoPrice) videoPrice = Number(r.price) || 0;
+    }
+  });
+  if (!photoPrice && ratesArr.length > 0) photoPrice = Number(ratesArr[0].price) || 0;
+  if (!videoPrice && ratesArr.length > 1) videoPrice = Number(ratesArr[1].price) || 0;
+
   if (!name) return res.status(400).json({ message: 'Nama freelance wajib diisi' });
   if (!phoneNorm || phoneNorm.length < 8) {
     return res.status(400).json({ message: 'Nomor HP login wajib diisi (min. 8 digit)' });
@@ -4227,8 +4296,8 @@ app.put('/api/freelancers-inhouse/:id', authenticateAdmin, async (req, res) => {
     }
     await db.execute(
       `UPDATE freelancers_inhouse SET name = ?, email = ?, phone = ?,
-        photo_price = ?, video_price = ?, is_active = ? WHERE id = ?`,
-      [name, email, phone, photoPrice, videoPrice, isActive ? 1 : 0, req.params.id]
+        photo_price = ?, video_price = ?, is_active = ?, rekening = ?, rates = ? WHERE id = ?`,
+      [name, email, phone, photoPrice, videoPrice, isActive ? 1 : 0, rekening, ratesStr, req.params.id]
     );
     res.json({
       message: 'Freelance diperbarui',

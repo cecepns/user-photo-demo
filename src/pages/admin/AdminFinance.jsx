@@ -582,7 +582,7 @@ const AdminFinance = () => {
               </div>
               <div className="p-6 overflow-y-auto flex-1">
                 <p className="text-sm text-gray-500 mb-4">
-                  Biaya produksi ditarik dari rincian pengeluaran per pesanan (seperti freelance dan cetak album). Admin dapat mengklik salah satu pesanan untuk menambah/edit biaya produksi.
+                  Biaya produksi ditarik dari rincian pengeluaran per pesanan (seperti freelance dan cetak album) yang diisi di invoice.
                 </p>
                 <div className="space-y-4">
                   {orders.map((row) => (
@@ -594,16 +594,6 @@ const AdminFinance = () => {
                         </div>
                         <div className="flex items-center gap-3">
                           <p className="font-bold text-orange-600">{formatRupiah(row.production_total)}</p>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setActivePanel(null);
-                              openEdit(row);
-                            }}
-                            className="text-xs px-3 py-1 bg-primary-50 text-primary-600 rounded border border-primary-200 hover:bg-primary-100 transition-colors"
-                          >
-                            Kelola Item
-                          </button>
                         </div>
                       </div>
                       {row.production_items?.length > 0 ? (
@@ -797,57 +787,19 @@ const AdminFinance = () => {
                 </label>
 
                 <div className="space-y-2 mb-4">
-                  <p className="text-sm font-medium text-gray-700">Rincian pengeluaran</p>
-                  {form.production_items.map((item, idx) => (
-                    <div key={idx} className="flex gap-2">
-                      <input
-                        placeholder="Contoh: Video / Cetak Album"
-                        value={item.label}
-                        onChange={(e) => {
-                          const next = [...form.production_items];
-                          next[idx] = { ...next[idx], label: e.target.value };
-                          setForm({ ...form, production_items: next });
-                        }}
-                        className="flex-1 border rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-primary-500 focus:outline-none"
-                      />
-                      <input
-                        type="number"
-                        min={0}
-                        placeholder="Jumlah"
-                        value={item.amount}
-                        onChange={(e) => {
-                          const next = [...form.production_items];
-                          next[idx] = { ...next[idx], amount: e.target.value };
-                          setForm({ ...form, production_items: next });
-                        }}
-                        className="w-32 border rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-primary-500 focus:outline-none"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const next = form.production_items.filter((_, i) => i !== idx);
-                          setForm({
-                            ...form,
-                            production_items: next.length ? next : emptyProductionItems(),
-                          });
-                        }}
-                        className="p-2 rounded-lg text-red-600 bg-red-50 hover:bg-red-100"
-                        title="Hapus baris"
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                  <p className="text-sm font-medium text-gray-700">Rincian pengeluaran (Hanya dapat diubah di invoice pesanan)</p>
+                  {form.production_items.length > 0 && form.production_items.some(i => i.label?.trim()) ? (
+                    <div className="bg-gray-50 rounded-lg p-3 space-y-2 border border-gray-150">
+                      {form.production_items.filter(i => i.label?.trim()).map((item, idx) => (
+                        <div key={idx} className="flex justify-between text-sm text-gray-700">
+                          <span className="font-medium">• {item.label}</span>
+                          <span className="font-semibold text-gray-900">{formatRupiah(item.amount)}</span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => setForm({
-                      ...form,
-                      production_items: [...form.production_items, { label: '', amount: '' }],
-                    })}
-                    className="text-sm text-primary-600 flex items-center gap-1 font-medium hover:text-primary-700 transition-colors"
-                  >
-                    <Plus size={16} /> Tambah item
-                  </button>
+                  ) : (
+                    <p className="text-sm text-gray-400 italic">Tidak ada rincian pengeluaran produksi.</p>
+                  )}
                 </div>
 
                 <textarea

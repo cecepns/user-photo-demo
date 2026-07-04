@@ -16,6 +16,7 @@ export const DEFAULT_SITE_CONTACT = {
     'https://www.google.com/maps/embed?pb=!1m17!1m12!1m3!1d3965.688906306652!2d106.532421074991!3d-6.304542493684667!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m2!1m1!2zNsKwMTgnMTYuNCJTIDEwNsKwMzInMDYuMCJF!5e0!3m2!1sen!2sid!4v1753360840035!5m2!1sen!2sid',
   businessHours:
     'Senin - Jumat: 09:00 - 18:00\nSabtu: 10:00 - 16:00\nMinggu: Hanya dengan janji temu',
+  invoiceWebsiteText: 'https://sites.google.com/view/userwedding/beranda',
 };
 
 /** Baris daftar di kolom "Layanan" footer (JSON key `footerServices`). */

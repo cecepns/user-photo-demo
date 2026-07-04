@@ -329,10 +329,10 @@ const AdminServices = () => {
             <table className="w-full min-w-[700px]">
               <thead>
                 <tr className="bg-gradient-to-r from-[#2f4274] to-[#3d5285] text-white">
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-white/95">Nama Layanan</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-white/95">Harga Dasar</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-white/95">Nama Paket</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-white/95">Harga</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-white/95">Item</th>
-                  <th className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-white/95 w-28">Aksi</th>
+                  <th className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-white/95 w-28">Edit</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-100">
@@ -416,7 +416,7 @@ const AdminServices = () => {
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/95">Kategori</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/95">Status</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/95">Harga</th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-white/95 w-28">Aksi</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-white/95 w-28">Edit</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-100">
@@ -586,7 +586,7 @@ const ServiceModal = ({ service, onSubmit, onClose }) => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Harga Dasar (Rp)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Harga (Rp)</label>
                 <input
                   type="number"
                   step="0.01"
