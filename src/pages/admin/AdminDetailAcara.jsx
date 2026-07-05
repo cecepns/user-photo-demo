@@ -10,6 +10,7 @@ import AdminLayout from '../../components/AdminLayout';
 import { formatDate } from '../../utils/formatters';
 import { API_ENDPOINTS } from '../../utils/endpoints';
 import { apiGet, apiPost, apiPut, apiDelete } from '../../utils/request';
+import { useSiteIdentity } from '../../hooks/useSiteIdentity';
 
 const MAX_MAPS = 20;
 
@@ -20,6 +21,7 @@ const FIELD_LABELS = {
   groom_name: 'Nama Pengantin Pria',
   wedding_date: 'Tanggal Acara',
   package_name: 'Nama Paket',
+  fg_vg: 'Nama FG/VG',
 };
 
 const emptyMap = () => ({ url: '', note: '' });
@@ -44,12 +46,14 @@ const emptyForm = () => ({
   groom_name: '',
   wedding_date: '',
   package_name: '',
+  fg_vg: '',
   maps: [emptyMap()],
   notes: '',
 });
 
 
 const AdminDetailAcara = () => {
+  const { appName } = useSiteIdentity();
   const [items, setItems] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, totalPages: 1 });
   const [q, setQ] = useState('');
@@ -125,10 +129,11 @@ const AdminDetailAcara = () => {
       groom_name: row.groom_name || '',
       wedding_date: row.wedding_date ? String(row.wedding_date).slice(0, 10) : '',
       package_name: row.package_name || '',
+      fg_vg: row.fg_vg || '',
       maps: mapsFromRow(row),
       notes: row.notes || '',
     });
-    
+
     // Set auto-select field state if order reference exists
     if (row.order_id && row.order_source) {
       const isCustom = row.order_source === 'custom_request';
@@ -166,6 +171,7 @@ const AdminDetailAcara = () => {
     groom_name: form.groom_name,
     wedding_date: form.wedding_date,
     package_name: form.package_name,
+    fg_vg: form.fg_vg,
     notes: form.notes,
     maps: form.maps
       .map((m) => ({ url: m.url.trim(), note: m.note.trim() }))
@@ -194,7 +200,7 @@ const AdminDetailAcara = () => {
   const generatePdf = async (row) => {
     const maps = mapsFromRow(row);
     const doc = new jsPDF();
-    
+
     // Title
     doc.setFontSize(18);
     doc.setFont("helvetica", "bold");
@@ -203,14 +209,20 @@ const AdminDetailAcara = () => {
     // Company Name
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
-    doc.text("Chekusphoto", 20, 32);
+    doc.text(appName || "Chekusphoto", 20, 32);
 
     // Divider Line
     doc.setLineWidth(0.5);
     doc.line(20, 36, 190, 36);
 
+    // FG / VG Name Section (Placed above data client)
+    let y = 44;
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text(`FG / VG: ${row.fg_vg || '-'}`, 20, y);
+    y += 10;
+
     // Client Info Header
-    let y = 46;
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
     doc.text("Data Client:", 20, y);
@@ -218,7 +230,7 @@ const AdminDetailAcara = () => {
 
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
-    
+
     doc.text(`Nama Client: ${row.client_name || '-'}`, 20, y);
     y += 6;
     doc.text(`Telepon: ${row.client_phone || '-'}`, 20, y);
@@ -255,7 +267,7 @@ const AdminDetailAcara = () => {
     for (let index = 0; index < maps.length; index++) {
       const m = maps[index];
       if (!m.url && !m.note) continue;
-      
+
       // Calculate required height for this location block
       const qrHeight = m.url ? 36 : 0;
       const noteLines = m.note ? doc.splitTextToSize(`Catatan: ${m.note}`, 170) : [];
@@ -271,11 +283,11 @@ const AdminDetailAcara = () => {
       doc.text(`Lokasi ${index + 1}:`, 20, y);
       y += 6;
       doc.setFont('helvetica', 'normal');
-      if (m.url) { 
+      if (m.url) {
         const urlLines = doc.splitTextToSize(`Maps: ${m.url}`, 170);
-        doc.text(urlLines, 20, y); 
+        doc.text(urlLines, 20, y);
         y += urlLines.length * 5;
-        
+
         try {
           const qrDataUrl = await QRCode.toDataURL(m.url, { margin: 1, width: 100 });
           doc.addImage(qrDataUrl, 'PNG', 20, y, 30, 30);
@@ -284,9 +296,9 @@ const AdminDetailAcara = () => {
           console.error("Error generating QR code:", qrErr);
         }
       }
-      if (m.note) { 
-        doc.text(noteLines, 20, y); 
-        y += noteHeight; 
+      if (m.note) {
+        doc.text(noteLines, 20, y);
+        y += noteHeight;
       }
       y += 2;
     }
@@ -313,7 +325,8 @@ const AdminDetailAcara = () => {
 
   const handleCopyText = (row) => {
     const maps = mapsFromRow(row);
-    let text = `Nama Client: ${row.client_name || '-'}\n`;
+    let text = `Nama FG/VG: ${row.fg_vg || '-'}\n`;
+    text += `Nama Client: ${row.client_name || '-'}\n`;
     text += `Telepon: ${row.client_phone || '-'}\n`;
     text += `Alamat: ${row.client_address || '-'}\n`;
     text += `Pasangan: ${row.bride_name || '-'} & ${row.groom_name || '-'}\n`;
@@ -419,6 +432,7 @@ const AdminDetailAcara = () => {
                         groom_name: opt.order.groom_name || '',
                         wedding_date: opt.order.wedding_date || '',
                         package_name: opt.order.package_name || '',
+                        fg_vg: form.fg_vg || '',
                         maps: form.maps,
                         notes: form.notes
                       });
@@ -547,7 +561,7 @@ const AdminDetailAcara = () => {
         <div className="mb-6 flex justify-between items-start gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-800">Detail Acara</h1>
-            <p className="text-gray-600">Dokumen detail acara dengan lokasi maps (generate PDF).</p>
+            <p className="text-gray-600">Dokumen detail acara</p>
           </div>
           <button type="button" onClick={openCreate} className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg">
             <Plus size={18} /> Tambah
@@ -568,17 +582,19 @@ const AdminDetailAcara = () => {
               <tr>
                 <th className="px-4 py-3 text-left">Client</th>
                 <th className="px-4 py-3 text-left">Pasangan</th>
+                <th className="px-4 py-3 text-left">FG/VG</th>
                 <th className="px-4 py-3 text-left">Tanggal</th>
                 <th className="px-4 py-3">Edit</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={4} className="p-8 text-center">Memuat...</td></tr>
+                <tr><td colSpan={5} className="p-8 text-center">Memuat...</td></tr>
               ) : items.map((row) => (
                 <tr key={row.id} className="border-t">
                   <td className="px-4 py-3">{row.client_name}</td>
                   <td className="px-4 py-3">{row.bride_name} & {row.groom_name}</td>
+                  <td className="px-4 py-3">{row.fg_vg || '-'}</td>
                   <td className="px-4 py-3">{row.wedding_date ? formatDate(row.wedding_date) : '-'}</td>
                   <td className="px-4 py-3 flex gap-2">
                     <button type="button" onClick={() => generatePdf(row)} className="text-green-600 hover:text-green-700" title="Unduh PDF Acara"><Download size={18} /></button>

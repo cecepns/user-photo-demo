@@ -118,9 +118,9 @@ const AdminFinance = () => {
 
   useEffect(() => {
     loadSummary().catch((e) => toast.error(e.message));
-    loadSettings().catch(() => {});
-    loadAssignments().catch(() => {});
-    loadChartData().catch(() => {});
+    loadSettings().catch(() => { });
+    loadAssignments().catch(() => { });
+    loadChartData().catch(() => { });
   }, [loadSummary, loadSettings, loadAssignments, loadChartData]);
 
   useEffect(() => {
@@ -279,7 +279,7 @@ const AdminFinance = () => {
         <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-800">Catatan Keuangan</h1>
-            <p className="text-gray-600">Pendapatan, biaya produksi, dan pendapatan bersih per pesanan.</p>
+            <p className="text-gray-600">Pendapatan, biaya produksi, dan pendapatan bersih pesanan.</p>
           </div>
 
         </div>
@@ -412,99 +412,99 @@ const AdminFinance = () => {
               <h3 className="font-semibold text-gray-700">Daftar Transaksi Keuangan</h3>
             </div>
 
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-3 text-left">Client</th>
-                  <th className="px-4 py-3 text-left">Paket</th>
-                  <th className="px-4 py-3 text-left">Catatan</th>
-                  <th className="px-4 py-3 text-right">Masuk</th>
-                  <th className="px-4 py-3 text-right">Pengeluaran</th>
-                  <th className="px-4 py-3 text-right">Bersih</th>
-                </tr>
-              </thead>
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left">Client</th>
+                    <th className="px-4 py-3 text-left">Paket</th>
+                    <th className="px-4 py-3 text-left">Catatan</th>
+                    <th className="px-4 py-3 text-right">Masuk</th>
+                    <th className="px-4 py-3 text-right">Pengeluaran</th>
+                    <th className="px-4 py-3 text-right">Bersih</th>
+                  </tr>
+                </thead>
 
-              <tbody>
-                {loading ? (
-                  <tr><td colSpan={6} className="p-8 text-center text-gray-500">Memuat...</td></tr>
-                ) : orders.length === 0 ? (
-                  <tr><td colSpan={6} className="p-8 text-center text-gray-500">Belum ada data pesanan</td></tr>
+                <tbody>
+                  {loading ? (
+                    <tr><td colSpan={6} className="p-8 text-center text-gray-500">Memuat...</td></tr>
+                  ) : orders.length === 0 ? (
+                    <tr><td colSpan={6} className="p-8 text-center text-gray-500">Belum ada data pesanan</td></tr>
 
-                ) : (
-                  orders.map((row) => (
-                    <tr key={`${row.order_source}-${row.order_id}`} className="border-t hover:bg-gray-50/80">
-                      <td className="px-4 py-3 font-medium text-gray-900">{row.client_name}</td>
-                      <td className="px-4 py-3 text-gray-700">{row.package_name || '-'}</td>
-                      <td className="px-4 py-3">
-                        {row.financial_id ? (
-                          <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            Ada catatan
-                          </span>
-                        ) : (
-                          <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-                            Belum ada
-                          </span>
-                        )}
-                        {row.notes ? (
-                          <p className="text-xs text-gray-500 mt-1 max-w-[180px] truncate" title={row.notes}>
-                            {row.notes}
-                          </p>
-                        ) : null}
-                      </td>
-                      <td className="px-4 py-3 text-right">{formatRupiah(row.gross_amount)}</td>
-                      <td className="px-4 py-3 text-right">
-                        {formatRupiah(row.production_total + row.accommodation_cost)}
-                      </td>
-                      <td className="px-4 py-3 text-right font-medium">{formatRupiah(row.net_amount)}</td>
-                    </tr>
+                  ) : (
+                    orders.map((row) => (
+                      <tr key={`${row.order_source}-${row.order_id}`} className="border-t hover:bg-gray-50/80">
+                        <td className="px-4 py-3 font-medium text-gray-900">{row.client_name}</td>
+                        <td className="px-4 py-3 text-gray-700">{row.package_name || '-'}</td>
+                        <td className="px-4 py-3">
+                          {row.financial_id ? (
+                            <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              Ada catatan
+                            </span>
+                          ) : (
+                            <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                              Belum ada
+                            </span>
+                          )}
+                          {row.notes ? (
+                            <p className="text-xs text-gray-500 mt-1 max-w-[180px] truncate" title={row.notes}>
+                              {row.notes}
+                            </p>
+                          ) : null}
+                        </td>
+                        <td className="px-4 py-3 text-right">{formatRupiah(row.gross_amount)}</td>
+                        <td className="px-4 py-3 text-right">
+                          {formatRupiah(row.production_total + row.accommodation_cost)}
+                        </td>
+                        <td className="px-4 py-3 text-right font-medium">{formatRupiah(row.net_amount)}</td>
+                      </tr>
 
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {!loading && pagination.total > 0 && (
-            <div className="px-4 py-3 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <span>Tampilkan</span>
-                <select
-                  value={pagination.limit}
-                  onChange={(e) => setPagination((p) => ({ ...p, limit: Number(e.target.value), page: 1 }))}
-                  className="border border-gray-200 rounded-lg px-2 py-1 text-sm"
-                >
-                  {LIMIT_OPTIONS.map((n) => (
-                    <option key={n} value={n}>{n}</option>
-                  ))}
-                </select>
-                <span>
-                  · {((pagination.page - 1) * pagination.limit) + 1}–{Math.min(pagination.page * pagination.limit, pagination.total)} dari {pagination.total}
-                </span>
-              </div>
-              <div className="flex items-center justify-between sm:justify-end gap-2">
-                <span className="text-sm text-gray-600 sm:mr-2">
-                  Halaman {pagination.page} / {pagination.totalPages}
-                </span>
-                <button
-                  type="button"
-                  disabled={pagination.page <= 1}
-                  onClick={() => setPagination((p) => ({ ...p, page: p.page - 1 }))}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 border border-gray-200 rounded-lg text-sm disabled:opacity-40"
-                >
-                  <ChevronLeft size={16} /> Sebelumnya
-                </button>
-                <button
-                  type="button"
-                  disabled={pagination.page >= pagination.totalPages}
-                  onClick={() => setPagination((p) => ({ ...p, page: p.page + 1 }))}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 border border-gray-200 rounded-lg text-sm disabled:opacity-40"
-                >
-                  Berikutnya <ChevronRight size={16} />
-                </button>
-              </div>
+                    ))
+                  )}
+                </tbody>
+              </table>
             </div>
-          )}
+
+            {!loading && pagination.total > 0 && (
+              <div className="px-4 py-3 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <span>Tampilkan</span>
+                  <select
+                    value={pagination.limit}
+                    onChange={(e) => setPagination((p) => ({ ...p, limit: Number(e.target.value), page: 1 }))}
+                    className="border border-gray-200 rounded-lg px-2 py-1 text-sm"
+                  >
+                    {LIMIT_OPTIONS.map((n) => (
+                      <option key={n} value={n}>{n}</option>
+                    ))}
+                  </select>
+                  <span>
+                    · {((pagination.page - 1) * pagination.limit) + 1}–{Math.min(pagination.page * pagination.limit, pagination.total)} dari {pagination.total}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between sm:justify-end gap-2">
+                  <span className="text-sm text-gray-600 sm:mr-2">
+                    Halaman {pagination.page} / {pagination.totalPages}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={pagination.page <= 1}
+                    onClick={() => setPagination((p) => ({ ...p, page: p.page - 1 }))}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 border border-gray-200 rounded-lg text-sm disabled:opacity-40"
+                  >
+                    <ChevronLeft size={16} /> Sebelumnya
+                  </button>
+                  <button
+                    type="button"
+                    disabled={pagination.page >= pagination.totalPages}
+                    onClick={() => setPagination((p) => ({ ...p, page: p.page + 1 }))}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 border border-gray-200 rounded-lg text-sm disabled:opacity-40"
+                  >
+                    Berikutnya <ChevronRight size={16} />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -513,7 +513,7 @@ const AdminFinance = () => {
         {showSettings && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
             <div className="bg-white rounded-xl max-w-md w-full p-6">
-              <h3 className="text-lg font-semibold mb-4">Biaya Akomodasi (per pesanan)</h3>
+              <h3 className="text-lg font-semibold mb-4">Biaya Akomodasi</h3>
               <input
                 type="number"
                 min={0}
@@ -582,13 +582,16 @@ const AdminFinance = () => {
               </div>
               <div className="p-6 overflow-y-auto flex-1">
                 <p className="text-sm text-gray-500 mb-4">
-                  Biaya produksi ditarik dari rincian pengeluaran per pesanan (seperti freelance dan cetak album) yang diisi di invoice.
+                  Biaya produksi ditarik dari rincian pengeluaran pesanan.
                 </p>
                 <div className="space-y-4">
                   {orders.map((row) => (
                     <div key={`${row.order_source}-${row.order_id}`} className="border rounded-lg p-4 hover:shadow-sm">
                       <div className="flex justify-between items-start mb-2">
                         <div>
+                          <p className="text-xs font-semibold text-primary-600 mb-1">
+                            {row.wedding_date ? `Acara: ${formatDate(row.wedding_date)}` : `Order: ${formatDate(row.created_at)}`}
+                          </p>
                           <p className="font-semibold text-gray-800">{row.client_name}</p>
                           <p className="text-xs text-gray-500">{row.package_name || '-'}</p>
                         </div>
@@ -712,7 +715,7 @@ const AdminFinance = () => {
                                 <Cell key={`cell-${index}`} fill={entry.color} />
                               ))}
                             </Pie>
-                            <Tooltip formatter={(value) => `${formatRupiah(value)} (${((value/totalIncome)*100).toFixed(0)}%)`} />
+                            <Tooltip formatter={(value) => `${formatRupiah(value)} (${((value / totalIncome) * 100).toFixed(0)}%)`} />
                             <Legend />
                           </PieChart>
                         </ResponsiveContainer>

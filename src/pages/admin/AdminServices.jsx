@@ -492,6 +492,7 @@ const AdminServices = () => {
             existingItemIds={serviceItems
               .filter((si) => !editingServiceItem || si.item_id != editingServiceItem.item_id)
               .map((si) => si.item_id)}
+            nextSortOrder={serviceItems.length + 1}
             onSubmit={editingServiceItem ? handleUpdateServiceItem : handleAddItemToService}
             onClose={() => {
               setShowItemModal(false);
@@ -646,12 +647,12 @@ const ServiceModal = ({ service, onSubmit, onClose }) => {
   );
 };
 
-const ServiceItemModal = ({ serviceItem, availableItems, existingItemIds = [], onSubmit, onClose }) => {
+const ServiceItemModal = ({ serviceItem, availableItems, existingItemIds = [], nextSortOrder, onSubmit, onClose }) => {
   const [formData, setFormData] = useState({
     item_id: serviceItem?.item_id || '',
     custom_price: serviceItem?.custom_price || '',
     is_required: serviceItem?.is_required || false,
-    sort_order: serviceItem?.sort_order || 0
+    sort_order: serviceItem?.sort_order || nextSortOrder || 0
   });
 
   const handleSubmit = (e) => {
@@ -767,15 +768,8 @@ const ServiceItemModal = ({ serviceItem, availableItems, existingItemIds = [], o
                 </p>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Urutan</label>
-                <input
-                  type="number"
-                  value={formData.sort_order}
-                  onChange={(e) => setFormData({ ...formData, sort_order: parseInt(e.target.value) })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                />
-              </div>
+              {/* Urutan input hidden as requested, set automatically */}
+              <input type="hidden" value={formData.sort_order} />
 
               <div className="flex justify-end space-x-4 pt-6">
                 <button

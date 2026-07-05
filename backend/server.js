@@ -311,6 +311,17 @@ app.get('/api/admin/stats', authenticateAdmin, async (req, res) => {
     // 6. Net Income
     stats.revenue = grossIncome - productionTotal - accommodationTotal;
 
+    // 7. Reference sources stats
+    const [refRows] = await db.execute(`
+      SELECT COALESCE(NULLIF(TRIM(reference_source), ''), 'lainnya') AS name, COUNT(*) AS value
+      FROM (
+        SELECT reference_source FROM orders
+        UNION ALL
+        SELECT reference_source FROM custom_requests
+      ) AS combined
+      GROUP BY name
+    `);
+    stats.references = refRows;
 
     res.json(stats);
   } catch (error) {
@@ -3310,11 +3321,11 @@ app.get('/api/admin/finance/orders', authenticateAdmin, async (req, res) => {
     const unionSql = `
       SELECT 'order' AS order_source, o.id AS order_id, o.name AS client_name,
              o.service_name AS package_name, o.total_amount AS gross_amount,
-             o.created_at
+             o.created_at, o.wedding_date
       FROM orders o WHERE o.status IN ('confirmed','completed','pending')
       UNION ALL
       SELECT 'custom_request', cr.id, cr.name, cr.services,
-             cr.booking_amount, cr.created_at
+             cr.booking_amount, cr.created_at, cr.wedding_date
       FROM custom_requests cr WHERE cr.status IN ('confirmed','completed','pending')
     `;
 
@@ -3661,12 +3672,13 @@ app.post('/api/order-progress', authenticateAdmin, async (req, res) => {
 
   try {
     const [result] = await db.execute(
-      `INSERT INTO order_progress (order_source, order_id, photo_status, video_status, photo_link, video_link, album_status, estimated_completion, album_link)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO order_progress (order_source, order_id, photo_status, video_status, photo_link, video_link, album_status, estimated_completion, album_link, custom_links)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         orderSource, orderId, photoStatus, videoStatus,
         req.body?.photo_link || null, req.body?.video_link || null,
-        albumStatus, req.body?.estimated_completion || null, req.body?.album_link || null
+        albumStatus, req.body?.estimated_completion || null, req.body?.album_link || null,
+        req.body?.custom_links || null
       ]
     );
     res.json({ id: result.insertId, message: 'Progress pesanan dibuat' });
@@ -3721,6 +3733,10 @@ app.put('/api/order-progress/:id', authenticateAdmin, async (req, res) => {
   if (req.body?.video_link !== undefined) {
     fields.push('video_link = ?');
     params.push(req.body.video_link || null);
+  }
+  if (req.body?.custom_links !== undefined) {
+    fields.push('custom_links = ?');
+    params.push(req.body.custom_links || null);
   }
 
   if (!fields.length) return res.status(400).json({ message: 'Tidak ada data diperbarui' });
@@ -3883,8 +3899,8 @@ app.post('/api/detail-acara', authenticateAdmin, async (req, res) => {
       `INSERT INTO detail_acara (
         order_source, order_id, client_name, client_phone, client_address,
         bride_name, groom_name, wedding_date, package_name, maps_json,
-        map1_url, map1_note, map2_url, map2_note, map3_url, map3_note, map4_url, map4_note, notes
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        map1_url, map1_note, map2_url, map2_note, map3_url, map3_note, map4_url, map4_note, notes, fg_vg
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         orderSource, orderId,
         b.client_name || null, b.client_phone || null, b.client_address || null,
@@ -3894,7 +3910,8 @@ app.post('/api/detail-acara', authenticateAdmin, async (req, res) => {
         legacy.map2_url, legacy.map2_note,
         legacy.map3_url, legacy.map3_note,
         legacy.map4_url, legacy.map4_note,
-        b.notes || null
+        b.notes || null,
+        b.fg_vg || null
       ]
     );
     res.json({ id: result.insertId, message: 'Detail acara disimpan' });
@@ -3921,7 +3938,7 @@ app.put('/api/detail-acara/:id', authenticateAdmin, async (req, res) => {
         bride_name = ?, groom_name = ?, wedding_date = ?, package_name = ?,
         maps_json = ?,
         map1_url = ?, map1_note = ?, map2_url = ?, map2_note = ?,
-        map3_url = ?, map3_note = ?, map4_url = ?, map4_note = ?, notes = ?
+        map3_url = ?, map3_note = ?, map4_url = ?, map4_note = ?, notes = ?, fg_vg = ?
        WHERE id = ?`,
       [
         orderSource, orderId,
@@ -3933,6 +3950,7 @@ app.put('/api/detail-acara/:id', authenticateAdmin, async (req, res) => {
         legacy.map3_url, legacy.map3_note,
         legacy.map4_url, legacy.map4_note,
         b.notes || null,
+        b.fg_vg || null,
         req.params.id
       ]
     );
@@ -4118,7 +4136,7 @@ app.get('/api/freelancer/me', authenticateToken, async (req, res) => {
   try {
     const fid = Number(req.user.freelancerId || req.user.id);
     const [rows] = await db.execute(
-      'SELECT id, name, email, phone, photo_price, video_price, is_active FROM freelancers_inhouse WHERE id = ? LIMIT 1',
+      'SELECT id, name, email, phone, photo_price, video_price, is_active, rekening, rates, alamat FROM freelancers_inhouse WHERE id = ? LIMIT 1',
       [fid]
     );
     if (!rows[0] || !rows[0].is_active) {
@@ -4171,7 +4189,7 @@ app.get('/api/freelancers-inhouse', authenticateAdmin, async (req, res) => {
     );
     const [rows] = await db.execute(
       `SELECT id, name, email, phone, photo_price, video_price, is_active, password,
-        login_password_plain, rekening, rates, created_at, updated_at
+        login_password_plain, rekening, rates, created_at, updated_at, alamat
        FROM freelancers_inhouse WHERE ${where} ORDER BY name ASC LIMIT ? OFFSET ?`,
       [...params, limit, offset]
     );
@@ -4193,7 +4211,7 @@ app.get('/api/freelancers-inhouse', authenticateAdmin, async (req, res) => {
 app.get('/api/freelancers-inhouse/all', authenticateAdmin, async (req, res) => {
   try {
     const [rows] = await db.execute(
-      `SELECT id, name, email, phone, photo_price, video_price, is_active, rekening, rates
+      `SELECT id, name, email, phone, photo_price, video_price, is_active, rekening, rates, alamat
        FROM freelancers_inhouse WHERE is_active = 1 ORDER BY name ASC`
     );
     res.json(rows.map(sanitizeFreelancerRow));
@@ -4208,6 +4226,7 @@ app.post('/api/freelancers-inhouse', authenticateAdmin, async (req, res) => {
   const phone = String(req.body?.phone || '').trim();
   const phoneNorm = normalizeFreelancerPhone(phone);
   const rekening = req.body?.rekening ? String(req.body.rekening).trim() : null;
+  const alamat = req.body?.alamat ? String(req.body.alamat).trim() : null;
   
   // Dynamic rates handling
   const ratesInput = req.body?.rates || [];
@@ -4240,9 +4259,9 @@ app.post('/api/freelancers-inhouse', authenticateAdmin, async (req, res) => {
     const hash = bcrypt.hashSync(plainPassword, 10);
     const [result] = await db.execute(
       `INSERT INTO freelancers_inhouse
-        (name, email, password, login_password_plain, phone, photo_price, video_price, rekening, rates)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [name, email, hash, plainPassword, phone, photoPrice, videoPrice, rekening, ratesStr]
+        (name, email, password, login_password_plain, phone, photo_price, video_price, rekening, rates, alamat)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [name, email, hash, plainPassword, phone, photoPrice, videoPrice, rekening, ratesStr, alamat]
     );
     res.json({
       id: result.insertId,
@@ -4297,8 +4316,8 @@ app.put('/api/freelancers-inhouse/:id', authenticateAdmin, async (req, res) => {
     }
     await db.execute(
       `UPDATE freelancers_inhouse SET name = ?, email = ?, phone = ?,
-        photo_price = ?, video_price = ?, is_active = ?, rekening = ?, rates = ? WHERE id = ?`,
-      [name, email, phone, photoPrice, videoPrice, isActive ? 1 : 0, rekening, ratesStr, req.params.id]
+        photo_price = ?, video_price = ?, is_active = ?, rekening = ?, rates = ?, alamat = ? WHERE id = ?`,
+      [name, email, phone, photoPrice, videoPrice, isActive ? 1 : 0, rekening, ratesStr, req.body?.alamat ? String(req.body.alamat).trim() : null, req.params.id]
     );
     res.json({
       message: 'Freelance diperbarui',

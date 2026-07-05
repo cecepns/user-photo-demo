@@ -67,7 +67,7 @@ const AdminOrders = () => {
   const [selectedDate, setSelectedDate] = useState(null);
   const [tableFilteredOrders, setTableFilteredOrders] = useState(null);
   const [showDuplicatesOnly, setShowDuplicatesOnly] = useState(false);
-   const [editableOrderItems, setEditableOrderItems] = useState([]);
+  const [editableOrderItems, setEditableOrderItems] = useState([]);
   const [savingOrderItems, setSavingOrderItems] = useState(false);
   const [vendorsList, setVendorsList] = useState([]);
   const [selectedVendorFilter, setSelectedVendorFilter] = useState("all");
@@ -79,6 +79,33 @@ const AdminOrders = () => {
 
   const [selectedFreelancerId, setSelectedFreelancerId] = useState("");
   const [selectedFreelancerRate, setSelectedFreelancerRate] = useState(null);
+  const [availableItemsForOrders, setAvailableItemsForOrders] = useState([]);
+  const [selectedAddItemIndex, setSelectedAddItemIndex] = useState("");
+
+  useEffect(() => {
+    const fetchItemsForOrders = async () => {
+      try {
+        const response = await fetch(`${API_BASE}/items`);
+        const data = await response.json();
+        setAvailableItemsForOrders(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error("Error fetching items for orders:", error);
+      }
+    };
+    fetchItemsForOrders();
+  }, []);
+
+  const recalculatedTotal = useMemo(() => {
+    if (!selectedOrder) return 0;
+    if (selectedOrder.orderType !== "order") return toNumber(selectedOrder.total_amount ?? 0);
+    const base = toNumber(selectedOrder.base_price || 0);
+    const itemsSum = editableOrderItems.reduce((sum, item) => {
+      const price = item.final_price ?? item.item_price ?? item.price ?? item.custom_price ?? 0;
+      const qty = item.quantity || 1;
+      return sum + (toNumber(price) * qty);
+    }, 0);
+    return base + itemsSum;
+  }, [selectedOrder, editableOrderItems]);
 
   // Financial States
   const [orderFinance, setOrderFinance] = useState(null);
@@ -468,7 +495,7 @@ const AdminOrders = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
-      
+
       let parsedItems = [];
       if (order.orderType === "custom_request") {
         parsedItems = Array.isArray(order.items_details) ? order.items_details : [];
@@ -484,10 +511,10 @@ const AdminOrders = () => {
         const fin = data.data[0];
         setOrderFinance(fin);
         setFinAccommodationCost(fin.accommodation_cost != null ? String(fin.accommodation_cost) : '');
-        
+
         const savedItems = Array.isArray(fin.production_items) ? fin.production_items : [];
         const merged = [];
-        
+
         parsedItems.forEach(cItem => {
           const cName = (cItem.name || cItem.item_name || "Item").trim();
           const match = savedItems.find(s => s.label.trim().toLowerCase() === cName.toLowerCase());
@@ -517,7 +544,7 @@ const AdminOrders = () => {
           production_total: 0,
         });
         setFinAccommodationCost('');
-        
+
         const initial = parsedItems.map(cItem => ({
           label: (cItem.name || cItem.item_name || "Item").trim(),
           amount: '0'
@@ -667,34 +694,34 @@ const AdminOrders = () => {
       setSelectedOrder((prev) =>
         prev
           ? {
-              ...prev,
-              selected_items: nextSelectedItems,
-              total_amount: nextTotalAmount,
-            }
+            ...prev,
+            selected_items: nextSelectedItems,
+            total_amount: nextTotalAmount,
+          }
           : prev
       );
       setOrders((prev) =>
         prev.map((order) =>
           order.id === selectedOrder.id
             ? {
-                ...order,
-                selected_items: nextSelectedItems,
-                total_amount: nextTotalAmount,
-              }
+              ...order,
+              selected_items: nextSelectedItems,
+              total_amount: nextTotalAmount,
+            }
             : order
         )
       );
       setTableFilteredOrders((prev) =>
         Array.isArray(prev)
           ? prev.map((order) =>
-              order.orderType === "order" && order.id === selectedOrder.id
-                ? {
-                    ...order,
-                    selected_items: nextSelectedItems,
-                    total_amount: nextTotalAmount,
-                  }
-                : order
-            )
+            order.orderType === "order" && order.id === selectedOrder.id
+              ? {
+                ...order,
+                selected_items: nextSelectedItems,
+                total_amount: nextTotalAmount,
+              }
+              : order
+          )
           : prev
       );
       toast.success("Item layanan berhasil diperbarui");
@@ -1239,7 +1266,7 @@ const AdminOrders = () => {
     // Calculate the final Y position after all content
     const finalContentY = notesText && notesText.trim() ? notesY : currentY + 95;
     const thankYouY = finalContentY + 30; // Add 30mm space after the last content
-    
+
     // Set font for thank you message
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
@@ -1248,9 +1275,8 @@ const AdminOrders = () => {
     });
 
     // Save the PDF
-    const fileName = `invoice-order-${item.id}-${
-      new Date().toISOString().split("T")[0]
-    }.pdf`;
+    const fileName = `invoice-order-${item.id}-${new Date().toISOString().split("T")[0]
+      }.pdf`;
     doc.save(fileName);
   };
 
@@ -1319,11 +1345,10 @@ const AdminOrders = () => {
                       document.getElementById("booking-calendar")?.scrollIntoView({ behavior: "smooth" });
                     }, 50);
                   }}
-                  className={`p-3 rounded-lg border text-center transition-all ${
-                    isActive
+                  className={`p-3 rounded-lg border text-center transition-all ${isActive
                       ? "border-primary-500 bg-primary-50 ring-2 ring-primary-500 font-semibold"
                       : "border-gray-200 hover:border-primary-300"
-                  }`}
+                    }`}
                 >
                   <p className="text-xs text-gray-700">{mName}</p>
                   <span className={`inline-block mt-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${count > 0 ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500'}`}>
@@ -1448,11 +1473,10 @@ const AdminOrders = () => {
                             setSelectedDate(key);
                             handleFilterTableBySelectedDate(key);
                           }}
-                            className={`min-h-20 border border-gray-100 p-1 text-left align-top ${
-                            hasBookings
+                          className={`min-h-20 border border-gray-100 p-1 text-left align-top ${hasBookings
                               ? "bg-blue-50"
                               : "bg-white"
-                          } ${isSelected ? "ring-2 ring-primary-500 z-10" : ""}`}
+                            } ${isSelected ? "ring-2 ring-primary-500 z-10" : ""}`}
                         >
                           <div className="text-sm text-blue-700 font-medium mb-1 text-center">
                             {d}
@@ -1758,11 +1782,10 @@ const AdminOrders = () => {
                       <button
                         key={page}
                         onClick={() => handleOrdersPageChange(page)}
-                        className={`px-3 py-1 rounded-md text-sm font-medium ${
-                          page === ordersPagination.page
+                        className={`px-3 py-1 rounded-md text-sm font-medium ${page === ordersPagination.page
                             ? "bg-primary-600 text-white"
                             : "text-gray-500 bg-white border border-gray-300 hover:bg-gray-50"
-                        }`}
+                          }`}
                       >
                         {page}
                       </button>
@@ -1856,7 +1879,7 @@ const AdminOrders = () => {
 
                       <div>
                         <span className="font-medium text-gray-700 font-semibold mb-1 block">
-                          Vendor ditugaskan:
+                          Vendor:
                         </span>
                         <select
                           value={selectedOrder.vendor_id || ""}
@@ -1911,9 +1934,9 @@ const AdminOrders = () => {
                                   const rates = Array.isArray(fl.rates) && fl.rates.length > 0
                                     ? fl.rates
                                     : [
-                                        { label: 'Foto', price: fl.photo_price },
-                                        { label: 'Video', price: fl.video_price }
-                                      ];
+                                      { label: 'Foto', price: fl.photo_price },
+                                      { label: 'Video', price: fl.video_price }
+                                    ];
                                   setSelectedFreelancerRate(rates[0] || null);
                                 } else {
                                   setSelectedFreelancerRate(null);
@@ -1986,9 +2009,9 @@ const AdminOrders = () => {
                             const flRates = Array.isArray(fl.rates) && fl.rates.length > 0
                               ? fl.rates
                               : [
-                                  { label: 'Foto', price: fl.photo_price },
-                                  { label: 'Video', price: fl.video_price }
-                                ];
+                                { label: 'Foto', price: fl.photo_price },
+                                { label: 'Video', price: fl.video_price }
+                              ];
                             return (
                               <select
                                 value={selectedFreelancerRate ? JSON.stringify(selectedFreelancerRate) : ''}
@@ -2043,300 +2066,362 @@ const AdminOrders = () => {
                             </div>
                           ))}
                         </div>  {assignedFreelancers.length === 0 && (
-                            <p className="text-xs text-gray-400 italic">Belum ada freelance yang ditugaskan.</p>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Biaya Produksi & Akomodasi */}
-                      <div className="mt-4 border-t pt-4">
-                        <span className="font-semibold text-gray-700 mb-2 block">
-                          Biaya Produksi &amp; Akomodasi:
-                        </span>
-                        {loadingFinance ? (
-                          <p className="text-xs text-gray-400 italic">Memuat data keuangan...</p>
-                        ) : (
-                          <div className="space-y-3">
-                            {/* Biaya Produksi Items */}
-                            <div className="mb-2">
-                              <div className="flex items-center justify-between mb-1.5">
-                                <p className="text-xs font-semibold text-gray-500">Rincian Biaya Produksi Item</p>
-                                {finProductionItems.length > 0 && (
-                                  <button
-                                    type="button"
-                                    onClick={() => setShowAllProdItems(!showAllProdItems)}
-                                    className="text-[10px] text-primary-600 hover:underline font-semibold"
-                                  >
-                                    {showAllProdItems ? "Tampilkan Lebih Sedikit" : "Tampilkan Semua Item"}
-                                  </button>
-                                )}
-                              </div>
-                              {(() => {
-                                const displayed = showAllProdItems
-                                  ? finProductionItems
-                                  : finProductionItems.filter(item => {
-                                      const n = String(item.label || '').toLowerCase();
-                                      const isTarget = n.includes('album') || n.includes('drone');
-                                      const hasValue = Number(item.amount) > 0;
-                                      return isTarget || hasValue;
-                                    });
-
-                                return displayed.length > 0 ? (
-                                  <div className="space-y-2 bg-gray-50 p-3 rounded-lg border border-gray-100 mb-3">
-                                    {displayed.map((item, idx) => {
-                                      const origIdx = finProductionItems.findIndex(p => p.label === item.label);
-                                      return (
-                                        <div key={idx} className="flex items-center gap-2">
-                                          <span className="text-xs text-gray-600 flex-1 truncate" title={item.label}>
-                                            {item.label}
-                                          </span>
-                                          <input
-                                            type="number"
-                                            min={0}
-                                            value={item.amount}
-                                            onChange={(e) => {
-                                              const val = e.target.value;
-                                              setFinProductionItems(prev => prev.map((p, i) => i === origIdx ? { ...p, amount: val } : p));
-                                            }}
-                                            className="w-28 border rounded-lg px-2 py-1 text-xs text-right focus:ring-1 focus:ring-primary-500"
-                                            placeholder="Rp 0"
-                                          />
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-                                ) : (
-                                  <p className="text-xs text-gray-400 italic mb-3">Tidak ada item album atau drone yang di-checkout.</p>
-                                );
-                              })()}
-                            </div>
-
-
-                            {/* Biaya Akomodasi Custom */}
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs text-gray-600 flex-1">
-                                Biaya Akomodasi Custom
-                              </span>
-                              <input
-                                type="number"
-                                min={0}
-                                value={finAccommodationCost}
-                                onChange={(e) => setFinAccommodationCost(e.target.value)}
-                                className="w-28 border rounded-lg px-2 py-1 text-xs text-right focus:ring-1 focus:ring-primary-500"
-                                placeholder="Rp 0"
-                              />
-                            </div>
-
-                            <button
-                              type="button"
-                              onClick={handleSaveFinanceDetails}
-                              className="w-full mt-2 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-semibold transition-colors"
-                            >
-                              Simpan Biaya &amp; Akomodasi
-                            </button>
-                          </div>
+                          <p className="text-xs text-gray-400 italic">Belum ada freelance yang ditugaskan.</p>
                         )}
                       </div>
                     </div>
-                  </div>
+
+                    {/* Biaya Produksi & Akomodasi */}
+                    <div className="mt-4 border-t pt-4">
+                      <span className="font-semibold text-gray-700 mb-2 block">
+                        Biaya Produksi &amp; Akomodasi:
+                      </span>
+                      {loadingFinance ? (
+                        <p className="text-xs text-gray-400 italic">Memuat data keuangan...</p>
+                      ) : (
+                        <div className="space-y-3">
+                          {/* Biaya Produksi Items */}
+                          <div className="mb-2">
+                            <div className="flex items-center justify-between mb-1.5">
+                              <p className="text-xs font-semibold text-gray-500">Rincian Biaya Produksi Item</p>
+                              {finProductionItems.length > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => setShowAllProdItems(!showAllProdItems)}
+                                  className="text-[10px] text-primary-600 hover:underline font-semibold"
+                                >
+                                  {showAllProdItems ? "Tampilkan Lebih Sedikit" : "Tampilkan Semua Item"}
+                                </button>
+                              )}
+                            </div>
+                            {(() => {
+                              const displayed = showAllProdItems
+                                ? finProductionItems
+                                : finProductionItems.filter(item => {
+                                  const n = String(item.label || '').toLowerCase();
+                                  const isTarget = n.includes('album') || n.includes('drone');
+                                  const hasValue = Number(item.amount) > 0;
+                                  return isTarget || hasValue;
+                                });
+
+                              return displayed.length > 0 ? (
+                                <div className="space-y-2 bg-gray-50 p-3 rounded-lg border border-gray-100 mb-3">
+                                  {displayed.map((item, idx) => {
+                                    const origIdx = finProductionItems.findIndex(p => p.label === item.label);
+                                    return (
+                                      <div key={idx} className="flex items-center gap-2">
+                                        <span className="text-xs text-gray-600 flex-1 truncate" title={item.label}>
+                                          {item.label}
+                                        </span>
+                                        <input
+                                          type="number"
+                                          min={0}
+                                          value={item.amount}
+                                          onChange={(e) => {
+                                            const val = e.target.value;
+                                            setFinProductionItems(prev => prev.map((p, i) => i === origIdx ? { ...p, amount: val } : p));
+                                          }}
+                                          className="w-28 border rounded-lg px-2 py-1 text-xs text-right focus:ring-1 focus:ring-primary-500"
+                                          placeholder="Rp 0"
+                                        />
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              ) : (
+                                <p className="text-xs text-gray-400 italic mb-3">Tidak ada item album atau drone yang di-checkout.</p>
+                              );
+                            })()}
+                          </div>
 
 
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                      Informasi Pesanan
-                    </h3>
-                    <div className="space-y-3">
-                      <div>
-                        <span className="font-medium text-gray-700">
-                          Paket:
-                        </span>
-                        <p className="text-gray-900">
-                          {selectedOrder.service_name}
-                        </p>
-                      </div>
-                      <div>
-                        <span className="font-medium text-gray-700">
-                          Tanggal Pernikahan:
-                        </span>
-                        <p className="text-gray-900">
-                          {formatDateTime(selectedOrder.wedding_date)}
-                        </p>
-                      </div>
-                      <div>
-                        <span className="font-medium text-gray-700">
-                          Tanggal Pesanan:
-                        </span>
-                        <p className="text-gray-900">
-                          {formatDate(selectedOrder.created_at)}
-                        </p>
-                      </div>
-                      <div>
-                        <span className="font-medium text-gray-700">
-                          Total:
-                        </span>
-                        <p className="text-2xl font-bold text-primary-600">
-                          {formatRupiah(selectedOrder.total_amount ?? 0)}
-                        </p>
-                      </div>
+                          {/* Biaya Akomodasi Custom */}
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-gray-600 flex-1">
+                              Biaya Akomodasi Custom
+                            </span>
+                            <input
+                              type="number"
+                              min={0}
+                              value={finAccommodationCost}
+                              onChange={(e) => setFinAccommodationCost(e.target.value)}
+                              className="w-28 border rounded-lg px-2 py-1 text-xs text-right focus:ring-1 focus:ring-primary-500"
+                              placeholder="Rp 0"
+                            />
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={handleSaveFinanceDetails}
+                            className="w-full mt-2 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-semibold transition-colors"
+                          >
+                            Simpan Biaya &amp; Akomodasi
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
 
-                {(selectedOrder.notes || selectedOrder.additional_requests) && (
-                  <div className="mb-6">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-2">
-                      Catatan
-                    </h3>
-                    <p className="text-gray-700 bg-gray-50 p-4 rounded-lg">
-                      {selectedOrder.notes || selectedOrder.additional_requests}
-                    </p>
-                  </div>
-                )}
 
-                <div className="mb-6">
+                <div>
                   <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                    Item yang Dipilih
+                    Informasi Pesanan
                   </h3>
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    {selectedOrder.orderType === "custom_request" ? (
-                      Array.isArray(selectedOrder.items_details) && selectedOrder.items_details.length > 0 ? (
-                        selectedOrder.items_details.map((item, index) => {
-                          const itemName = item.name || item.item_name || "Item";
-                          const itemPrice = typeof item.price === "number" ? item.price : parseFloat(item.price) || 0;
-                          return (
-                            <div
-                              key={index}
-                              className="flex justify-between items-center py-2 border-b border-gray-200 last:border-b-0"
-                            >
-                              <span className="text-gray-900">{itemName}</span>
-                              <span className="font-medium text-primary-600">
-                                {formatRupiah(itemPrice)}
-                              </span>
-                            </div>
-                          );
-                        })
-                      ) : (
-                        <p className="text-gray-600 whitespace-pre-wrap">{selectedOrder.services || "-"}</p>
-                      )
-                    ) : editableOrderItems.length === 0 ? (
-                      <div className="text-gray-500 text-center py-4">
-                        Tidak ada item yang dipilih
-                      </div>
-                    ) : (
-                      editableOrderItems.map((item, index) => {
-                        const itemName =
-                          item.name ||
-                          item.item_name ||
-                          item.title ||
-                          "Item tidak dikenal";
-                        const itemPrice =
-                          item.final_price ||
-                          item.item_price ||
-                          item.price ||
-                          item.custom_price ||
-                          0;
-                        const normalizedPrice =
-                          typeof itemPrice === "number"
-                            ? itemPrice
-                            : parseFloat(itemPrice) || 0;
+                  <div className="space-y-3">
+                    <div>
+                      <span className="font-medium text-gray-700">
+                        Paket:
+                      </span>
+                      <p className="text-gray-900">
+                        {selectedOrder.service_name}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-700">
+                        Tanggal Pernikahan:
+                      </span>
+                      <p className="text-gray-900">
+                        {formatDateTime(selectedOrder.wedding_date)}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-700">
+                        Tanggal Pesanan:
+                      </span>
+                      <p className="text-gray-900">
+                        {formatDate(selectedOrder.created_at)}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-700">
+                        Total:
+                      </span>
+                      <p className="text-2xl font-bold text-primary-600">
+                        {formatRupiah(recalculatedTotal)}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-700">
+                        Booking Amount (DP):
+                      </span>
+                      <p className="text-lg font-semibold text-amber-600">
+                        {formatRupiah(selectedOrder.booking_amount ?? 0)}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-700">
+                        Sisa Pembayaran:
+                      </span>
+                      <p className="text-lg font-semibold text-red-600">
+                        {formatRupiah(Math.max(0, recalculatedTotal - toNumber(selectedOrder.booking_amount || 0)))}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {(selectedOrder.notes || selectedOrder.additional_requests) && (
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                    Catatan
+                  </h3>
+                  <p className="text-gray-700 bg-gray-50 p-4 rounded-lg">
+                    {selectedOrder.notes || selectedOrder.additional_requests}
+                  </p>
+                </div>
+              )}
+
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                  Item yang Dipilih
+                </h3>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  {selectedOrder.orderType === "custom_request" ? (
+                    Array.isArray(selectedOrder.items_details) && selectedOrder.items_details.length > 0 ? (
+                      selectedOrder.items_details.map((item, index) => {
+                        const itemName = item.name || item.item_name || "Item";
+                        const itemPrice = typeof item.price === "number" ? item.price : parseFloat(item.price) || 0;
                         return (
                           <div
-                            key={`${itemName}-${index}`}
+                            key={index}
                             className="flex justify-between items-center py-2 border-b border-gray-200 last:border-b-0"
                           >
                             <span className="text-gray-900">{itemName}</span>
-                            <div className="flex items-center gap-3">
-                              <span className="font-medium text-primary-600">
-                                {formatRupiah(normalizedPrice)}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveEditableItem(index)}
-                                className="text-xs font-semibold px-2 py-1 rounded bg-red-100 text-red-700 hover:bg-red-200"
-                              >
-                                Hapus
-                              </button>
-                            </div>
+                            <span className="font-medium text-primary-600">
+                              {formatRupiah(itemPrice)}
+                            </span>
                           </div>
                         );
                       })
-                    )}
-                  </div>
+                    ) : (
+                      <p className="text-gray-600 whitespace-pre-wrap">{selectedOrder.services || "-"}</p>
+                    )
+                  ) : editableOrderItems.length === 0 ? (
+                    <div className="text-gray-500 text-center py-4">
+                      Tidak ada item yang dipilih
+                    </div>
+                  ) : (
+                    editableOrderItems.map((item, index) => {
+                      const itemName =
+                        item.name ||
+                        item.item_name ||
+                        item.title ||
+                        "Item tidak dikenal";
+                      const itemPrice =
+                        item.final_price ||
+                        item.item_price ||
+                        item.price ||
+                        item.custom_price ||
+                        0;
+                      const normalizedPrice =
+                        typeof itemPrice === "number"
+                          ? itemPrice
+                          : parseFloat(itemPrice) || 0;
+                      return (
+                        <div
+                          key={`${itemName}-${index}`}
+                          className="flex justify-between items-center py-2 border-b border-gray-200 last:border-b-0"
+                        >
+                          <span className="text-gray-900">{itemName}</span>
+                          <div className="flex items-center gap-3">
+                            <span className="font-medium text-primary-600">
+                              {formatRupiah(normalizedPrice)}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveEditableItem(index)}
+                              className="text-xs font-semibold px-2 py-1 rounded bg-red-100 text-red-700 hover:bg-red-200"
+                            >
+                              Hapus
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
                   {selectedOrder.orderType === "order" && (
-                    <div className="mt-3 flex justify-end">
-                      <button
-                        id="save-items-button"
-                        type="button"
-                        onClick={handleSaveEditableItems}
-                        disabled={savingOrderItems}
-                        className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-60"
-                      >
-                        {savingOrderItems ? "Menyimpan..." : "Simpan Perubahan Item"}
-                      </button>
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Tambah Item Baru
+                      </label>
+                      <div className="flex gap-2">
+                        <select
+                          value={selectedAddItemIndex}
+                          onChange={(e) => setSelectedAddItemIndex(e.target.value)}
+                          className="flex-1 border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500"
+                        >
+                          <option value="">-- Pilih Item --</option>
+                          {availableItemsForOrders.map((item, idx) => (
+                            <option key={item.id} value={idx}>
+                              {item.name} - {formatRupiah(item.price)}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (selectedAddItemIndex === "") {
+                              toast.error("Silakan pilih item terlebih dahulu");
+                              return;
+                            }
+                            const itemToAdd = availableItemsForOrders[selectedAddItemIndex];
+                            setEditableOrderItems((prev) => [
+                              ...prev,
+                              {
+                                id: itemToAdd.id,
+                                name: itemToAdd.name,
+                                price: itemToAdd.price,
+                                final_price: itemToAdd.price,
+                                quantity: 1,
+                              },
+                            ]);
+                            setSelectedAddItemIndex("");
+                            toast.success(`Berhasil menambahkan ${itemToAdd.name}`);
+                          }}
+                          className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors"
+                        >
+                          Tambah
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
+                {selectedOrder.orderType === "order" && (
+                  <div className="mt-3 flex justify-end">
+                    <button
+                      id="save-items-button"
+                      type="button"
+                      onClick={handleSaveEditableItems}
+                      disabled={savingOrderItems}
+                      className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-60"
+                    >
+                      {savingOrderItems ? "Menyimpan..." : "Simpan Perubahan Item"}
+                    </button>
+                  </div>
+                )}
+              </div>
 
-                <div className="flex justify-end space-x-3">
-                  <button
-                    id="close-modal-button"
-                    onClick={() => setShowDetailModal(false)}
-                    className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-                  >
-                    Tutup
-                  </button>
+              <div className="flex justify-end space-x-3">
+                <button
+                  id="close-modal-button"
+                  onClick={() => setShowDetailModal(false)}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  Tutup
+                </button>
 
-                  <button
-                    onClick={async () => {
-                      const confirmed = await new Promise((resolve) => {
-                        toast(
-                          (t) => (
-                            <div className="flex items-center gap-3">
-                              <span>
-                                Apakah Anda yakin ingin menghapus pesanan ini?
-                              </span>
-                              <div className="flex gap-2">
-                                <button
-                                  onClick={() => {
-                                    toast.dismiss(t.id);
-                                    resolve(true);
-                                  }}
-                                  className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700"
-                                >
-                                  Ya
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    toast.dismiss(t.id);
-                                    resolve(false);
-                                  }}
-                                  className="px-3 py-1 bg-gray-300 text-gray-700 rounded text-sm hover:bg-gray-400"
-                                >
-                                  Tidak
-                                </button>
-                              </div>
+                <button
+                  onClick={async () => {
+                    const confirmed = await new Promise((resolve) => {
+                      toast(
+                        (t) => (
+                          <div className="flex items-center gap-3">
+                            <span>
+                              Apakah Anda yakin ingin menghapus pesanan ini?
+                            </span>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => {
+                                  toast.dismiss(t.id);
+                                  resolve(true);
+                                }}
+                                className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700"
+                              >
+                                Ya
+                              </button>
+                              <button
+                                onClick={() => {
+                                  toast.dismiss(t.id);
+                                  resolve(false);
+                                }}
+                                className="px-3 py-1 bg-gray-300 text-gray-700 rounded text-sm hover:bg-gray-400"
+                              >
+                                Tidak
+                              </button>
                             </div>
-                          ),
-                          {
-                            duration: Infinity,
-                            position: "top-center",
-                          }
-                        );
-                      });
+                          </div>
+                        ),
+                        {
+                          duration: Infinity,
+                          position: "top-center",
+                        }
+                      );
+                    });
 
-                      if (confirmed) {
-                        await handleDeleteOrder(selectedOrder);
-                        setShowDetailModal(false);
-                      }
-                    }}
-                    className="px-4 py-2 text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
-                  >
-                    Hapus Pesanan
-                  </button>
-                </div>
+                    if (confirmed) {
+                      await handleDeleteOrder(selectedOrder);
+                      setShowDetailModal(false);
+                    }
+                  }}
+                  className="px-4 py-2 text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  Hapus Pesanan
+                </button>
               </div>
             </div>
-          )}
+          </div>
+        )}
 
 
         {/* Edit Booking Amount Modal */}
@@ -2424,11 +2509,10 @@ const AdminOrders = () => {
                     {paymentMethods.map((method) => (
                       <div
                         key={method.id}
-                        className={`p-3 border rounded-lg cursor-pointer transition-all ${
-                          selectedBankMethod?.id === method.id
+                        className={`p-3 border rounded-lg cursor-pointer transition-all ${selectedBankMethod?.id === method.id
                             ? "border-primary-500 bg-primary-50"
                             : "border-gray-300 hover:border-primary-300"
-                        }`}
+                          }`}
                         onClick={() => setSelectedBankMethod(method)}
                       >
                         <div className="flex items-center justify-between">

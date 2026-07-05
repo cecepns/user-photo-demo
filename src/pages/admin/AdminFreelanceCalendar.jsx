@@ -6,11 +6,12 @@ import toast, { Toaster } from 'react-hot-toast';
 import jsPDF from 'jspdf';
 
 import AdminLayout from '../../components/AdminLayout';
-import { formatDate } from '../../utils/formatters';
+import { formatDate, formatRupiah } from '../../utils/formatters';
 import { API_ENDPOINTS } from '../../utils/endpoints';
 import { apiGet, apiPost, apiPut, apiDelete } from '../../utils/request';
 import {
   colorForPhotographer,
+  styleForPhotographer,
   dutyDateLabel,
   getCalendarDays,
 } from '../../utils/freelanceCalendar';
@@ -30,6 +31,8 @@ const AdminFreelanceCalendar = () => {
     duty_date: '',
     notes: '',
   });
+  const [showFreelancerModal, setShowFreelancerModal] = useState(false);
+  const [selectedFreelancer, setSelectedFreelancer] = useState(null);
 
   const year = calendarMonth.getFullYear();
   const month = calendarMonth.getMonth() + 1;
@@ -93,7 +96,7 @@ const AdminFreelanceCalendar = () => {
         toast.error("Gagal memuat detail acara");
         return;
       }
-      
+
       const doc = new jsPDF();
       let y = 20;
       doc.setFontSize(16);
@@ -110,7 +113,7 @@ const AdminFreelanceCalendar = () => {
       ];
       lines.forEach((line) => { doc.text(line, 20, y); y += 7; });
       y += 5;
-      
+
       const maps = Array.isArray(data.maps) && data.maps.length ? data.maps : [
         { url: data.map1_url || '', note: data.map1_note || '' },
         { url: data.map2_url || '', note: data.map2_note || '' },
@@ -127,7 +130,7 @@ const AdminFreelanceCalendar = () => {
         if (m.url) { doc.text(`Maps: ${m.url}`, 20, y); y += 6; }
         if (m.note) { doc.text(`Catatan: ${m.note}`, 20, y); y += 6; }
       });
-      
+
       if (data.notes) {
         doc.text(`Catatan umum: ${data.notes}`, 20, y);
       }
@@ -218,13 +221,48 @@ const AdminFreelanceCalendar = () => {
         if (data.notes) {
           text += `Catatan umum: ${data.notes}\n`;
         }
-        
+
         navigator.clipboard.writeText(text.trim());
         toast.success('Detail acara disalin ke clipboard');
       }).catch(() => {
         toast.error("Browser tidak mendukung salin otomatis.");
       });
     }
+  };
+
+  const handleViewFreelancerDetail = (freelancerId, photographerName) => {
+    const fl = freelancersList.find(f => String(f.id) === String(freelancerId));
+    if (fl) {
+      setSelectedFreelancer(fl);
+    } else {
+      setSelectedFreelancer({
+        name: photographerName,
+        phone: '—',
+        email: '—',
+        rekening: '—',
+        alamat: '—',
+        rates: []
+      });
+    }
+    setShowFreelancerModal(true);
+  };
+
+  const handleCopyFreelancer = (fl) => {
+    if (!fl) return;
+    let text = `Detail Freelancer:\n`;
+    text += `Nama: ${fl.name || '-'}\n`;
+    text += `Telepon: ${fl.phone || '-'}\n`;
+    text += `Email: ${fl.email || '-'}\n`;
+    text += `Rekening: ${fl.rekening || '-'}\n`;
+    text += `Alamat: ${fl.alamat || '-'}\n`;
+    if (Array.isArray(fl.rates) && fl.rates.length > 0) {
+      text += `Rates:\n`;
+      fl.rates.forEach(r => {
+        text += `- ${r.label}: ${formatRupiah(r.price)}\n`;
+      });
+    }
+    navigator.clipboard.writeText(text.trim());
+    toast.success('Detail freelancer disalin ke clipboard');
   };
 
 
@@ -286,10 +324,10 @@ const AdminFreelanceCalendar = () => {
     setSelectedFreelancerOpt(
       row.freelancer_id
         ? {
-            value: row.freelancer_id,
-            label: row.photographer_name || `Freelance #${row.freelancer_id}`,
-            freelancer: { id: row.freelancer_id, name: row.photographer_name },
-          }
+          value: row.freelancer_id,
+          label: row.photographer_name || `Freelance #${row.freelancer_id}`,
+          freelancer: { id: row.freelancer_id, name: row.photographer_name },
+        }
         : row.photographer_name
           ? { value: `legacy:${row.photographer_name}`, label: row.photographer_name, freelancer: null }
           : null,
@@ -377,10 +415,6 @@ const AdminFreelanceCalendar = () => {
         <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-800 mb-2">Kalender Freelance</h1>
-            <p className="text-gray-600 max-w-2xl">
-              Atur jadwal fotografer freelance yang terjun / bertugas pada tanggal tertentu untuk setiap
-              pesanan (biasa maupun custom). Mirip staff field: satu pesanan bisa punya beberapa penugasan.
-            </p>
           </div>
           {/* <button type="button" onClick={openCreate} className="btn-primary flex items-center gap-2 shrink-0">
             <Plus size={18} /> Tambah penugasan
@@ -455,7 +489,9 @@ const AdminFreelanceCalendar = () => {
                         className={`min-h-[72px] rounded-lg border p-1 text-left text-xs transition-colors ${
                           isSelected
                             ? 'border-primary-500 bg-primary-50 ring-2 ring-primary-200'
-                            : 'border-gray-200 hover:bg-gray-50'
+                            : list.length
+                              ? 'border-indigo-200 bg-indigo-50/40 hover:bg-indigo-50'
+                              : 'border-gray-200 hover:bg-gray-50'
                         }`}
                       >
                         <span className="font-semibold text-gray-700">{d.getDate()}</span>
@@ -463,10 +499,13 @@ const AdminFreelanceCalendar = () => {
                           {list.slice(0, 3).map((ev) => (
                             <span
                               key={ev.id}
-                              className={`inline-block max-w-full truncate rounded px-1 py-0.5 text-[10px] font-medium ${colorForPhotographer(
-                                ev.photographer_name
-                              )}`}
-                              title={ev.photographer_name}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleViewFreelancerDetail(ev.freelancer_id, ev.photographer_name);
+                              }}
+                              className="inline-block max-w-full truncate rounded px-1 py-0.5 text-[10px] font-medium cursor-pointer hover:opacity-80"
+                              style={styleForPhotographer(ev.photographer_name)}
+                              title={`${ev.photographer_name} (Klik untuk detail)`}
                             >
                               {ev.photographer_name}
                             </span>
@@ -511,9 +550,10 @@ const AdminFreelanceCalendar = () => {
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <p
-                          className={`inline-block rounded px-2 py-0.5 text-xs font-semibold ${colorForPhotographer(
-                            ev.photographer_name
-                          )}`}
+                          onClick={() => handleViewFreelancerDetail(ev.freelancer_id, ev.photographer_name)}
+                          className="inline-block rounded px-2 py-0.5 text-xs font-semibold cursor-pointer hover:opacity-80"
+                          style={styleForPhotographer(ev.photographer_name)}
+                          title="Klik untuk detail"
                         >
                           {ev.photographer_name}
                         </p>
@@ -526,7 +566,7 @@ const AdminFreelanceCalendar = () => {
                           <p className="text-xs text-gray-600 mt-1 whitespace-pre-wrap">{ev.notes}</p>
                         ) : null}
                       </div>
-                       <div className="flex gap-1.5 shrink-0 items-center">
+                      <div className="flex gap-1.5 shrink-0 items-center">
                         {ev.detail_acara_id ? (
                           <>
                             <button
@@ -580,7 +620,7 @@ const AdminFreelanceCalendar = () => {
               <thead>
                 <tr className="text-left text-gray-500 border-b">
                   <th className="py-2 pr-2">Tanggal bertugas</th>
-                  <th className="py-2 pr-2">Fotografer</th>
+                  <th className="py-2 pr-2">Fg/Vg</th>
                   <th className="py-2 pr-2">Klien / Pesanan</th>
                   <th className="py-2 pr-2 w-24">Aksi</th>
                 </tr>
@@ -596,7 +636,13 @@ const AdminFreelanceCalendar = () => {
                   assignments.map((row) => (
                     <tr key={row.id} className="border-b border-gray-100">
                       <td className="py-2 pr-2 whitespace-nowrap">{formatDate(row.duty_date)}</td>
-                      <td className="py-2 pr-2 font-medium">{row.photographer_name}</td>
+                      <td 
+                        onClick={() => handleViewFreelancerDetail(row.freelancer_id, row.photographer_name)}
+                        className="py-2 pr-2 font-medium cursor-pointer text-primary-600 hover:underline"
+                        title="Klik untuk detail"
+                      >
+                        {row.photographer_name}
+                      </td>
                       <td className="py-2 pr-2">
                         {row.client_name || '-'} · #
                         {row.order_source === 'custom_request' ? `C${row.order_id}` : row.order_id}
@@ -623,22 +669,6 @@ const AdminFreelanceCalendar = () => {
                               </button>
                             </>
                           ) : null}
-                          <button
-                            type="button"
-                            onClick={() => openEdit(row)}
-                            className="p-1.5 rounded text-[#2f4274] bg-[#2f4274]/10 hover:bg-[#2f4274]/20"
-                            title="Edit"
-                          >
-                            <Edit size={14} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDelete(row.id)}
-                            className="p-1.5 rounded text-red-600 bg-red-50 hover:bg-red-100"
-                            title="Hapus"
-                          >
-                            <Trash2 size={14} />
-                          </button>
                         </div>
                       </td>
 
@@ -752,6 +782,82 @@ const AdminFreelanceCalendar = () => {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+        {showFreelancerModal && selectedFreelancer && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col">
+              <div className="p-5 border-b border-gray-200 flex justify-between items-center relative">
+                <h2 className="text-lg font-semibold text-gray-800">
+                  Detail Freelancer
+                </h2>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleCopyFreelancer(selectedFreelancer)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary-50 text-primary-700 hover:bg-primary-100 rounded-lg text-xs font-semibold transition-colors"
+                  >
+                    <Copy size={14} /> Salin
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowFreelancerModal(false);
+                      setSelectedFreelancer(null);
+                    }}
+                    className="text-gray-500 hover:text-gray-800 p-1"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+              </div>
+              <div className="p-5 space-y-4 overflow-y-auto">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-400 uppercase">Nama</label>
+                  <p className="text-sm font-medium text-gray-900 mt-0.5">{selectedFreelancer.name || '—'}</p>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-400 uppercase">No. HP</label>
+                  <p className="text-sm font-medium text-gray-900 mt-0.5">{selectedFreelancer.phone || '—'}</p>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-400 uppercase">Email</label>
+                  <p className="text-sm font-medium text-gray-900 mt-0.5">{selectedFreelancer.email || '—'}</p>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-400 uppercase">No. Rekening</label>
+                  <p className="text-sm font-medium text-gray-900 mt-0.5">{selectedFreelancer.rekening || '—'}</p>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-400 uppercase">Alamat</label>
+                  <p className="text-sm font-medium text-gray-900 mt-0.5 whitespace-pre-wrap">{selectedFreelancer.alamat || '—'}</p>
+                </div>
+                {Array.isArray(selectedFreelancer.rates) && selectedFreelancer.rates.length > 0 && (
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-400 uppercase mb-1.5">Tugas &amp; Rate</label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {selectedFreelancer.rates.map((r, idx) => (
+                        <span key={idx} className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 border border-blue-100">
+                          {r.label}: {formatRupiah(r.price)}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="p-5 border-t border-gray-150 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowFreelancerModal(false);
+                    setSelectedFreelancer(null);
+                  }}
+                  className="px-4 py-2 rounded-lg bg-gray-100 text-gray-800 hover:bg-gray-200 text-sm font-medium"
+                >
+                  Tutup
+                </button>
+              </div>
             </div>
           </div>
         )}

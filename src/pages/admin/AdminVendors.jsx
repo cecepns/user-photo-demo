@@ -55,7 +55,6 @@ const AdminVendors = () => {
       <AdminLayout>
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-800">Daftar Vendor</h1>
-          <p className="text-gray-600">Kelola nama vendor untuk filter kalender & penugasan pesanan.</p>
         </div>
 
         <form onSubmit={handleAdd} className="bg-white rounded-xl shadow p-4 mb-6 flex flex-col sm:flex-row gap-3">

@@ -11,10 +11,18 @@ export const PHOTOGRAPHER_COLORS = [
 
 export function dutyDateLabel(value) {
   if (!value) return '';
-  const s = String(value).slice(0, 10);
-  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
   try {
-    const d = new Date(value);
+    const s = typeof value === 'string' ? value.trim() : String(value);
+    const pureDateMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+    let d;
+    if (pureDateMatch) {
+      const y = parseInt(pureDateMatch[1], 10);
+      const m = parseInt(pureDateMatch[2], 10) - 1;
+      const day = parseInt(pureDateMatch[3], 10);
+      d = new Date(y, m, day);
+    } else {
+      d = new Date(value);
+    }
     if (Number.isNaN(d.getTime())) return '';
     const y = d.getFullYear();
     const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -32,6 +40,28 @@ export function colorForPhotographer(name) {
     h = (h + key.charCodeAt(i) * (i + 3)) % 100000;
   }
   return PHOTOGRAPHER_COLORS[h % PHOTOGRAPHER_COLORS.length];
+}
+
+export function styleForPhotographer(name) {
+  const key = String(name || '');
+  let h = 0;
+  for (let i = 0; i < key.length; i += 1) {
+    h = (h + key.charCodeAt(i) * (i + 3)) % 100000;
+  }
+  const HEX_COLORS = [
+    '#0284c7', // sky-600
+    '#4f46e5', // indigo-600
+    '#7c3aed', // violet-600
+    '#0d9488', // teal-600
+    '#e11d48', // rose-600
+    '#b45309', // amber-700
+    '#047857', // emerald-700
+    '#0e7490', // cyan-700
+  ];
+  return {
+    backgroundColor: HEX_COLORS[h % HEX_COLORS.length],
+    color: '#ffffff'
+  };
 }
 
 export function getCalendarDays(calendarMonth) {

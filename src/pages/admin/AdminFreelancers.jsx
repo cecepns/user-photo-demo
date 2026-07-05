@@ -14,6 +14,7 @@ const emptyForm = () => ({
   phone: '',
   email: '',
   rekening: '',
+  alamat: '',
   rates: [{ label: 'Foto', price: '' }, { label: 'Video', price: '' }],
 });
 
@@ -32,11 +33,10 @@ const PasswordBadge = ({ value, highlight }) => {
   return (
     <div className="flex items-center gap-2">
       <code
-        className={`px-2.5 py-1 rounded-md text-sm font-bold tracking-wider ${
-          highlight
+        className={`px-2.5 py-1 rounded-md text-sm font-bold tracking-wider ${highlight
             ? 'bg-amber-200 text-amber-950 ring-2 ring-amber-400 animate-pulse'
             : 'bg-amber-100 text-amber-900'
-        }`}
+          }`}
       >
         {value}
       </code>
@@ -128,6 +128,7 @@ const AdminFreelancers = () => {
       phone: row.phone || '',
       email: row.email || '',
       rekening: row.rekening || '',
+      alamat: row.alamat || '',
       rates: initialRates,
     });
     setShowModal(true);
@@ -140,6 +141,7 @@ const AdminFreelancers = () => {
       phone: form.phone.trim(),
       email: form.email.trim() || null,
       rekening: form.rekening.trim() || null,
+      alamat: form.alamat.trim() || null,
       rates: form.rates
         .filter(r => r.label.trim())
         .map(r => ({ label: r.label.trim(), price: Number(r.price) || 0 })),
@@ -198,9 +200,6 @@ const AdminFreelancers = () => {
         <div className="mb-6 flex justify-between items-start gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-800">Database Freelance Inhouse</h1>
-            <p className="text-gray-600">
-              Login freelance memakai <strong>nomor HP</strong>. Password dibuat otomatis dan bisa dilihat di tabel.
-            </p>
           </div>
           <button type="button" onClick={openCreate} className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg shrink-0">
             <Plus size={18} /> Tambah
@@ -223,6 +222,7 @@ const AdminFreelancers = () => {
                   <th className="px-4 py-3 text-left font-semibold text-gray-700">Nama</th>
                   <th className="px-4 py-3 text-left font-semibold text-gray-700">No. HP (login)</th>
                   <th className="px-4 py-3 text-left font-semibold text-gray-700">No. Rekening</th>
+                  <th className="px-4 py-3 text-left font-semibold text-gray-700">Alamat</th>
                   <th className="px-4 py-3 text-left font-semibold text-gray-700">Password login</th>
                   <th className="px-4 py-3 text-left font-semibold text-gray-700">Daftar Tugas &amp; Harga</th>
                   <th className="px-4 py-3 text-center font-semibold text-gray-700 w-36">Edit</th>
@@ -231,11 +231,11 @@ const AdminFreelancers = () => {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-12 text-center text-gray-500">Memuat...</td>
+                    <td colSpan={7} className="px-4 py-12 text-center text-gray-500">Memuat...</td>
                   </tr>
                 ) : freelancers.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-12 text-center text-gray-500">
+                    <td colSpan={7} className="px-4 py-12 text-center text-gray-500">
                       <Users className="mx-auto mb-2 text-gray-300" size={36} />
                       <p className="font-medium text-gray-700">
                         {debouncedSearch ? 'Tidak ada data yang cocok' : 'Belum ada data freelance'}
@@ -253,6 +253,7 @@ const AdminFreelancers = () => {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-gray-700">{f.rekening || '—'}</td>
+                      <td className="px-4 py-3 text-gray-700 max-w-xs truncate" title={f.alamat}>{f.alamat || '—'}</td>
                       <td className="px-4 py-3">
                         <PasswordBadge
                           value={f.login_password}
@@ -386,6 +387,16 @@ const AdminFreelancers = () => {
                     onChange={(e) => setForm({ ...form, rekening: e.target.value })}
                     className="w-full border rounded-lg px-3 py-2 mt-1 focus:ring-1 focus:ring-primary-500 focus:outline-none"
                     placeholder="Contoh: BCA 1234567890 a/n Edo"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Alamat (opsional)</label>
+                  <textarea
+                    value={form.alamat}
+                    onChange={(e) => setForm({ ...form, alamat: e.target.value })}
+                    className="w-full border rounded-lg px-3 py-2 mt-1 focus:ring-1 focus:ring-primary-500 focus:outline-none"
+                    placeholder="Alamat lengkap freelancer"
+                    rows={2}
                   />
                 </div>
 

@@ -333,6 +333,26 @@ const MyOrder = () => {
                             </dd>
                           </div>
                         )}
+                        {(() => {
+                          try {
+                            const links = typeof orderProgress.custom_links === 'string' ? JSON.parse(orderProgress.custom_links) : orderProgress.custom_links;
+                            if (Array.isArray(links)) {
+                              return links.map((lnk, idx) => (
+                                lnk.url && (
+                                  <div key={idx}>
+                                    <dt className="text-gray-600 mb-1">{lnk.title || 'Link Tambahan'}</dt>
+                                    <dd>
+                                      <a href={lnk.url} target="_blank" rel="noreferrer" className="text-primary-600 break-all hover:underline">
+                                        {lnk.url}
+                                      </a>
+                                    </dd>
+                                  </div>
+                                )
+                              ));
+                            }
+                          } catch {}
+                          return null;
+                        })()}
                       </dl>
                     ) : (
                       <p className="text-sm text-gray-500">

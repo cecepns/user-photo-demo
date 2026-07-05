@@ -8,13 +8,16 @@ import FreelancerLayout from '../../components/FreelancerLayout';
 import { formatDate } from '../../utils/formatters';
 import { API_ENDPOINTS } from '../../utils/endpoints';
 import { freelancerGet } from '../../utils/request';
+import { useSiteIdentity } from '../../hooks/useSiteIdentity';
 import {
   colorForPhotographer,
+  styleForPhotographer,
   dutyDateLabel,
   getCalendarDays,
 } from '../../utils/freelanceCalendar';
 
 const FreelancerCalendar = () => {
+  const { appName } = useSiteIdentity();
   const [calendarMonth, setCalendarMonth] = useState(new Date());
   const [assignments, setAssignments] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -81,7 +84,7 @@ const FreelancerCalendar = () => {
       // Company Name
       doc.setFontSize(12);
       doc.setFont("helvetica", "bold");
-      doc.text("Chekusphoto", 20, 32);
+      doc.text(appName || "Chekusphoto", 20, 32);
 
       // Divider Line
       doc.setLineWidth(0.5);
@@ -462,7 +465,8 @@ const FreelancerCalendar = () => {
                       <td className="py-2 pr-2 whitespace-nowrap">{formatDate(row.duty_date)}</td>
                       <td className="py-2 pr-2">
                         <span
-                          className={`inline-block rounded px-2 py-0.5 text-xs font-semibold mr-2 ${colorForPhotographer(row.photographer_name)}`}
+                          className="inline-block rounded px-2 py-0.5 text-xs font-semibold mr-2"
+                          style={styleForPhotographer(row.photographer_name)}
                         >
                           {row.photographer_name}
                         </span>

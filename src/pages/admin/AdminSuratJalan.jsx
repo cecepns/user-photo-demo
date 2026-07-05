@@ -21,6 +21,7 @@ import AdminLayout from "../../components/AdminLayout";
 import { formatDate, toLocalDate, toDateOnlyString } from "../../utils/formatters";
 import jsPDF from "jspdf";
 import QRCode from "qrcode";
+import { useSiteIdentity } from "../../hooks/useSiteIdentity";
 
 const API_BASE = "https://api.kingcreativestudio.my.id/user-photo";
 function imageUrl(value) {
@@ -68,6 +69,7 @@ const GoogleMapsVendorQr = ({ url }) => {
 };
 
 const AdminSuratJalan = () => {
+  const { appName } = useSiteIdentity();
   const [suratJalanList, setSuratJalanList] = useState([]);
   const [pagination, setPagination] = useState({
     page: 1,
@@ -115,10 +117,16 @@ const AdminSuratJalan = () => {
     ukuran_tenda: "",
     piring: "",
     nama_pasangan: "",
-    vendor_name: "Chekusphoto",
+    vendor_name: appName || "Chekusphoto",
     maps_link: "",
     notes: "",
   });
+
+  useEffect(() => {
+    if (appName && (formData.vendor_name === "Chekusphoto" || !formData.vendor_name)) {
+      setFormData((prev) => ({ ...prev, vendor_name: appName }));
+    }
+  }, [appName, formData.vendor_name]);
 
   useEffect(() => {
     fetchSuratJalan();
@@ -406,7 +414,7 @@ const AdminSuratJalan = () => {
         ukuran_tenda: item.ukuran_tenda || "",
         piring: item.piring || "",
         nama_pasangan: item.nama_pasangan || "",
-        vendor_name: item.vendor_name || "Chekusphoto",
+        vendor_name: item.vendor_name || appName || "Chekusphoto",
         maps_link: item.maps_link || "",
         notes: item.notes || "",
       });
@@ -428,7 +436,7 @@ const AdminSuratJalan = () => {
         ukuran_tenda: "",
         piring: "",
         nama_pasangan: "",
-        vendor_name: "Chekusphoto",
+        vendor_name: appName || "Chekusphoto",
         maps_link: "",
         notes: "",
       });
@@ -673,7 +681,7 @@ const AdminSuratJalan = () => {
       // Vendor name
       doc.setFontSize(12);
       doc.setFont("helvetica", "bold");
-      doc.text(item.vendor_name || "Chekusphoto", 20, 35);
+      doc.text(item.vendor_name || appName || "Chekusphoto", 20, 35);
 
       // Nomor surat jalan
       doc.setFontSize(10);

@@ -2,8 +2,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import AdminLayout from '../../components/AdminLayout';
+import StatModal from '../../components/admin/StatModal';
 import PackageSalesChart from '../../components/admin/PackageSalesChart';
 import VendorJobsChart from '../../components/admin/VendorJobsChart';
+import ReferenceChart from '../../components/admin/ReferenceChart';
 import { formatRupiah, formatDate } from '../../utils/formatters';
 import { API_ENDPOINTS, API_BASE } from '../../utils/endpoints';
 import { apiGet } from '../../utils/request';
@@ -30,6 +32,7 @@ const AdminDashboard = () => {
   const [stats, setStats] = useState({ orders: 0, services: 0, customRequests: 0, revenue: 0 });
   const [packageSales, setPackageSales] = useState([]);
   const [vendorJobs, setVendorJobs] = useState([]);
+  const [referenceStats, setReferenceStats] = useState([]);
   const [activeModal, setActiveModal] = useState(null); // 'orders' | 'services' | 'custom' | 'revenue'
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
@@ -46,12 +49,16 @@ const AdminDashboard = () => {
     fetchStats();
     fetchPackageSales();
     fetchVendorJobs();
+    fetchActiveServices();
   }, []);
 
   const fetchStats = async () => {
     try {
       const data = await apiGet(API_ENDPOINTS.AUTH.STATS);
       setStats(data);
+      if (data.references) {
+        setReferenceStats(data.references);
+      }
     } catch (error) {
       console.error('Error fetching stats:', error);
     }
@@ -115,12 +122,27 @@ const AdminDashboard = () => {
       const customData = await customRes.json();
       const orders = (Array.isArray(ordersData) ? ordersData : ordersData.orders || []).map(o => ({ ...o, type: 'order' }));
       const customs = (customData.requests || []).map(r => ({ ...r, type: 'custom', service_name: r.services || '-' }));
-      const active = [...orders, ...customs].sort((a, b) => {
-        const dateA = new Date(a.wedding_date || '9999');
-        const dateB = new Date(b.wedding_date || '9999');
-        if (dateA - dateB !== 0) return dateA - dateB;
-        return (a.name || '').localeCompare(b.name || '');
-      });
+      
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const active = [...orders, ...customs]
+        .filter(item => {
+          if (item.wedding_date) {
+            const wDate = new Date(item.wedding_date);
+            if (wDate < today) return false;
+          }
+          if (item.status === 'confirmed' || item.status === 'completed' || item.status === 'cancelled') {
+            return false;
+          }
+          return true;
+        })
+        .sort((a, b) => {
+          const dateA = new Date(a.wedding_date || '9999');
+          const dateB = new Date(b.wedding_date || '9999');
+          if (dateA - dateB !== 0) return dateA - dateB;
+          return (a.name || '').localeCompare(b.name || '');
+        });
       setActiveServices(active);
     } catch (e) {
       console.error(e);
@@ -187,7 +209,7 @@ const AdminDashboard = () => {
     {
       id: 'services',
       label: 'Layanan Aktif',
-      value: stats.services,
+      value: activeServices.length || stats.services,
       color: 'border-secondary-500',
       bg: 'hover:bg-secondary-50',
       icon: <Star size={22} className="text-secondary-500" />,
@@ -417,6 +439,15 @@ const AdminDashboard = () => {
                   <p className="text-gray-400 text-sm">Belum ada data.</p>
                 ) : (
                   <VendorJobsChart data={vendorJobs} />
+                )}
+              </div>
+
+              <div className="mt-6 border-t pt-6">
+                <h3 className="font-semibold text-gray-800 mb-3">Referensi</h3>
+                {referenceStats.length === 0 ? (
+                  <p className="text-gray-400 text-sm">Belum ada data.</p>
+                ) : (
+                  <ReferenceChart data={referenceStats} />
                 )}
               </div>
             </div>

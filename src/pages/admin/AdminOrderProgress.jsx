@@ -41,6 +41,7 @@ const AdminOrderProgress = () => {
     album_status: 'pending',
     estimated_completion: '',
     album_link: '',
+    custom_links: [],
   });
 
 
@@ -111,6 +112,7 @@ const AdminOrderProgress = () => {
       album_status: 'pending',
       estimated_completion: '',
       album_link: '',
+      custom_links: [],
     });
     setSelectedOrderOpt(null);
     setShowModal(true);
@@ -118,6 +120,16 @@ const AdminOrderProgress = () => {
 
   const openEdit = (row) => {
     setEditingId(row.id);
+    let parsedCustomLinks = [];
+    try {
+      if (row.custom_links) {
+        parsedCustomLinks = typeof row.custom_links === 'string'
+          ? JSON.parse(row.custom_links)
+          : row.custom_links;
+      }
+    } catch (e) {
+      console.error("Error parsing custom links:", e);
+    }
     setForm({
       photo_status: row.photo_status,
       video_status: row.video_status,
@@ -126,6 +138,7 @@ const AdminOrderProgress = () => {
       album_status: row.album_status || 'pending',
       estimated_completion: row.estimated_completion ? String(row.estimated_completion).slice(0, 10) : '',
       album_link: row.album_link || '',
+      custom_links: Array.isArray(parsedCustomLinks) ? parsedCustomLinks : [],
     });
 
     const isCustom = row.order_source === 'custom_request';
@@ -139,9 +152,13 @@ const AdminOrderProgress = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const payload = {
+      ...form,
+      custom_links: JSON.stringify(form.custom_links),
+    };
     try {
       if (editingId) {
-        await apiPut(API_ENDPOINTS.ORDER_PROGRESS.UPDATE(editingId), form);
+        await apiPut(API_ENDPOINTS.ORDER_PROGRESS.UPDATE(editingId), payload);
         toast.success('Progress diperbarui');
       } else {
         if (!selectedOrderOpt?.order) {
@@ -151,7 +168,7 @@ const AdminOrderProgress = () => {
         await apiPost(API_ENDPOINTS.ORDER_PROGRESS.CREATE, {
           order_source: selectedOrderOpt.order.source,
           order_id: selectedOrderOpt.order.id,
-          ...form,
+          ...payload,
         });
         toast.success('Progress dibuat');
       }
@@ -187,7 +204,7 @@ const AdminOrderProgress = () => {
         <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-800">Progress Pesanan</h1>
-            <p className="text-gray-600">Status progres foto &amp; video per pesanan.</p>
+            <p className="text-gray-600">Status progres foto &amp; video pesanan.</p>
           </div>
           <button type="button" onClick={openCreate} className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg">
             <Plus size={18} /> Tambah Progress
@@ -212,16 +229,14 @@ const AdminOrderProgress = () => {
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveFilter(tab.id)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
-                  activeFilter === tab.id
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${activeFilter === tab.id
                     ? 'bg-primary-600 text-white shadow-sm'
                     : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
-                }`}
+                  }`}
               >
                 {tab.label}
-                <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${
-                  activeFilter === tab.id ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'
-                }`}>
+                <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${activeFilter === tab.id ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'
+                  }`}>
                   {count}
                 </span>
               </button>
@@ -257,7 +272,7 @@ const AdminOrderProgress = () => {
                 <tr><td colSpan={6} className="p-8 text-center text-gray-500">
 
                   {activeFilter === 'progress' ? 'Tidak ada pesanan yang sedang progres' :
-                   activeFilter === 'done' ? 'Tidak ada pesanan yang selesai' : 'Belum ada data'}
+                    activeFilter === 'done' ? 'Tidak ada pesanan yang selesai' : 'Belum ada data'}
                 </td></tr>
               ) : (
                 filteredItems.map((row) => (
@@ -274,19 +289,36 @@ const AdminOrderProgress = () => {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-xs">
-                      {row.photo_link && <a href={row.photo_link} target="_blank" rel="noreferrer" className="text-primary-600 block hover:underline">📷 Foto</a>}
-                      {row.video_link && <a href={row.video_link} target="_blank" rel="noreferrer" className="text-primary-600 block hover:underline">🎬 Video</a>}
-                      {row.album_link && <a href={row.album_link} target="_blank" rel="noreferrer" className="text-primary-600 block hover:underline">📖 Album</a>}
-                      {!row.photo_link && !row.video_link && !row.album_link && <span className="text-gray-400">–</span>}
+                      {(() => {
+                        let parsed = [];
+                        try {
+                          if (row.custom_links) {
+                            parsed = typeof row.custom_links === 'string' ? JSON.parse(row.custom_links) : row.custom_links;
+                          }
+                        } catch {}
+                        const hasCustom = Array.isArray(parsed) && parsed.length > 0;
+                        const hasDefault = row.photo_link || row.video_link || row.album_link;
+                        
+                        return (
+                          <>
+                            {row.photo_link && <a href={row.photo_link} target="_blank" rel="noreferrer" className="text-primary-600 block hover:underline">📷 Foto</a>}
+                            {row.video_link && <a href={row.video_link} target="_blank" rel="noreferrer" className="text-primary-600 block hover:underline">🎬 Video</a>}
+                            {row.album_link && <a href={row.album_link} target="_blank" rel="noreferrer" className="text-primary-600 block hover:underline">📖 Album</a>}
+                            {hasCustom && parsed.map((lnk, idx) => (
+                              lnk.url && <a key={idx} href={lnk.url} target="_blank" rel="noreferrer" className="text-primary-600 block hover:underline">🔗 {lnk.title || 'Link'}</a>
+                            ))}
+                            {!hasDefault && !hasCustom && <span className="text-gray-400">–</span>}
+                          </>
+                        );
+                      })()}
                     </td>
                     <td className="px-4 py-3">
-                      <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${
-                        row.album_status === 'selesai'
+                      <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${row.album_status === 'selesai'
                           ? 'bg-green-100 text-green-800'
                           : row.album_status === 'diproses'
-                          ? 'bg-amber-100 text-amber-800'
-                          : 'bg-gray-100 text-gray-700'
-                      }`}>
+                            ? 'bg-amber-100 text-amber-800'
+                            : 'bg-gray-100 text-gray-700'
+                        }`}>
                         {row.album_status === 'selesai' ? 'Selesai' : row.album_status === 'diproses' ? 'Diproses' : 'Pending'}
                       </span>
                       {row.estimated_completion && (
@@ -428,6 +460,60 @@ const AdminOrderProgress = () => {
                     className="w-full border rounded-lg px-3 py-2 mt-1"
                     placeholder="https://..."
                   />
+                </div>
+
+                <div className="space-y-2 border-t pt-3">
+                  <div className="flex justify-between items-center">
+                    <label className="text-sm font-medium text-gray-700">Link Kustom Tambahan</label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const currentLinks = Array.isArray(form.custom_links) ? form.custom_links : [];
+                        setForm({ ...form, custom_links: [...currentLinks, { title: '', url: '' }] });
+                      }}
+                      className="text-xs text-primary-600 font-semibold hover:underline"
+                    >
+                      + Tambah Link
+                    </button>
+                  </div>
+                  {(Array.isArray(form.custom_links) ? form.custom_links : []).map((link, idx) => (
+                    <div key={idx} className="flex gap-2 items-center">
+                      <input
+                        placeholder="Judul link (misal: Drive 1)"
+                        value={link.title}
+                        onChange={(e) => {
+                          const next = [...form.custom_links];
+                          next[idx] = { ...next[idx], title: e.target.value };
+                          setForm({ ...form, custom_links: next });
+                        }}
+                        className="flex-1 border rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-primary-500 focus:outline-none"
+                        required
+                      />
+                      <input
+                        type="url"
+                        placeholder="URL (https://...)"
+                        value={link.url}
+                        onChange={(e) => {
+                          const next = [...form.custom_links];
+                          next[idx] = { ...next[idx], url: e.target.value };
+                          setForm({ ...form, custom_links: next });
+                        }}
+                        className="flex-1 border rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-primary-500 focus:outline-none"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const next = form.custom_links.filter((_, i) => i !== idx);
+                          setForm({ ...form, custom_links: next });
+                        }}
+                        className="p-2 rounded-lg text-red-600 bg-red-50 hover:bg-red-100"
+                        title="Hapus link"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ))}
                 </div>
 
                 <div className="flex gap-2 justify-end">
