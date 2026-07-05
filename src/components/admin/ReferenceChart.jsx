@@ -32,23 +32,46 @@ const ChartTooltip = ({ active, payload }) => {
 
 const ReferenceChart = ({ data = [] }) => {
   const chartData = useMemo(() => {
-    const prettify = (name) => {
-      if (!name) return 'Lainnya';
+    const getStandardKey = (name) => {
+      if (!name) return 'lainnya';
       const lowercase = name.toLowerCase().trim();
-      if (lowercase === 'instagram' || lowercase === 'ig') return 'Instagram';
-      if (lowercase === 'tiktok') return 'TikTok';
-      if (lowercase === 'facebook' || lowercase === 'fb') return 'Facebook';
-      if (lowercase === 'google') return 'Google';
-      if (lowercase === 'teman' || lowercase === 'rekomendasi') return 'Rekomendasi Teman';
-      return name.charAt(0).toUpperCase() + name.slice(1);
+      if (lowercase === 'instagram' || lowercase === 'ig') return 'instagram';
+      if (lowercase === 'tiktok') return 'tiktok';
+      if (lowercase === 'facebook' || lowercase === 'fb') return 'facebook';
+      if (lowercase === 'google') return 'google';
+      if (lowercase === 'teman' || lowercase === 'rekomendasi') return 'teman';
+      return 'lainnya';
     };
 
-    return data.map((item) => {
-      const displayName = prettify(item.name);
+    const counts = {
+      instagram: 0,
+      tiktok: 0,
+      facebook: 0,
+      google: 0,
+      teman: 0,
+      lainnya: 0
+    };
+
+    data.forEach((item) => {
+      const key = getStandardKey(item.name);
+      counts[key] += Number(item.value) || 0;
+    });
+
+    const displayNames = {
+      instagram: 'Instagram',
+      tiktok: 'TikTok',
+      facebook: 'Facebook',
+      google: 'Google / Pencarian',
+      teman: 'Teman / Kerabat',
+      lainnya: 'Lainnya'
+    };
+
+    return Object.keys(counts).map((key) => {
+      const displayName = displayNames[key];
       return {
-        ...item,
+        name: key,
         displayName,
-        value: Number(item.value) || 0,
+        value: counts[key],
         short_name: truncateLabel(displayName),
       };
     }).sort((a, b) => b.value - a.value);
