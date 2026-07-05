@@ -257,7 +257,7 @@ const AdminDetailAcara = () => {
       if (!m.url && !m.note) continue;
       
       // Calculate required height for this location block
-      const qrHeight = m.url ? 35 : 0;
+      const qrHeight = m.url ? 36 : 0;
       const noteLines = m.note ? doc.splitTextToSize(`Catatan: ${m.note}`, 170) : [];
       const noteHeight = noteLines.length * 5;
       const textHeight = m.url ? doc.splitTextToSize(`Maps: ${m.url}`, 170).length * 5 : 0;
@@ -279,7 +279,7 @@ const AdminDetailAcara = () => {
         try {
           const qrDataUrl = await QRCode.toDataURL(m.url, { margin: 1, width: 100 });
           doc.addImage(qrDataUrl, 'PNG', 20, y, 30, 30);
-          y += 32;
+          y += 36;
         } catch (qrErr) {
           console.error("Error generating QR code:", qrErr);
         }
