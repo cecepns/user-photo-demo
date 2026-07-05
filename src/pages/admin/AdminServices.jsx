@@ -287,7 +287,6 @@ const AdminServices = () => {
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-3xl font-bold text-gray-800 mb-2">Kelola Layanan</h1>
-              <p className="text-gray-600">Buat dan kelola layanan pernikahan Anda beserta item-itemnya.</p>
             </div>
             <button
               onClick={() => setShowServiceModal(true)}
@@ -565,7 +564,7 @@ const ServiceModal = ({ service, onSubmit, onClose }) => {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Nama Layanan</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Nama Paket</label>
                 <input
                   type="text"
                   value={formData.name}

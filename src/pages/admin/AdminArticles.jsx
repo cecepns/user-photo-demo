@@ -25,12 +25,12 @@ const AdminArticles = () => {
 
   const handleSubmit = async (articleData) => {
     try {
-      const url = editingArticle 
+      const url = editingArticle
         ? `https://api.kingcreativestudio.my.id/user-photo/api/articles/${editingArticle.id}`
         : 'https://api.kingcreativestudio.my.id/user-photo/api/articles';
-      
+
       const method = editingArticle ? 'PUT' : 'POST';
-      
+
       const response = await fetch(url, {
         method,
         headers: {
@@ -121,7 +121,6 @@ const AdminArticles = () => {
           <div className="flex justify-between items-center">
             <div>
               <h1 className=" text-3xl font-bold text-gray-800 mb-2">Kelola Artikel</h1>
-              <p className="text-gray-600">Buat dan kelola tips pernikahan dan artikel blog.</p>
             </div>
             <button
               onClick={() => setShowModal(true)}
@@ -153,7 +152,7 @@ const AdminArticles = () => {
                     {article.excerpt || article.content.substring(0, 200) + '...'}
                   </p>
                 </div>
-                
+
                 {article.image && (
                   <img
                     src={article.image}
@@ -162,7 +161,7 @@ const AdminArticles = () => {
                   />
                 )}
               </div>
-              
+
               <div className="flex justify-end space-x-3">
                 <button
                   onClick={() => {

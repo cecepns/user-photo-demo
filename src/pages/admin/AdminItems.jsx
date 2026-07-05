@@ -49,9 +49,9 @@ const AdminItems = () => {
       const url = itemData.id
         ? `${API_BASE}/api/items/${itemData.id}`
         : `${API_BASE}/api/items`;
-      
+
       const method = itemData.id ? 'PUT' : 'POST';
-      
+
       const response = await fetch(url, {
         method,
         headers: {
@@ -130,8 +130,8 @@ const AdminItems = () => {
     }
   };
 
-  const filteredItems = selectedCategory === 'all' 
-    ? items 
+  const filteredItems = selectedCategory === 'all'
+    ? items
     : items.filter(item => item.category === selectedCategory);
 
   return (
@@ -147,7 +147,6 @@ const AdminItems = () => {
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-3xl font-bold text-gray-800 mb-2">Kelola Item</h1>
-              <p className="text-gray-600">Buat dan kelola item-item yang dapat digunakan dalam layanan pernikahan.</p>
             </div>
             <button
               onClick={() => setShowItemModal(true)}
@@ -207,59 +206,59 @@ const AdminItems = () => {
                     const images = Array.isArray(item.images) ? item.images : [];
                     const thumb = images[0];
                     return (
-                    <tr
-                      key={item.id}
-                      className={`transition-colors duration-150 hover:bg-[#2f4274]/[0.04] ${idx % 2 === 1 ? "bg-gray-50/50" : ""}`}
-                    >
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {thumb ? (
-                          <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 border border-gray-200 shrink-0">
-                            <img src={itemImageUrl(thumb)} alt="" className="w-full h-full object-cover" />
+                      <tr
+                        key={item.id}
+                        className={`transition-colors duration-150 hover:bg-[#2f4274]/[0.04] ${idx % 2 === 1 ? "bg-gray-50/50" : ""}`}
+                      >
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {thumb ? (
+                            <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 border border-gray-200 shrink-0">
+                              <img src={itemImageUrl(thumb)} alt="" className="w-full h-full object-cover" />
+                            </div>
+                          ) : (
+                            <div className="w-12 h-12 rounded-lg bg-gray-100 border border-gray-200 flex items-center justify-center shrink-0">
+                              <ImageIcon className="w-5 h-5 text-gray-400" />
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-semibold text-gray-900">{item.name}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-gray-100 text-gray-800 text-xs font-medium">
+                            {item.category}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-bold text-[#2f4274]">{formatRupiah(item.price)}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold ${item.is_active !== false ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                            }`}>
+                            {item.is_active !== false ? "Aktif" : "Nonaktif"}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => { setSelectedItem(item); setShowItemModal(true); }}
+                              className="p-2 rounded-lg text-[#2f4274] bg-[#2f4274]/10 hover:bg-[#2f4274]/20 transition-colors"
+                              title="Edit"
+                            >
+                              <Edit size={16} />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteItem(item.id)}
+                              className="p-2 rounded-lg text-red-600 bg-red-50 hover:bg-red-100 transition-colors"
+                              title="Hapus"
+                            >
+                              <Trash2 size={16} />
+                            </button>
                           </div>
-                        ) : (
-                          <div className="w-12 h-12 rounded-lg bg-gray-100 border border-gray-200 flex items-center justify-center shrink-0">
-                            <ImageIcon className="w-5 h-5 text-gray-400" />
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-semibold text-gray-900">{item.name}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-gray-100 text-gray-800 text-xs font-medium">
-                          {item.category}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-bold text-[#2f4274]">{formatRupiah(item.price)}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold ${
-                          item.is_active !== false ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                        }`}>
-                          {item.is_active !== false ? "Aktif" : "Nonaktif"}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => { setSelectedItem(item); setShowItemModal(true); }}
-                            className="p-2 rounded-lg text-[#2f4274] bg-[#2f4274]/10 hover:bg-[#2f4274]/20 transition-colors"
-                            title="Edit"
-                          >
-                            <Edit size={16} />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteItem(item.id)}
-                            className="p-2 rounded-lg text-red-600 bg-red-50 hover:bg-red-100 transition-colors"
-                            title="Hapus"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ); })
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -362,7 +361,7 @@ const ItemModal = ({ item, onSubmit, onClose }) => {
                 <input
                   type="text"
                   value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   required
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                 />
@@ -372,7 +371,7 @@ const ItemModal = ({ item, onSubmit, onClose }) => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">Deskripsi</label>
                 <textarea
                   value={formData.description}
-                  onChange={(e) => setFormData({...formData, description: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   rows={3}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                 ></textarea>
@@ -384,7 +383,7 @@ const ItemModal = ({ item, onSubmit, onClose }) => {
                   type="number"
                   step="0.01"
                   value={formData.price}
-                  onChange={(e) => setFormData({...formData, price: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                   required
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                 />
@@ -395,7 +394,7 @@ const ItemModal = ({ item, onSubmit, onClose }) => {
                 <input
                   type="text"
                   value={formData.category}
-                  onChange={(e) => setFormData({...formData, category: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                   placeholder="Contoh: Decoration, Photography, Catering"
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                 />
@@ -445,7 +444,7 @@ const ItemModal = ({ item, onSubmit, onClose }) => {
                     <input
                       type="checkbox"
                       checked={formData.is_active}
-                      onChange={(e) => setFormData({...formData, is_active: e.target.checked})}
+                      onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
                       className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                     />
                     <span className="ml-2 text-sm text-gray-700">Item Aktif</span>
