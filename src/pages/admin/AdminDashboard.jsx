@@ -68,7 +68,7 @@ const AdminDashboard = () => {
 
   const fetchVendorJobs = async () => {
     try {
-      const data = await apiGet('/admin/vendor-jobs');
+      const data = await apiGet('/api/admin/vendor-jobs');
       setVendorJobs(data.data || []);
     } catch (error) {
       console.error('Error fetching vendor jobs stats:', error);
@@ -81,8 +81,8 @@ const AdminDashboard = () => {
     try {
       const token = localStorage.getItem('admin_token');
       const [ordersRes, customRes] = await Promise.all([
-        fetch(`${API_BASE}/api/orders?page=1&limit=500&status=pending`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`${API_BASE}/api/custom-requests?page=1&limit=500&status=pending`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_BASE}/api/orders?page=1&limit=500`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_BASE}/api/custom-requests?page=1&limit=500`, { headers: { Authorization: `Bearer ${token}` } }),
       ]);
       const ordersData = await ordersRes.json();
       const customData = await customRes.json();
@@ -107,19 +107,21 @@ const AdminDashboard = () => {
     setModalLoading(true);
     try {
       const token = localStorage.getItem('admin_token');
-      const now = new Date();
       const [ordersRes, customRes] = await Promise.all([
-        fetch(`${API_BASE}/api/orders?page=1&limit=500&status=pending`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`${API_BASE}/api/custom-requests?page=1&limit=500&status=pending`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_BASE}/api/orders?page=1&limit=500&status=pending,confirmed`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_BASE}/api/custom-requests?page=1&limit=500&status=pending,confirmed`, { headers: { Authorization: `Bearer ${token}` } }),
       ]);
       const ordersData = await ordersRes.json();
       const customData = await customRes.json();
-      const orders = (Array.isArray(ordersData) ? ordersData : ordersData.orders || []);
-      const customs = customData.requests || [];
-      const upcoming = [...orders, ...customs]
-        .filter(o => o.wedding_date && new Date(o.wedding_date) >= now)
-        .sort((a, b) => new Date(a.wedding_date) - new Date(b.wedding_date));
-      setActiveServices(upcoming);
+      const orders = (Array.isArray(ordersData) ? ordersData : ordersData.orders || []).map(o => ({ ...o, type: 'order' }));
+      const customs = (customData.requests || []).map(r => ({ ...r, type: 'custom', service_name: r.services || '-' }));
+      const active = [...orders, ...customs].sort((a, b) => {
+        const dateA = new Date(a.wedding_date || '9999');
+        const dateB = new Date(b.wedding_date || '9999');
+        if (dateA - dateB !== 0) return dateA - dateB;
+        return (a.name || '').localeCompare(b.name || '');
+      });
+      setActiveServices(active);
     } catch (e) {
       console.error(e);
     } finally {
@@ -263,9 +265,19 @@ const AdminDashboard = () => {
                   </div>
                   <div className="text-right flex-shrink-0">
                     <p className="text-xs font-medium text-primary-600">{formatDate(order.wedding_date)}</p>
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${order.type === 'custom' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
-                      {order.type === 'custom' ? 'Custom' : 'Biasa'}
-                    </span>
+                    <div className="flex gap-1 justify-end mt-1">
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${order.type === 'custom' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
+                        {order.type === 'custom' ? 'Custom' : 'Biasa'}
+                      </span>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium capitalize ${
+                        order.status === 'completed' ? 'bg-green-100 text-green-700' :
+                        order.status === 'confirmed' ? 'bg-indigo-100 text-indigo-700' :
+                        order.status === 'cancelled' ? 'bg-red-100 text-red-700' :
+                        'bg-yellow-100 text-yellow-700'
+                      }`}>
+                        {order.status || 'Pending'}
+                      </span>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -283,17 +295,25 @@ const AdminDashboard = () => {
             <p className="text-center text-gray-400 py-8">Semua layanan sudah terlaksana.</p>
           ) : (
             <div className="space-y-2">
-              {activeServices.map((order) => (
-                <div key={`${order.id}`} className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 hover:bg-gray-50">
-                  <div className="w-10 h-10 rounded-full bg-secondary-100 flex items-center justify-center text-secondary-700 font-bold text-sm flex-shrink-0">
-                    {(order.name || '?')[0].toUpperCase()}
-                  </div>
+              {activeServices.map((order, idx) => (
+                <div key={`${order.type}-${order.id}`} className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 hover:bg-gray-50">
+                  <span className="text-xs font-bold text-gray-400 w-6">{idx + 1}</span>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-gray-800 truncate">{order.name}</p>
-                    <p className="text-xs text-gray-500">{order.phone}</p>
+                    <p className="text-xs text-gray-500">{order.service_name || '-'}</p>
                   </div>
                   <div className="text-right flex-shrink-0">
                     <p className="text-xs font-medium text-green-600">{formatDate(order.wedding_date)}</p>
+                    <div className="flex gap-1 justify-end mt-1">
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${order.type === 'custom' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
+                        {order.type === 'custom' ? 'Custom' : 'Biasa'}
+                      </span>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium capitalize ${
+                        order.status === 'confirmed' ? 'bg-indigo-100 text-indigo-700' : 'bg-yellow-100 text-yellow-700'
+                      }`}>
+                        {order.status || 'Pending'}
+                      </span>
+                    </div>
                   </div>
                 </div>
               ))}

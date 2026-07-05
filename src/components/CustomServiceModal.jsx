@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import toast from 'react-hot-toast';
 import { formatRupiah } from '../utils/formatters';
+import { useSiteIdentity } from '../hooks/useSiteIdentity';
 
 const CustomServiceModal = ({ isOpen, onClose }) => {
+  const { contact: siteContact } = useSiteIdentity();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -224,7 +226,12 @@ const CustomServiceModal = ({ isOpen, onClose }) => {
                     </div>
                     <button
                       type="button"
-                      onClick={() => window.open('https://wa.me/6289646829459?text=Halo, saya ingin konfirmasi pembayaran untuk booking layanan kustom. Total pembayaran: ' + formatRupiah(calculateTotalPrice()), '_blank')}
+                      onClick={() => {
+                        const rawNumber = siteContact?.whatsapp || siteContact?.phone || '6289646829459';
+                        const cleaned = rawNumber.replace(/\D/g, '');
+                        const phoneNumber = cleaned.startsWith('0') ? '62' + cleaned.slice(1) : cleaned;
+                        window.open(`https://wa.me/${phoneNumber}?text=Halo, saya ingin konfirmasi pembayaran untuk booking layanan kustom. Total pembayaran: ` + formatRupiah(calculateTotalPrice()), '_blank');
+                      }}
                       className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center space-x-2"
                     >
                       <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">

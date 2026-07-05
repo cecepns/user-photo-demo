@@ -443,6 +443,18 @@ const AdminContent = () => {
                         />
                       </div>
                       <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp</label>
+                        <input
+                          type="text"
+                          value={siteContactDraft.whatsapp || ''}
+                          onChange={(e) =>
+                            setSiteContactDraft((p) => ({ ...p, whatsapp: e.target.value }))
+                          }
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white"
+                          placeholder="Contoh: 6289646829459"
+                        />
+                      </div>
+                      <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                         <input
                           type="email"

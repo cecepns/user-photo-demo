@@ -1,10 +1,16 @@
 import { useState } from 'react';
+import { useSiteIdentity } from '../hooks/useSiteIdentity';
 
 const WhatsAppButton = () => {
   const [isHovered, setIsHovered] = useState(false);
 
+  const { contact: siteContact } = useSiteIdentity();
+
   const handleWhatsAppClick = () => {
-    const phoneNumber = '6289646829459';
+    const rawNumber = siteContact?.whatsapp || siteContact?.phone || '6289646829459';
+    const cleaned = rawNumber.replace(/\D/g, '');
+    const phoneNumber = cleaned.startsWith('0') ? '62' + cleaned.slice(1) : cleaned;
+
     const message = 'Halo! Saya tertarik dengan layanan pernikahan Anda. Bisa saya tanya-tanya lebih lanjut?';
     const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');

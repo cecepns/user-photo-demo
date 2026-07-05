@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
+import { useSiteIdentity } from '../hooks/useSiteIdentity';
 
 const PaymentInstructions = ({ totalAmount, bookingAmount, onComplete, onBack, onPaymentMethodChange }) => {
+  const { contact: siteContact } = useSiteIdentity();
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [selectedMethod, setSelectedMethod] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -29,7 +31,10 @@ const PaymentInstructions = ({ totalAmount, bookingAmount, onComplete, onBack, o
   };
 
   const handleWhatsAppContact = () => {
-    const phoneNumber = '6289646829459';
+    const rawNumber = siteContact?.whatsapp || siteContact?.phone || '6289646829459';
+    const cleaned = rawNumber.replace(/\D/g, '');
+    const phoneNumber = cleaned.startsWith('0') ? '62' + cleaned.slice(1) : cleaned;
+
     const message = `Halo! Saya sudah melakukan pemesanan dengan total Rp ${totalAmount.toLocaleString('id-ID')} dan booking amount Rp ${bookingAmount.toLocaleString('id-ID')}. Mohon konfirmasi pembayaran saya.`;
     const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');

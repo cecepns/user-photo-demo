@@ -266,8 +266,9 @@ app.get('/api/admin/stats', authenticateAdmin, async (req, res) => {
     const [orderCount] = await db.execute('SELECT COUNT(*) as count FROM orders');
     stats.orders = orderCount[0].count;
 
-    const [serviceCount] = await db.execute('SELECT COUNT(*) as count FROM services');
-    stats.services = serviceCount[0].count;
+    const [activeOrders] = await db.execute("SELECT COUNT(*) as count FROM orders WHERE status IN ('pending', 'confirmed')");
+    const [activeCustoms] = await db.execute("SELECT COUNT(*) as count FROM custom_requests WHERE status IN ('pending', 'confirmed')");
+    stats.services = activeOrders[0].count + activeCustoms[0].count;
 
     const [requestCount] = await db.execute('SELECT COUNT(*) as count FROM custom_requests');
     stats.customRequests = requestCount[0].count;

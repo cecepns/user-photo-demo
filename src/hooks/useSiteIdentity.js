@@ -10,6 +10,7 @@ export const DEFAULT_SITE_CONTACT = {
   addressLine1: 'Jl. Raya panongan Kec. Panongan Kab. Tangerang',
   addressLine2: 'Provinsi Banten',
   phone: '089646829459',
+  whatsapp: '6289646829459',
   email: 'edo19priyatno@gmail.com',
   instagramUrl: 'https://www.instagram.com/user_wedding_organizer/',
   mapsEmbedUrl:

@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import toast from "react-hot-toast";
 import { ChevronLeft, ChevronRight, X, Image as ImageIcon } from "lucide-react";
 import { formatRupiah } from "../utils/formatters";
+import { useSiteIdentity } from "../hooks/useSiteIdentity";
 
 const API_BASE = "https://api.kingcreativestudio.my.id/user-photo";
 function itemImageUrl(filename) {
@@ -17,6 +18,7 @@ const MIN_BOOKING_AMOUNT = 300000;
 const CustomService = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { contact: siteContact } = useSiteIdentity();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -232,7 +234,10 @@ const CustomService = () => {
   };
 
   const handleWhatsAppContact = () => {
-    const phoneNumber = "6289646829459";
+    const rawNumber = siteContact?.whatsapp || siteContact?.phone || "6289646829459";
+    const cleaned = rawNumber.replace(/\D/g, "");
+    const phoneNumber = cleaned.startsWith("0") ? "62" + cleaned.slice(1) : cleaned;
+
     const message = `Halo! Saya sudah melakukan pemesanan layanan kustom dengan total Rp ${calculateTotalPrice().toLocaleString(
       "id-ID"
     )}. Mohon konfirmasi pembayaran saya.`;
