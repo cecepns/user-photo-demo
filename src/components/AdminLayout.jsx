@@ -15,10 +15,9 @@ const AdminLayout = ({ children }) => {
       id: 'utama',
       name: 'Manajemen Utama',
       items: [
-        { name: 'Dashboard', path: '/admin/dashboard', icon: 'M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a1 1 0 00-1-1H6a1 1 0 00-1-1V7a3 3 0 013-3h4a3 3 0 013 3v1h1a1 1 0 011 1v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2z' },
-        { name: 'Item', path: '/admin/items', icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4' },
-        { name: 'Layanan', path: '/admin/services', icon: 'M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H8a2 2 0 01-2-2V8a2 2 0 012-2h8z' },
-        { name: 'Fitur Layanan', path: '/admin/service-features', icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' },
+        { name: 'Daftar Vendor', path: '/admin/vendors', icon: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4' },
+        { name: 'Pesan Kontak', path: '/admin/contact-messages', icon: 'M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z' },
+        { name: 'Freelance Inhouse', path: '/admin/freelancers', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z' },
       ]
     },
     {
@@ -28,7 +27,7 @@ const AdminLayout = ({ children }) => {
         { name: 'Pesanan', path: '/admin/orders', icon: 'M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2' },
         { name: 'Progress Pesanan', path: '/admin/order-progress', icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' },
         { name: 'Detail Acara', path: '/admin/detail-acara', icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
-        { name: 'Freelance Inhouse', path: '/admin/freelancers', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z' },
+        { name: 'History Pesanan', path: '/admin/orders-history', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
         { name: 'Kalender Freelance', path: '/admin/freelance-calendar', icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' },
       ]
     },
@@ -44,9 +43,9 @@ const AdminLayout = ({ children }) => {
       id: 'setting',
       name: 'Setting',
       items: [
-        { name: 'Daftar Vendor', path: '/admin/vendors', icon: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4' },
-        { name: 'History Pesanan', path: '/admin/orders-history', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
-        { name: 'Pesan Kontak', path: '/admin/contact-messages', icon: 'M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z' },
+        { name: 'Item', path: '/admin/items', icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4' },
+        { name: 'Layanan', path: '/admin/services', icon: 'M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H8a2 2 0 01-2-2V8a2 2 0 012-2h8z' },
+        { name: 'Fitur Layanan', path: '/admin/service-features', icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' },
         { name: 'Galeri', path: '/admin/gallery', icon: 'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z' },
         { name: 'Konten', path: '/admin/content', icon: 'M4 6h16M4 10h16M4 14h16M4 18h16' },
         { name: 'Cards Management', path: '/admin/service-cards', icon: 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10' },
@@ -112,6 +111,24 @@ const AdminLayout = ({ children }) => {
         {/* Scrollable Navigation Area */}
         <nav className="flex-1 overflow-y-auto mt-6">
           <div className="px-4 space-y-4">
+            {/* Standalone Dashboard Link */}
+            <div className="space-y-1">
+              <Link
+                to="/admin/dashboard"
+                className={`flex items-center px-4 py-2.5 text-sm font-medium rounded-lg transition-all ${
+                  location.pathname === '/admin/dashboard'
+                    ? 'bg-gradient-to-r from-primary-600 to-secondary-600 text-white shadow-md'
+                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                }`}
+                onClick={() => setIsSidebarOpen(false)}
+              >
+                <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zM14 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2v-4z" />
+                </svg>
+                Dashboard
+              </Link>
+            </div>
+
             {categories.map((cat) => {
               const isOpen = expandedCategories[cat.id];
               return (
@@ -122,12 +139,11 @@ const AdminLayout = ({ children }) => {
                     className="w-full flex items-center justify-between px-3 py-2 text-xs font-bold uppercase tracking-wider text-gray-500 hover:text-primary-600 hover:bg-gray-50 rounded-lg transition-colors text-left"
                   >
                     <span className="flex items-center gap-2">
-                      <span className={`w-2.5 h-2.5 rounded-full ${
-                        cat.id === 'utama' ? 'bg-primary-500' :
-                        cat.id === 'operasional' ? 'bg-amber-500' :
-                        cat.id === 'keuangan' ? 'bg-green-500' :
-                        'bg-purple-500'
-                      }`}></span>
+                      <span className={`w-2.5 h-2.5 rounded-full ${cat.id === 'utama' ? 'bg-primary-500' :
+                          cat.id === 'operasional' ? 'bg-amber-500' :
+                            cat.id === 'keuangan' ? 'bg-green-500' :
+                              'bg-purple-500'
+                        }`}></span>
                       {cat.name}
                     </span>
                     <svg
@@ -147,11 +163,10 @@ const AdminLayout = ({ children }) => {
                         <Link
                           key={item.path}
                           to={item.path}
-                          className={`flex items-center px-4 py-2.5 text-sm font-medium rounded-lg transition-all ${
-                            isActive
+                          className={`flex items-center px-4 py-2.5 text-sm font-medium rounded-lg transition-all ${isActive
                               ? 'bg-gradient-to-r from-primary-600 to-secondary-600 text-white shadow-md'
                               : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                          }`}
+                            }`}
                           onClick={() => setIsSidebarOpen(false)}
                         >
                           <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">

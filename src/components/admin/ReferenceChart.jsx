@@ -9,6 +9,11 @@ import {
   YAxis,
 } from 'recharts';
 
+const truncateLabel = (label, max = 22) => {
+  const text = String(label || '');
+  return text.length > max ? `${text.slice(0, max)}…` : text;
+};
+
 const ChartTooltip = ({ active, payload }) => {
   if (!active || !payload?.length) return null;
 
@@ -17,7 +22,7 @@ const ChartTooltip = ({ active, payload }) => {
 
   return (
     <div className="bg-white border border-gray-100 rounded-lg shadow-lg px-4 py-3 text-sm">
-      <p className="font-semibold text-gray-800 mb-1.5 capitalize">{item.name}</p>
+      <p className="font-semibold text-gray-800 mb-1.5 capitalize">{item.displayName}</p>
       <p className="text-gray-600 text-xs mb-1">
         <span className="font-medium text-gray-700">Jumlah Client:</span> {item.value}
       </p>
@@ -38,45 +43,60 @@ const ReferenceChart = ({ data = [] }) => {
       return name.charAt(0).toUpperCase() + name.slice(1);
     };
 
-    return data.map((item) => ({
-      ...item,
-      displayName: prettify(item.name),
-      value: Number(item.value) || 0,
-    })).sort((a, b) => b.value - a.value);
+    return data.map((item) => {
+      const displayName = prettify(item.name);
+      return {
+        ...item,
+        displayName,
+        value: Number(item.value) || 0,
+        short_name: truncateLabel(displayName),
+      };
+    }).sort((a, b) => b.value - a.value);
   }, [data]);
 
-  const maxVal = useMemo(() => {
-    const highest = chartData.reduce((max, d) => Math.max(max, d.value), 0);
-    return Math.max(5, highest + 1);
+  const chartHeight = useMemo(() => {
+    return Math.max(220, chartData.length * 52 + 40);
+  }, [chartData]);
+
+  const yAxisWidth = useMemo(() => {
+    const longest = chartData.reduce(
+      (max, d) => Math.max(max, String(d.short_name || '').length),
+      4,
+    );
+    return Math.min(160, Math.max(44, longest * 7 + 12));
   }, [chartData]);
 
   return (
-    <div className="h-60 mt-2">
-      <ResponsiveContainer width="100%" height="100%">
+    <div>
+      <ResponsiveContainer width="100%" height={chartHeight} className="-ml-1">
         <BarChart
           data={chartData}
-          margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+          layout="vertical"
+          margin={{ top: 4, right: 12, left: 0, bottom: 4 }}
+          barCategoryGap="20%"
         >
           <defs>
-            <linearGradient id="referenceGradient" x1="0" y1="0" x2="0" y2="1">
+            <linearGradient id="referenceGradient" x1="0" y1="0" x2="1" y2="0">
               <stop offset="0%" stopColor="#ec4899" />
               <stop offset="100%" stopColor="#ef4444" />
             </linearGradient>
           </defs>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+          <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e5e7eb" />
           <XAxis
-            dataKey="displayName"
-            tick={{ fill: '#4b5563', fontSize: 11 }}
+            type="number"
+            allowDecimals={false}
+            tick={{ fill: '#6b7280', fontSize: 12 }}
             axisLine={{ stroke: '#e5e7eb' }}
             tickLine={false}
           />
           <YAxis
-            type="number"
-            domain={[0, maxVal]}
-            tick={{ fill: '#4b5563', fontSize: 11 }}
+            type="category"
+            dataKey="short_name"
+            width={yAxisWidth}
+            tick={{ fill: '#374151', fontSize: 12 }}
+            tickMargin={4}
             axisLine={false}
             tickLine={false}
-            tickFormatter={(val) => Math.round(val)}
           />
           <Tooltip
             cursor={{ fill: 'rgba(236, 72, 153, 0.04)' }}
@@ -85,8 +105,9 @@ const ReferenceChart = ({ data = [] }) => {
           <Bar
             dataKey="value"
             fill="url(#referenceGradient)"
-            radius={[4, 4, 0, 0]}
-            maxBarSize={45}
+            radius={[0, 6, 6, 0]}
+            maxBarSize={28}
+            animationDuration={600}
           />
         </BarChart>
       </ResponsiveContainer>

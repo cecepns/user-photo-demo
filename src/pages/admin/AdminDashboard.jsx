@@ -86,21 +86,16 @@ const AdminDashboard = () => {
     setModalLoading(true);
     try {
       const token = localStorage.getItem('admin_token');
-      const [ordersRes, customRes] = await Promise.all([
-        fetch(`${API_BASE}/api/orders?page=1&limit=500`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`${API_BASE}/api/custom-requests?page=1&limit=500`, { headers: { Authorization: `Bearer ${token}` } }),
-      ]);
+      const ordersRes = await fetch(`${API_BASE}/api/orders?page=1&limit=500`, { headers: { Authorization: `Bearer ${token}` } });
       const ordersData = await ordersRes.json();
-      const customData = await customRes.json();
       const orders = (Array.isArray(ordersData) ? ordersData : ordersData.orders || []).map(o => ({ ...o, type: 'order' }));
-      const customs = (customData.requests || []).map(r => ({ ...r, type: 'custom', service_name: r.services || '-' }));
-      const combined = [...orders, ...customs].sort((a, b) => {
+      const sorted = orders.sort((a, b) => {
         const dateA = new Date(a.wedding_date || '9999');
         const dateB = new Date(b.wedding_date || '9999');
         if (dateA - dateB !== 0) return dateA - dateB;
         return (a.name || '').localeCompare(b.name || '');
       });
-      setAllOrders(combined);
+      setAllOrders(sorted);
     } catch (e) {
       console.error(e);
     } finally {
@@ -287,9 +282,6 @@ const AdminDashboard = () => {
                   <div className="text-right flex-shrink-0">
                     <p className="text-xs font-medium text-primary-600">{formatDate(order.wedding_date)}</p>
                     <div className="flex gap-1 justify-end mt-1">
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${order.type === 'custom' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
-                        {order.type === 'custom' ? 'Custom' : 'Biasa'}
-                      </span>
                       <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium capitalize ${order.status === 'completed' ? 'bg-green-100 text-green-700' :
                           order.status === 'confirmed' ? 'bg-indigo-100 text-indigo-700' :
                             order.status === 'cancelled' ? 'bg-red-100 text-red-700' :
