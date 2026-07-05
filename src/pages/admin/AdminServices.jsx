@@ -9,7 +9,7 @@ import { API_BASE, imageUrl } from '../../utils/imageUrl';
 // Utility function for Indonesian Rupiah formatting
 const formatRupiah = (amount) => {
   if (!amount && amount !== 0) return 'Rp 0';
-  
+
   return new Intl.NumberFormat('id-ID', {
     style: 'currency',
     currency: 'IDR',
@@ -84,12 +84,12 @@ const AdminServices = () => {
 
   const handleServiceSubmit = async (serviceData) => {
     try {
-      const url = serviceData.id 
+      const url = serviceData.id
         ? `https://api.kingcreativestudio.my.id/user-photo/api/services/${serviceData.id}`
         : 'https://api.kingcreativestudio.my.id/user-photo/api/services';
-      
+
       const method = serviceData.id ? 'PUT' : 'POST';
-      
+
       const response = await fetch(url, {
         method,
         headers: {
@@ -169,7 +169,7 @@ const AdminServices = () => {
   const handleAddItemToService = async (itemData) => {
     try {
       const url = `https://api.kingcreativestudio.my.id/user-photo/api/services/${selectedService.id}/items`;
-      
+
       const response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -196,7 +196,7 @@ const AdminServices = () => {
   const handleUpdateServiceItem = async (itemData) => {
     try {
       const url = `https://api.kingcreativestudio.my.id/user-photo/api/service-items/${editingServiceItem.id}`;
-      
+
       const response = await fetch(url, {
         method: 'PUT',
         headers: {
@@ -307,7 +307,7 @@ const AdminServices = () => {
               type="text"
               value={serviceSearchQuery}
               onChange={(e) => setServiceSearchQuery(e.target.value)}
-              placeholder="Cari nama makeup / nama paket..."
+              placeholder="Cari nama paket..."
               className={`w-full pl-10 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${serviceSearchQuery ? 'pr-9' : 'pr-4'}`}
             />
             {serviceSearchQuery && (
@@ -406,7 +406,7 @@ const AdminServices = () => {
                 Tambah Item
               </button>
             </div>
-            
+
             <div className="overflow-x-auto">
               <table className="w-full min-w-[640px]">
                 <thead>
@@ -569,7 +569,7 @@ const ServiceModal = ({ service, onSubmit, onClose }) => {
                 <input
                   type="text"
                   value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   required
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                 />
@@ -579,7 +579,7 @@ const ServiceModal = ({ service, onSubmit, onClose }) => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">Deskripsi</label>
                 <textarea
                   value={formData.description}
-                  onChange={(e) => setFormData({...formData, description: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   rows={3}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                 ></textarea>
@@ -591,7 +591,7 @@ const ServiceModal = ({ service, onSubmit, onClose }) => {
                   type="number"
                   step="0.01"
                   value={formData.base_price}
-                  onChange={(e) => setFormData({...formData, base_price: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, base_price: e.target.value })}
                   required
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                 />
@@ -687,14 +687,14 @@ const ServiceItemModal = ({ serviceItem, availableItems, existingItemIds = [], o
                   placeholder="Pilih item..."
                   value={formData.item_id
                     ? (() => {
-                        const idx = availableItems.findIndex((i) => i.id == formData.item_id);
-                        const item = availableItems[idx];
-                        if (!item) return null;
-                        return {
-                          value: item.id,
-                          label: `${idx + 1}. ${item.name} - ${formatRupiah(item.price)}`,
-                        };
-                      })()
+                      const idx = availableItems.findIndex((i) => i.id == formData.item_id);
+                      const item = availableItems[idx];
+                      if (!item) return null;
+                      return {
+                        value: item.id,
+                        label: `${idx + 1}. ${item.name} - ${formatRupiah(item.price)}`,
+                      };
+                    })()
                     : null}
                   onChange={(option) =>
                     setFormData({
@@ -744,7 +744,7 @@ const ServiceItemModal = ({ serviceItem, availableItems, existingItemIds = [], o
                   type="number"
                   step="0.01"
                   value={formData.custom_price}
-                  onChange={(e) => setFormData({...formData, custom_price: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, custom_price: e.target.value })}
                   placeholder="Biarkan kosong untuk menggunakan harga default"
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                 />
@@ -758,7 +758,7 @@ const ServiceItemModal = ({ serviceItem, availableItems, existingItemIds = [], o
                   <input
                     type="checkbox"
                     checked={formData.is_required}
-                    onChange={(e) => setFormData({...formData, is_required: e.target.checked})}
+                    onChange={(e) => setFormData({ ...formData, is_required: e.target.checked })}
                     className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                   />
                   <span className="ml-2 text-sm text-gray-700">Item Wajib</span>
@@ -773,7 +773,7 @@ const ServiceItemModal = ({ serviceItem, availableItems, existingItemIds = [], o
                 <input
                   type="number"
                   value={formData.sort_order}
-                  onChange={(e) => setFormData({...formData, sort_order: parseInt(e.target.value)})}
+                  onChange={(e) => setFormData({ ...formData, sort_order: parseInt(e.target.value) })}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                 />
               </div>
