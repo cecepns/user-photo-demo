@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import AdminLayout from '../../components/AdminLayout';
-import StatModal from '../../components/admin/StatModal';
 import PackageSalesChart from '../../components/admin/PackageSalesChart';
 import VendorJobsChart from '../../components/admin/VendorJobsChart';
 import ReferenceChart from '../../components/admin/ReferenceChart';
