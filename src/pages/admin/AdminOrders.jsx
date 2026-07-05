@@ -3,7 +3,7 @@ import { Helmet } from "react-helmet-async";
 import { Eye, Trash2, ChevronLeft, ChevronRight, X, Edit, Download, CheckCircle } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 import AdminLayout from "../../components/AdminLayout";
-import { formatRupiah, formatDate, formatDateTime } from "../../utils/formatters";
+import { formatRupiah, formatDate, formatDateTime, toLocalDate, toDateOnlyString } from "../../utils/formatters";
 import jsPDF from "jspdf";
 import { useSiteIdentity } from "../../hooks/useSiteIdentity";
 
@@ -139,7 +139,7 @@ const AdminOrders = () => {
   const yearlyTotalOrders = useMemo(() => {
     return combinedOrders.filter((order) => {
       if (!order.wedding_date) return false;
-      const d = new Date(order.wedding_date);
+      const d = toLocalDate(order.wedding_date);
       return d.getFullYear() === activeYear;
     }).length;
   }, [combinedOrders, activeYear]);
@@ -152,7 +152,7 @@ const AdminOrders = () => {
     return combinedOrders.filter((order) => {
       const rawDate = order.wedding_date;
       if (!rawDate) return false;
-      const d = new Date(rawDate);
+      const d = toLocalDate(rawDate);
       if (isNaN(d.getTime())) return false;
 
       // Filter by selected vendor
@@ -289,7 +289,7 @@ const AdminOrders = () => {
     }
     try {
       const token = localStorage.getItem("admin_token");
-      const d = new Date(selectedOrder.wedding_date);
+      const d = toLocalDate(selectedOrder.wedding_date);
       const y = d.getFullYear();
       const m = d.getMonth() + 1;
       const res = await fetch(`${API_BASE}/freelance-calendar?year=${y}&month=${m}`, {
@@ -819,7 +819,7 @@ const AdminOrders = () => {
     const rawDate = order.wedding_date;
     if (!rawDate) return acc;
 
-    const dateObj = new Date(rawDate);
+    const dateObj = toLocalDate(rawDate);
     if (isNaN(dateObj.getTime())) return acc;
 
     const y = dateObj.getFullYear();
@@ -1331,7 +1331,7 @@ const AdminOrders = () => {
             {["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"].map((mName, mIdx) => {
               const count = combinedOrders.filter((order) => {
                 if (!order.wedding_date) return false;
-                const d = new Date(order.wedding_date);
+                const d = toLocalDate(order.wedding_date);
                 return d.getFullYear() === activeYear && d.getMonth() === mIdx;
               }).length;
               const isActive = calendarMonth.getFullYear() === activeYear && calendarMonth.getMonth() === mIdx;
@@ -1959,7 +1959,7 @@ const AdminOrders = () => {
                                 try {
                                   const fl = freelancersList.find(x => String(x.id) === String(selectedFreelancerId));
                                   const rawDate = selectedOrder.wedding_date;
-                                  const ymd = typeof rawDate === 'string' && rawDate.length >= 10 ? rawDate.slice(0, 10) : new Date(rawDate).toISOString().split('T')[0];
+                                  const ymd = toDateOnlyString(rawDate);
                                   const taskLabel = selectedFreelancerRate ? selectedFreelancerRate.label : "Foto";
                                   const taskPrice = selectedFreelancerRate ? String(selectedFreelancerRate.price) : "0";
 

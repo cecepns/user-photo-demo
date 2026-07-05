@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
 import QRCode from 'qrcode';
 import AdminLayout from '../../components/AdminLayout';
-import { formatDate } from '../../utils/formatters';
+import { formatDate, toDateOnlyString } from '../../utils/formatters';
 import { API_ENDPOINTS } from '../../utils/endpoints';
 import { apiGet, apiPost, apiPut, apiDelete } from '../../utils/request';
 import { useSiteIdentity } from '../../hooks/useSiteIdentity';
@@ -103,7 +103,7 @@ const AdminDetailAcara = () => {
           address: row.address,
           bride_name: row.bride_name,
           groom_name: row.groom_name,
-          wedding_date: row.wedding_date ? String(row.wedding_date).slice(0, 10) : '',
+          wedding_date: toDateOnlyString(row.wedding_date),
           package_name: svc
         }
       };
@@ -127,7 +127,7 @@ const AdminDetailAcara = () => {
       client_address: row.client_address || '',
       bride_name: row.bride_name || '',
       groom_name: row.groom_name || '',
-      wedding_date: row.wedding_date ? String(row.wedding_date).slice(0, 10) : '',
+      wedding_date: toDateOnlyString(row.wedding_date),
       package_name: row.package_name || '',
       fg_vg: row.fg_vg || '',
       maps: mapsFromRow(row),
@@ -150,7 +150,7 @@ const AdminDetailAcara = () => {
           address: row.client_address,
           bride_name: row.bride_name,
           groom_name: row.groom_name,
-          wedding_date: row.wedding_date ? String(row.wedding_date).slice(0, 10) : '',
+          wedding_date: toDateOnlyString(row.wedding_date),
           package_name: row.package_name
         }
       });

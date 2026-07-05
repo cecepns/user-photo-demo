@@ -1,3 +1,5 @@
+import { toLocalDate } from './formatters';
+
 export const PHOTOGRAPHER_COLORS = [
   'bg-sky-600 text-white',
   'bg-indigo-600 text-white',
@@ -12,18 +14,8 @@ export const PHOTOGRAPHER_COLORS = [
 export function dutyDateLabel(value) {
   if (!value) return '';
   try {
-    const s = typeof value === 'string' ? value.trim() : String(value);
-    const pureDateMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
-    let d;
-    if (pureDateMatch) {
-      const y = parseInt(pureDateMatch[1], 10);
-      const m = parseInt(pureDateMatch[2], 10) - 1;
-      const day = parseInt(pureDateMatch[3], 10);
-      d = new Date(y, m, day);
-    } else {
-      d = new Date(value);
-    }
-    if (Number.isNaN(d.getTime())) return '';
+    const d = toLocalDate(value);
+    if (!d || Number.isNaN(d.getTime())) return '';
     const y = d.getFullYear();
     const m = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');

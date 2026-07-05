@@ -65,7 +65,8 @@ const dbConfig = {
   database: 'wedding_organizer',
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0
+  queueLimit: 0,
+  dateStrings: true
 };
 
 let db;

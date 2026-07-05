@@ -4,7 +4,7 @@ import AsyncSelect from 'react-select/async';
 import { Edit, Trash2, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import AdminLayout from '../../components/AdminLayout';
-import { formatDate } from '../../utils/formatters';
+import { formatDate, toDateOnlyString } from '../../utils/formatters';
 import { API_ENDPOINTS } from '../../utils/endpoints';
 import { apiGet, apiPost, apiPut, apiDelete } from '../../utils/request';
 import {
@@ -136,7 +136,7 @@ const AdminOrderProgress = () => {
       photo_link: row.photo_link || '',
       video_link: row.video_link || '',
       album_status: row.album_status || 'pending',
-      estimated_completion: row.estimated_completion ? String(row.estimated_completion).slice(0, 10) : '',
+      estimated_completion: toDateOnlyString(row.estimated_completion),
       album_link: row.album_link || '',
       custom_links: Array.isArray(parsedCustomLinks) ? parsedCustomLinks : [],
     });
