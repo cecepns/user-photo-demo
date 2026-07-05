@@ -2336,8 +2336,7 @@ const AdminOrders = () => {
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
 
         {/* Edit Booking Amount Modal */}
@@ -2440,16 +2439,10 @@ const AdminOrders = () => {
                             <p className="text-sm text-gray-600">
                               {method.type}
                             </p>
-                            {method.account_number && (
-                              <p className="text-xs text-gray-500">
-                                No. Rek: {method.account_number}
-                              </p>
-                            )}
+                            {method.account_number && <p className="text-xs text-gray-500">No. Rek: {method.account_number}</p>}
                           </div>
                           <div className="w-4 h-4 border-2 border-gray-300 rounded-full flex items-center justify-center">
-                            {selectedBankMethod?.id === method.id && (
-                              <div className="w-2 h-2 bg-primary-600 rounded-full"></div>
-                            )}
+                            {selectedBankMethod?.id === method.id && <div className="w-2 h-2 bg-primary-600 rounded-full" />}
                           </div>
                         </div>
                       </div>
