@@ -292,7 +292,15 @@ app.get('/api/admin/stats', authenticateAdmin, async (req, res) => {
 
     // 4. Get total production cost
     const [prodRows] = await db.execute(
-      "SELECT COALESCE(SUM(amount), 0) AS total FROM production_cost_items"
+      `SELECT COALESCE(SUM(pci.amount), 0) AS total
+       FROM production_cost_items pci
+       JOIN order_financials ofn ON pci.order_financial_id = ofn.id
+       LEFT JOIN orders o ON ofn.order_source = 'order' AND ofn.order_id = o.id
+       LEFT JOIN custom_requests cr ON ofn.order_source = 'custom_request' AND ofn.order_id = cr.id
+       WHERE (
+         (ofn.order_source = 'order' AND o.id IS NOT NULL AND o.status IN ('confirmed','completed','pending'))
+         OR (ofn.order_source = 'custom_request' AND cr.id IS NOT NULL AND cr.status IN ('confirmed','completed','pending'))
+       )`
     );
     const productionTotal = Number(prodRows[0]?.total || 0);
 
@@ -300,11 +308,18 @@ app.get('/api/admin/stats', authenticateAdmin, async (req, res) => {
     const [accomRows] = await db.execute(
       `SELECT COALESCE(SUM(
          CASE 
-           WHEN accommodation_cost IS NOT NULL AND accommodation_cost >= 0 THEN accommodation_cost
-           WHEN accommodation_applied = 1 THEN ?
+           WHEN ofn.accommodation_cost IS NOT NULL AND ofn.accommodation_cost >= 0 THEN ofn.accommodation_cost
+           WHEN ofn.accommodation_applied = 1 THEN ?
            ELSE 0
          END
-       ), 0) AS total FROM order_financials`,
+       ), 0) AS total
+       FROM order_financials ofn
+       LEFT JOIN orders o ON ofn.order_source = 'order' AND ofn.order_id = o.id
+       LEFT JOIN custom_requests cr ON ofn.order_source = 'custom_request' AND ofn.order_id = cr.id
+       WHERE (
+         (ofn.order_source = 'order' AND o.id IS NOT NULL AND o.status IN ('confirmed','completed','pending'))
+         OR (ofn.order_source = 'custom_request' AND cr.id IS NOT NULL AND cr.status IN ('confirmed','completed','pending'))
+       )`,
       [accommodationDefault]
     );
     const accommodationTotal = Number(accomRows[0]?.total || 0);
@@ -1385,6 +1400,12 @@ app.delete('/api/orders/:id', authenticateAdmin, async (req, res) => {
       return res.status(404).json({ message: 'Order not found' });
     }
     
+    // Clean up polymorphic relationships
+    await db.execute('DELETE FROM order_financials WHERE order_source = \'order\' AND order_id = ?', [id]);
+    await db.execute('DELETE FROM order_progress WHERE order_source = \'order\' AND order_id = ?', [id]);
+    await db.execute('DELETE FROM detail_acara WHERE order_source = \'order\' AND order_id = ?', [id]);
+    await db.execute('DELETE FROM freelance_photographer_assignments WHERE order_source = \'order\' AND order_id = ?', [id]);
+
     res.json({ message: 'Order deleted successfully' });
   } catch (error) {
     console.error('Delete order error:', error);
@@ -1767,6 +1788,12 @@ app.delete('/api/custom-requests/:id', authenticateAdmin, async (req, res) => {
       return res.status(404).json({ message: 'Custom request not found' });
     }
     
+    // Clean up polymorphic relationships
+    await db.execute('DELETE FROM order_financials WHERE order_source = \'custom_request\' AND order_id = ?', [id]);
+    await db.execute('DELETE FROM order_progress WHERE order_source = \'custom_request\' AND order_id = ?', [id]);
+    await db.execute('DELETE FROM detail_acara WHERE order_source = \'custom_request\' AND order_id = ?', [id]);
+    await db.execute('DELETE FROM freelance_photographer_assignments WHERE order_source = \'custom_request\' AND order_id = ?', [id]);
+
     res.json({ message: 'Custom request deleted successfully' });
   } catch (error) {
     console.error('Delete custom request error:', error);
