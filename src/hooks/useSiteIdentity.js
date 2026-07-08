@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
-import { API_BASE } from '../utils/endpoints';
+import { apiFetch } from '../utils/api';
 
-const API_BASE_URL = `${API_BASE}/api`;
 const DEFAULT_APP_NAME = 'Chekusphoto';
 const DEFAULT_COMPANY_NAME = 'PT Chekusphoto';
 const DEFAULT_APP_INITIAL = 'C';
@@ -133,10 +132,7 @@ export const useSiteIdentity = () => {
 
     const fetchIdentity = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/content-sections/site_identity`);
-        if (!response.ok) return;
-
-        const data = await response.json();
+        const data = await apiFetch('/api/content-sections/site_identity');
         if (!cancelled) {
           setIdentity(buildIdentity(data));
         }

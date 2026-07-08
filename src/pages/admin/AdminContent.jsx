@@ -4,6 +4,7 @@ import { Edit, Plus, Trash2, Upload } from 'lucide-react';
 import toast from 'react-hot-toast';
 import AdminLayout from '../../components/AdminLayout';
 import { API_BASE, imageUrl } from '../../utils/imageUrl';
+import { buildUrl } from '../../utils/api';
 import {
   DEFAULT_SITE_CONTACT,
   DEFAULT_FOOTER_SERVICES,
@@ -11,6 +12,33 @@ import {
   parseFooterServicesFromDescription,
   serializeSiteIdentityDescription,
 } from '../../hooks/useSiteIdentity';
+
+function getTenantSubdomainHeader() {
+  const hostname = window.location.hostname;
+  const urlParams = new URLSearchParams(window.location.search);
+  const queryTenant = urlParams.get('tenant');
+  if (queryTenant) return queryTenant;
+  const saved = localStorage.getItem('selected_tenant_subdomain');
+  if (saved && (hostname === 'localhost' || hostname === '127.0.0.1')) return saved;
+  const baseSuffix = '.user-photo.my.id';
+  if (hostname.endsWith(baseSuffix)) {
+    const sub = hostname.slice(0, -baseSuffix.length);
+    if (sub === 'www' || sub === 'api' || sub === 'admin') return null;
+    return sub;
+  }
+  return null;
+}
+
+function getAuthHeaders(extra = {}) {
+  const token = localStorage.getItem('admin_token');
+  const tenant = getTenantSubdomainHeader();
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(tenant ? { 'X-Tenant-Subdomain': tenant } : {}),
+    ...extra,
+  };
+}
 
 const AdminContent = () => {
   const [sections, setSections] = useState([]);
@@ -42,10 +70,8 @@ const AdminContent = () => {
 
   const fetchSections = async () => {
     try {
-      const response = await fetch(`${API_BASE}/api/content-sections?is_active=false`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
-        }
+      const response = await fetch(buildUrl('/api/content-sections?is_active=false'), {
+        headers: getAuthHeaders({ 'Content-Type': undefined }),
       });
       const data = await response.json();
       setSections(data);
@@ -82,12 +108,9 @@ const AdminContent = () => {
           }
         : formData;
 
-      const response = await fetch(url, {
+      const response = await fetch(buildUrl(editingSection ? `/api/content-sections/${editingSection.id}` : '/api/content-sections'), {
         method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(payload)
       });
 
@@ -131,11 +154,9 @@ const AdminContent = () => {
     if (!confirm('Apakah Anda yakin ingin menghapus konten ini?')) return;
 
     try {
-      const response = await fetch(`${API_BASE}/api/content-sections/${id}`, {
+      const response = await fetch(buildUrl(`/api/content-sections/${id}`), {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
-        }
+        headers: getAuthHeaders({ 'Content-Type': undefined }),
       });
 
       if (response.ok) {
