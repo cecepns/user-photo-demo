@@ -94,6 +94,21 @@ db = new Proxy({}, {
   }
 });
 
+function extractSubdomainFromOrigin(originHeader) {
+  if (!originHeader) return null;
+  try {
+    const url = new URL(originHeader);
+    const hostname = url.hostname.toLowerCase();
+    const baseSuffix = '.user-photo.my.id';
+    if (hostname.endsWith(baseSuffix)) {
+      const sub = hostname.slice(0, -baseSuffix.length);
+      if (sub === 'api' || sub === 'www' || sub === 'admin' || sub === 'master') return null;
+      return sub;
+    }
+  } catch (_) { /* invalid URL, ignore */ }
+  return null;
+}
+
 function getTenantSubdomain(req) {
   // 1. Check custom header (useful for local development or API clients)
   const headerSubdomain = req.headers['x-tenant-subdomain'];
@@ -101,31 +116,34 @@ function getTenantSubdomain(req) {
     return headerSubdomain;
   }
 
-  // 2. Extract from hostname
+  // 2. Extract from hostname (only works if API and frontend share the same domain)
   const host = req.headers.host || req.hostname;
-  if (!host) return null;
+  if (host) {
+    const hostname = host.split(':')[0].toLowerCase();
 
-  const hostname = host.split(':')[0].toLowerCase();
-  if (hostname === 'localhost' || hostname === '127.0.0.1') return null;
-
-  // Local development subdomain check
-  if (hostname.includes('localhost')) {
-    const parts = hostname.split('.');
-    if (parts.length >= 2) {
-      return parts[0];
+    // Local development subdomain check
+    if (hostname.includes('localhost') && hostname !== 'localhost' && hostname !== '127.0.0.1') {
+      const parts = hostname.split('.');
+      if (parts.length >= 2) return parts[0];
     }
-    return null;
+
+    // Domain utama: user-photo.my.id
+    const baseSuffix = '.user-photo.my.id';
+    if (hostname.endsWith(baseSuffix)) {
+      const sub = hostname.slice(0, -baseSuffix.length);
+      if (sub !== 'api' && sub !== 'www' && sub !== 'admin' && sub !== 'master') {
+        return sub;
+      }
+    }
   }
 
-  // Domain utama: user-photo.my.id
-  const baseSuffix = '.user-photo.my.id';
-  if (hostname.endsWith(baseSuffix)) {
-    const sub = hostname.slice(0, -baseSuffix.length);
-    if (sub === 'api' || sub === 'www' || sub === 'admin' || sub === 'master') {
-      return null;
-    }
-    return sub;
-  }
+  // 3. Fallback: extract from Origin header (cross-origin requests from tenant frontends)
+  const originSub = extractSubdomainFromOrigin(req.headers.origin);
+  if (originSub) return originSub;
+
+  // 4. Fallback: extract from Referer header
+  const refererSub = extractSubdomainFromOrigin(req.headers.referer);
+  if (refererSub) return refererSub;
 
   return null;
 }
@@ -241,6 +259,7 @@ async function tenantResolver(req, res, next) {
   }
 
   const subdomain = getTenantSubdomain(req);
+  console.log(`[tenant] ${req.method} ${req.path} | host=${req.headers.host} | origin=${req.headers.origin || '-'} | subdomain=${subdomain || 'null(master)'}`);
 
   if (!subdomain || subdomain === 'www' || subdomain === 'admin' || subdomain === 'master' || subdomain === 'localhost') {
     return tenantStorage.run({ pool: masterPool, tenant: null }, () => {
