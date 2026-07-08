@@ -2522,9 +2522,10 @@ const AdminOrders = () => {
 
         {/* Bank Selection Modal */}
         {showBankSelectionModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl shadow-xl max-w-md w-full mx-4">
-              <div className="flex justify-between items-center p-6 border-b border-gray-200">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-xl max-w-md w-full mx-4 flex flex-col max-h-[90vh]">
+              {/* Header - sticky */}
+              <div className="flex justify-between items-center p-6 border-b border-gray-200 shrink-0">
                 <h2 className="text-xl font-bold text-gray-800">
                   Pilih Bank Transfer
                 </h2>
@@ -2539,8 +2540,9 @@ const AdminOrders = () => {
                 </button>
               </div>
 
-              <div className="p-6">
-                <div className="mb-4">
+              {/* Scrollable body */}
+              <div className="p-6 overflow-y-auto flex-1">
+                <div className="mb-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Pilih Metode Pembayaran
                   </label>
@@ -2572,33 +2574,34 @@ const AdminOrders = () => {
                     ))}
                   </div>
                 </div>
+              </div>
 
-                <div className="flex justify-end space-x-3">
-                  <button
-                    onClick={() => {
+              {/* Footer - sticky */}
+              <div className="flex justify-end space-x-3 p-6 border-t border-gray-200 shrink-0">
+                <button
+                  onClick={() => {
+                    setShowBankSelectionModal(false);
+                    setPendingInvoiceItem(null);
+                  }}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={() => {
+                    if (pendingInvoiceItem) {
+                      generateInvoicePDF(
+                        pendingInvoiceItem,
+                        selectedBankMethod
+                      );
                       setShowBankSelectionModal(false);
                       setPendingInvoiceItem(null);
-                    }}
-                    className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-                  >
-                    Batal
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (pendingInvoiceItem) {
-                        generateInvoicePDF(
-                          pendingInvoiceItem,
-                          selectedBankMethod
-                        );
-                        setShowBankSelectionModal(false);
-                        setPendingInvoiceItem(null);
-                      }
-                    }}
-                    className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-                  >
-                    Generate Invoice
-                  </button>
-                </div>
+                    }
+                  }}
+                  className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                >
+                  Generate Invoice
+                </button>
               </div>
             </div>
           </div>

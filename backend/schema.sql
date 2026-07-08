@@ -99,7 +99,8 @@ CREATE TABLE IF NOT EXISTS payment_methods (
   account_number VARCHAR(255),
   details TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_payment_method_name (name)
 );
 
 -- Orders table
@@ -146,7 +147,8 @@ CREATE TABLE IF NOT EXISTS articles (
   image VARCHAR(500),
   category VARCHAR(100),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_article_title (title)
 );
 
 -- Contact messages table
@@ -197,7 +199,8 @@ CREATE TABLE IF NOT EXISTS gallery_categories (
   is_active BOOLEAN DEFAULT true,
   sort_order INT DEFAULT 0,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_gallery_category_name (name)
 );
 
 -- Gallery images table
@@ -212,7 +215,8 @@ CREATE TABLE IF NOT EXISTS gallery_images (
   sort_order INT DEFAULT 0,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (category_id) REFERENCES gallery_categories(id) ON DELETE SET NULL
+  FOREIGN KEY (category_id) REFERENCES gallery_categories(id) ON DELETE SET NULL,
+  UNIQUE KEY uq_gallery_image_url (image_url(191))
 );
 
 -- Insert sample data
