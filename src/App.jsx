@@ -171,7 +171,7 @@ function App() {
               </ProtectedRoute>
             } />
 
-            
+
             {/* Public Routes */}
             <Route path="/*" element={
               <>
@@ -196,7 +196,7 @@ function App() {
             } />
           </Routes>
         </div>
-        <Toaster 
+        <Toaster
           position="top-right"
           toastOptions={{
             duration: 1000,
@@ -224,5 +224,6 @@ function App() {
     </HelmetProvider>
   );
 }
+
 
 export default App;
