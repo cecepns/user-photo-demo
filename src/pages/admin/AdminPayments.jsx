@@ -77,9 +77,6 @@ const AdminPayments = () => {
       await apiFetch(`/api/payment-methods/${id}`, { method: 'DELETE' });
       fetchPaymentMethods();
       toast.success('Metode pembayaran berhasil dihapus!');
-      } else {
-        toast.error('Error menghapus metode pembayaran');
-      }
     } catch (error) {
       console.error('Error:', error);
       toast.error('Error menghapus metode pembayaran');
