@@ -87,10 +87,6 @@ const AdminContent = () => {
     e.preventDefault();
     
     try {
-      const url = editingSection 
-        ? `${API_BASE}/api/content-sections/${editingSection.id}`
-        : `${API_BASE}/api/content-sections`;
-      
       const method = editingSection ? 'PUT' : 'POST';
       
       const isSiteIdentity = formData.section_name === 'site_identity';
