@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import AdminLayout from "../../components/AdminLayout";
 import { toLocalDate } from "../../utils/formatters";
 
-const API_BASE = "https://api.userphoto.my.idapi";
+const API_BASE = "https://api.userphoto.my.id/api";
 
 const VENDOR_COLOR_POOL = [
   "bg-green-600 text-white",

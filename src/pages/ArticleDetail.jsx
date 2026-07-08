@@ -13,7 +13,7 @@ const ArticleDetail = () => {
 
   const fetchArticle = async () => {
     try {
-      const response = await fetch(`https://api.userphoto.my.idapi/articles/${id}`);
+      const response = await fetch(`https://api.userphoto.my.id/api/articles/${id}`);
       const data = await response.json();
       setArticle(data);
     } catch (error) {

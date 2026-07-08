@@ -23,7 +23,7 @@ const Services = () => {
   const fetchServices = async () => {
     try {
       const response = await fetch(
-        "https://api.userphoto.my.idapi/services"
+        "https://api.userphoto.my.id/api/services"
       );
       const data = await response.json();
       setServices(data);
@@ -35,7 +35,7 @@ const Services = () => {
   const fetchHeroContent = async () => {
     try {
       const response = await fetch(
-        "https://api.userphoto.my.idapi/content-sections/services_hero_section"
+        "https://api.userphoto.my.id/api/content-sections/services_hero_section"
       );
       if (response.ok) {
         const data = await response.json();

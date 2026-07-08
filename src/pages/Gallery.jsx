@@ -26,12 +26,12 @@ const Gallery = () => {
       setLoading(true);
 
       // Fetch categories
-      const categoriesResponse = await fetch('https://api.userphoto.my.idapi/gallery/categories');
+      const categoriesResponse = await fetch('https://api.userphoto.my.id/api/gallery/categories');
       const categoriesData = await categoriesResponse.json();
       setCategories(categoriesData);
 
       // Fetch images
-      const imagesResponse = await fetch('https://api.userphoto.my.idapi/gallery/images');
+      const imagesResponse = await fetch('https://api.userphoto.my.id/api/gallery/images');
       const imagesData = await imagesResponse.json();
       setImages(imagesData);
     } catch (error) {
@@ -43,7 +43,7 @@ const Gallery = () => {
 
   const fetchHeroContent = async () => {
     try {
-      const response = await fetch('https://api.userphoto.my.idapi/content-sections/gallery_hero_section');
+      const response = await fetch('https://api.userphoto.my.id/api/content-sections/gallery_hero_section');
       if (response.ok) {
         const data = await response.json();
         setHeroContent(data);

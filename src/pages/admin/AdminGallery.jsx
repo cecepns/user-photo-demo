@@ -149,8 +149,8 @@ const AdminGallery = () => {
 
     try {
       const url = editingCategory
-        ? `https://api.userphoto.my.idapi/gallery/categories/${editingCategory.id}`
-        : 'https://api.userphoto.my.idapi/gallery/categories';
+        ? `https://api.userphoto.my.id/api/gallery/categories/${editingCategory.id}`
+        : 'https://api.userphoto.my.id/api/gallery/categories';
 
       const method = editingCategory ? 'PUT' : 'POST';
 

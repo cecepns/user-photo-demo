@@ -27,7 +27,7 @@ const AdminServiceCards = () => {
 
   const fetchCards = async () => {
     try {
-      const response = await fetch('https://api.userphoto.my.idapi/service-cards', {
+      const response = await fetch('https://api.userphoto.my.id/api/service-cards', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
         }
@@ -47,8 +47,8 @@ const AdminServiceCards = () => {
 
     try {
       const url = editingCard
-        ? `https://api.userphoto.my.idapi/service-cards/${editingCard.id}`
-        : 'https://api.userphoto.my.idapi/service-cards';
+        ? `https://api.userphoto.my.id/api/service-cards/${editingCard.id}`
+        : 'https://api.userphoto.my.id/api/service-cards';
 
       const method = editingCard ? 'PUT' : 'POST';
 
@@ -97,7 +97,7 @@ const AdminServiceCards = () => {
     if (!confirm('Apakah Anda yakin ingin menghapus card ini?')) return;
 
     try {
-      const response = await fetch(`https://api.userphoto.my.idapi/service-cards/${id}`, {
+      const response = await fetch(`https://api.userphoto.my.id/api/service-cards/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('admin_token')}`

@@ -32,7 +32,7 @@ const AdminOrdersHistory = () => {
     setLoading(true);
     try {
       const response = await fetch(
-        `https://api.userphoto.my.idapi/orders?page=${ordersPagination.page}&limit=${ordersPagination.limit}&status=confirmed,completed,cancelled`,
+        `https://api.userphoto.my.id/api/orders?page=${ordersPagination.page}&limit=${ordersPagination.limit}&status=confirmed,completed,cancelled`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("admin_token")}`,
@@ -87,7 +87,7 @@ const AdminOrdersHistory = () => {
   const handleStatusUpdate = async (orderId, newStatus) => {
     try {
       const response = await fetch(
-        `https://api.userphoto.my.idapi/orders/${orderId}/status`,
+        `https://api.userphoto.my.id/api/orders/${orderId}/status`,
         {
           method: "PUT",
           headers: {
@@ -149,7 +149,7 @@ const AdminOrdersHistory = () => {
 
     try {
       const response = await fetch(
-        `https://api.userphoto.my.idapi/orders/${orderId}`,
+        `https://api.userphoto.my.id/api/orders/${orderId}`,
         {
           method: "DELETE",
           headers: {

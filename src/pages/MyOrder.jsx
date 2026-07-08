@@ -6,7 +6,7 @@ import { formatRupiah } from "../utils/formatters";
 import { imageUrl } from "../utils/imageUrl";
 import { formatPhotoStatus, formatVideoStatus } from "../constants/orderProgress";
 
-const API_BASE = "https://api.userphoto.my.idapi";
+const API_BASE = "https://api.userphoto.my.id/api";
 
 const toNumber = (value) => {
   const n = typeof value === "number" ? value : parseFloat(value);

@@ -28,7 +28,7 @@ const AdminLogin = () => {
     setError('');
 
     try {
-      const response = await fetch('https://api.userphoto.my.idapi/admin/login', {
+      const response = await fetch('https://api.userphoto.my.id/api/admin/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

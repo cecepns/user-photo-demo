@@ -24,7 +24,7 @@ const AdminServiceFeatures = () => {
     try {
       const token = localStorage.getItem("admin_token");
       const response = await fetch(
-        "https://api.userphoto.my.idapi/service-features",
+        "https://api.userphoto.my.id/api/service-features",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -52,8 +52,8 @@ const AdminServiceFeatures = () => {
     try {
       const token = localStorage.getItem("admin_token");
       const url = editingFeature
-        ? `https://api.userphoto.my.idapi/service-features/${editingFeature.id}`
-        : "https://api.userphoto.my.idapi/service-features";
+        ? `https://api.userphoto.my.id/api/service-features/${editingFeature.id}`
+        : "https://api.userphoto.my.id/api/service-features";
 
       const method = editingFeature ? "PUT" : "POST";
       const postData = {
@@ -111,7 +111,7 @@ const AdminServiceFeatures = () => {
     try {
       const token = localStorage.getItem("admin_token");
       const response = await fetch(
-        `https://api.userphoto.my.idapi/service-features/${id}`,
+        `https://api.userphoto.my.id/api/service-features/${id}`,
         {
           method: "DELETE",
           headers: {

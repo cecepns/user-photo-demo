@@ -11,7 +11,7 @@ const Articles = () => {
 
   const fetchArticles = async () => {
     try {
-      const response = await fetch('https://api.userphoto.my.idapi/articles');
+      const response = await fetch('https://api.userphoto.my.id/api/articles');
       const data = await response.json();
       setArticles(data);
     } catch (error) {

@@ -35,7 +35,7 @@ const AdminServices = () => {
 
   const fetchServices = async (searchQuery = '') => {
     try {
-      const base = 'https://api.userphoto.my.idapi/services';
+      const base = 'https://api.userphoto.my.id/api/services';
       const url = searchQuery.trim()
         ? `${base}?q=${encodeURIComponent(searchQuery.trim())}`
         : base;
@@ -58,7 +58,7 @@ const AdminServices = () => {
 
   const fetchAvailableItems = async () => {
     try {
-      const response = await fetch('https://api.userphoto.my.idapi/items');
+      const response = await fetch('https://api.userphoto.my.id/api/items');
       const data = await response.json();
       setAvailableItems(data);
     } catch (error) {
@@ -68,7 +68,7 @@ const AdminServices = () => {
 
   const fetchServiceItems = async (serviceId) => {
     try {
-      const response = await fetch(`https://api.userphoto.my.idapi/services/${serviceId}/items`);
+      const response = await fetch(`https://api.userphoto.my.id/api/services/${serviceId}/items`);
       const data = await response.json();
       setServiceItems(data);
     } catch (error) {
@@ -85,8 +85,8 @@ const AdminServices = () => {
   const handleServiceSubmit = async (serviceData) => {
     try {
       const url = serviceData.id
-        ? `https://api.userphoto.my.idapi/services/${serviceData.id}`
-        : 'https://api.userphoto.my.idapi/services';
+        ? `https://api.userphoto.my.id/api/services/${serviceData.id}`
+        : 'https://api.userphoto.my.id/api/services';
 
       const method = serviceData.id ? 'PUT' : 'POST';
 
@@ -147,7 +147,7 @@ const AdminServices = () => {
     if (!confirmed) return;
 
     try {
-      const response = await fetch(`https://api.userphoto.my.idapi/services/${id}`, {
+      const response = await fetch(`https://api.userphoto.my.id/api/services/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
@@ -168,7 +168,7 @@ const AdminServices = () => {
 
   const handleAddItemToService = async (itemData) => {
     try {
-      const url = `https://api.userphoto.my.idapi/services/${selectedService.id}/items`;
+      const url = `https://api.userphoto.my.id/api/services/${selectedService.id}/items`;
 
       const response = await fetch(url, {
         method: 'POST',
@@ -195,7 +195,7 @@ const AdminServices = () => {
 
   const handleUpdateServiceItem = async (itemData) => {
     try {
-      const url = `https://api.userphoto.my.idapi/service-items/${editingServiceItem.id}`;
+      const url = `https://api.userphoto.my.id/api/service-items/${editingServiceItem.id}`;
 
       const response = await fetch(url, {
         method: 'PUT',
@@ -255,7 +255,7 @@ const AdminServices = () => {
     if (!confirmed) return;
 
     try {
-      const response = await fetch(`https://api.userphoto.my.idapi/service-items/${id}`, {
+      const response = await fetch(`https://api.userphoto.my.id/api/service-items/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('admin_token')}`

@@ -81,7 +81,7 @@ const CustomService = () => {
   const fetchCategories = async () => {
     try {
       const response = await fetch(
-        "https://api.userphoto.my.idapi/items/categories"
+        "https://api.userphoto.my.id/api/items/categories"
       );
       const data = await response.json();
       setCategories(data);
@@ -93,10 +93,10 @@ const CustomService = () => {
   const fetchServiceOptions = async (category = "") => {
     try {
       const url = category
-        ? `https://api.userphoto.my.idapi/items?category=${encodeURIComponent(
+        ? `https://api.userphoto.my.id/api/items?category=${encodeURIComponent(
           category
         )}`
-        : "https://api.userphoto.my.idapi/items";
+        : "https://api.userphoto.my.id/api/items";
       const response = await fetch(url);
       const data = await response.json();
       setServiceOptions(data);
@@ -109,7 +109,7 @@ const CustomService = () => {
   const fetchPaymentMethods = async () => {
     try {
       const response = await fetch(
-        "https://api.userphoto.my.idapi/payment-methods"
+        "https://api.userphoto.my.id/api/payment-methods"
       );
       const data = await response.json();
       setPaymentMethods(data);
@@ -124,7 +124,7 @@ const CustomService = () => {
   const fetchCustomServiceContent = async () => {
     try {
       const response = await fetch(
-        "https://api.userphoto.my.idapi/content-sections/custom_service_section"
+        "https://api.userphoto.my.id/api/content-sections/custom_service_section"
       );
       if (response.ok) {
         const data = await response.json();
@@ -171,7 +171,7 @@ const CustomService = () => {
     e.preventDefault();
     try {
       const response = await fetch(
-        "https://api.userphoto.my.idapi/custom-requests",
+        "https://api.userphoto.my.id/api/custom-requests",
         {
           method: "POST",
           headers: {

@@ -27,7 +27,7 @@ const CustomServiceModal = ({ isOpen, onClose }) => {
 
   const fetchServiceOptions = async () => {
     try {
-      const response = await fetch('https://api.userphoto.my.idapi/items');
+      const response = await fetch('https://api.userphoto.my.id/api/items');
       const data = await response.json();
       setServiceOptions(data);
     } catch (error) {
@@ -68,7 +68,7 @@ const CustomServiceModal = ({ isOpen, onClose }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('https://api.userphoto.my.idapi/custom-requests', {
+      const response = await fetch('https://api.userphoto.my.id/api/custom-requests', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
