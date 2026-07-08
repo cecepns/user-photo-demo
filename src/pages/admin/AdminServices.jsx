@@ -5,6 +5,7 @@ import Select from 'react-select';
 import toast, { Toaster } from 'react-hot-toast';
 import AdminLayout from '../../components/AdminLayout';
 import { API_BASE, imageUrl } from '../../utils/imageUrl';
+import { apiFetch } from '../../utils/api';
 
 // Utility function for Indonesian Rupiah formatting
 const formatRupiah = (amount) => {
@@ -35,12 +36,10 @@ const AdminServices = () => {
 
   const fetchServices = async (searchQuery = '') => {
     try {
-      const base = 'https://api.userphoto.my.id/api/services';
-      const url = searchQuery.trim()
-        ? `${base}?q=${encodeURIComponent(searchQuery.trim())}`
-        : base;
-      const response = await fetch(url);
-      const data = await response.json();
+      const path = searchQuery.trim()
+        ? `/api/services?q=${encodeURIComponent(searchQuery.trim())}`
+        : '/api/services';
+      const data = await apiFetch(path);
       setServices(data);
     } catch (error) {
       console.error('Error fetching services:', error);
@@ -58,8 +57,7 @@ const AdminServices = () => {
 
   const fetchAvailableItems = async () => {
     try {
-      const response = await fetch('https://api.userphoto.my.id/api/items');
-      const data = await response.json();
+      const data = await apiFetch('/api/items');
       setAvailableItems(data);
     } catch (error) {
       console.error('Error fetching available items:', error);
@@ -68,8 +66,7 @@ const AdminServices = () => {
 
   const fetchServiceItems = async (serviceId) => {
     try {
-      const response = await fetch(`https://api.userphoto.my.id/api/services/${serviceId}/items`);
-      const data = await response.json();
+      const data = await apiFetch(`/api/services/${serviceId}/items`);
       setServiceItems(data);
     } catch (error) {
       console.error('Error fetching service items:', error);
@@ -84,28 +81,14 @@ const AdminServices = () => {
 
   const handleServiceSubmit = async (serviceData) => {
     try {
-      const url = serviceData.id
-        ? `https://api.userphoto.my.id/api/services/${serviceData.id}`
-        : 'https://api.userphoto.my.id/api/services';
-
+      const path = serviceData.id
+        ? `/api/services/${serviceData.id}`
+        : '/api/services';
       const method = serviceData.id ? 'PUT' : 'POST';
-
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
-        },
-        body: JSON.stringify(serviceData),
-      });
-
-      if (response.ok) {
-        fetchServices(serviceSearchQuery);
-        setShowServiceModal(false);
-        toast.success('Layanan berhasil disimpan!');
-      } else {
-        toast.error('Error menyimpan layanan');
-      }
+      await apiFetch(path, { method, body: JSON.stringify(serviceData) });
+      fetchServices(serviceSearchQuery);
+      setShowServiceModal(false);
+      toast.success('Layanan berhasil disimpan!');
     } catch (error) {
       console.error('Error:', error);
       toast.error('Error menyimpan layanan');
@@ -147,19 +130,9 @@ const AdminServices = () => {
     if (!confirmed) return;
 
     try {
-      const response = await fetch(`https://api.userphoto.my.id/api/services/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
-        }
-      });
-
-      if (response.ok) {
-        fetchServices(serviceSearchQuery);
-        toast.success('Layanan berhasil dihapus!');
-      } else {
-        toast.error('Error menghapus layanan');
-      }
+      await apiFetch(`/api/services/${id}`, { method: 'DELETE' });
+      fetchServices(serviceSearchQuery);
+      toast.success('Layanan berhasil dihapus!');
     } catch (error) {
       console.error('Error:', error);
       toast.error('Error menghapus layanan');
@@ -168,52 +141,29 @@ const AdminServices = () => {
 
   const handleAddItemToService = async (itemData) => {
     try {
-      const url = `https://api.userphoto.my.id/api/services/${selectedService.id}/items`;
-
-      const response = await fetch(url, {
+      await apiFetch(`/api/services/${selectedService.id}/items`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
-        },
         body: JSON.stringify(itemData),
       });
-
-      if (response.ok) {
-        fetchServiceItems(selectedService.id);
-        setShowItemModal(false);
-        toast.success('Item berhasil ditambahkan ke layanan!');
-      } else {
-        const errorData = await response.json();
-        toast.error(`Error menambahkan item: ${errorData.message}`);
-      }
+      fetchServiceItems(selectedService.id);
+      setShowItemModal(false);
+      toast.success('Item berhasil ditambahkan ke layanan!');
     } catch (error) {
       console.error('Error:', error);
-      toast.error('Error menambahkan item');
+      toast.error(`Error menambahkan item: ${error.data?.message || error.message}`);
     }
   };
 
   const handleUpdateServiceItem = async (itemData) => {
     try {
-      const url = `https://api.userphoto.my.id/api/service-items/${editingServiceItem.id}`;
-
-      const response = await fetch(url, {
+      await apiFetch(`/api/service-items/${editingServiceItem.id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
-        },
         body: JSON.stringify(itemData),
       });
-
-      if (response.ok) {
-        fetchServiceItems(selectedService.id);
-        setShowItemModal(false);
-        setEditingServiceItem(null);
-        toast.success('Item layanan berhasil diperbarui!');
-      } else {
-        toast.error('Error memperbarui item layanan');
-      }
+      fetchServiceItems(selectedService.id);
+      setShowItemModal(false);
+      setEditingServiceItem(null);
+      toast.success('Item layanan berhasil diperbarui!');
     } catch (error) {
       console.error('Error:', error);
       toast.error('Error memperbarui item layanan');
@@ -255,19 +205,13 @@ const AdminServices = () => {
     if (!confirmed) return;
 
     try {
-      const response = await fetch(`https://api.userphoto.my.id/api/service-items/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
-        }
-      });
-
-      if (response.ok) {
-        fetchServiceItems(selectedService.id);
-        toast.success('Item berhasil dihapus dari layanan!');
-      } else {
-        toast.error('Error menghapus item dari layanan');
-      }
+      await apiFetch(`/api/service-items/${id}`, { method: 'DELETE' });
+      fetchServiceItems(selectedService.id);
+      toast.success('Item berhasil dihapus dari layanan!');
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error('Error menghapus item dari layanan');
+    }
     } catch (error) {
       console.error('Error:', error);
       toast.error('Error menghapus item dari layanan');

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
+import { apiFetch } from '../utils/api';
 
 const ArticleDetail = () => {
   const { id } = useParams();
@@ -13,8 +14,7 @@ const ArticleDetail = () => {
 
   const fetchArticle = async () => {
     try {
-      const response = await fetch(`https://api.userphoto.my.id/api/articles/${id}`);
-      const data = await response.json();
+      const data = await apiFetch(`/api/articles/${id}`);
       setArticle(data);
     } catch (error) {
       console.error('Error fetching article:', error);

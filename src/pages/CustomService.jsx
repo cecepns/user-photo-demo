@@ -5,8 +5,8 @@ import toast from "react-hot-toast";
 import { ChevronLeft, ChevronRight, X, Image as ImageIcon } from "lucide-react";
 import { formatRupiah } from "../utils/formatters";
 import { useSiteIdentity } from "../hooks/useSiteIdentity";
-
-const API_BASE = "https://api.userphoto.my.id";
+import { apiFetch } from "../utils/api";
+import { API_BASE } from "../utils/endpoints";
 function itemImageUrl(filename) {
   if (!filename || filename.startsWith("http")) return filename || "";
   return `${API_BASE}/uploads-weddingsapp/${filename}`;
@@ -80,10 +80,7 @@ const CustomService = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch(
-        "https://api.userphoto.my.id/api/items/categories"
-      );
-      const data = await response.json();
+      const data = await apiFetch("/api/items/categories");
       setCategories(data);
     } catch (error) {
       console.error("Error fetching categories:", error);
@@ -92,13 +89,10 @@ const CustomService = () => {
 
   const fetchServiceOptions = async (category = "") => {
     try {
-      const url = category
-        ? `https://api.userphoto.my.id/api/items?category=${encodeURIComponent(
-          category
-        )}`
-        : "https://api.userphoto.my.id/api/items";
-      const response = await fetch(url);
-      const data = await response.json();
+      const path = category
+        ? `/api/items?category=${encodeURIComponent(category)}`
+        : "/api/items";
+      const data = await apiFetch(path);
       setServiceOptions(data);
     } catch (error) {
       console.error("Error fetching service options:", error);
@@ -108,10 +102,7 @@ const CustomService = () => {
 
   const fetchPaymentMethods = async () => {
     try {
-      const response = await fetch(
-        "https://api.userphoto.my.id/api/payment-methods"
-      );
-      const data = await response.json();
+      const data = await apiFetch("/api/payment-methods");
       setPaymentMethods(data);
       if (data.length > 0) {
         setSelectedPaymentMethod(data[0]);
@@ -123,13 +114,8 @@ const CustomService = () => {
 
   const fetchCustomServiceContent = async () => {
     try {
-      const response = await fetch(
-        "https://api.userphoto.my.id/api/content-sections/custom_service_section"
-      );
-      if (response.ok) {
-        const data = await response.json();
-        setCustomServiceContent(data);
-      }
+      const data = await apiFetch("/api/content-sections/custom_service_section");
+      setCustomServiceContent(data);
     } catch (error) {
       console.error("Error fetching custom service content:", error);
     }

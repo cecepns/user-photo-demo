@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import toast from 'react-hot-toast';
 import { useSiteIdentity } from '../hooks/useSiteIdentity';
+import { apiFetch } from '../utils/api';
 
 const Contact = () => {
   const { appName, contact } = useSiteIdentity();
@@ -11,11 +12,7 @@ const Contact = () => {
     let cancelled = false;
     const loadHero = async () => {
       try {
-        const response = await fetch(
-          'https://api.userphoto.my.id/api/content-sections/contact_hero_section'
-        );
-        if (!response.ok) return;
-        const data = await response.json();
+        const data = await apiFetch('/api/content-sections/contact_hero_section');
         if (!cancelled) setHeroContent(data);
       } catch (error) {
         console.error('Error fetching contact hero:', error);
@@ -47,20 +44,12 @@ const Contact = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('https://api.userphoto.my.id/api/contact', {
+      await apiFetch('/api/contact', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(formData),
       });
-
-      if (response.ok) {
-        toast.success('Pesan berhasil dikirim! Kami akan menghubungi Anda segera.');
-        setFormData({ name: '', email: '', phone: '', address: '', instagram: '', consultation_date: '', message: '' });
-      } else {
-        toast.error('Error mengirim pesan. Silakan coba lagi.');
-      }
+      toast.success('Pesan berhasil dikirim! Kami akan menghubungi Anda segera.');
+      setFormData({ name: '', email: '', phone: '', address: '', instagram: '', consultation_date: '', message: '' });
     } catch (error) {
       console.error('Error:', error);
       toast.error('Error mengirim pesan. Silakan coba lagi.');

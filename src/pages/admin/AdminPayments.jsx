@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import toast, { Toaster } from 'react-hot-toast';
 import AdminLayout from '../../components/AdminLayout';
+import { apiFetch } from '../../utils/api';
 
 const AdminPayments = () => {
   const [paymentMethods, setPaymentMethods] = useState([]);
@@ -14,8 +15,7 @@ const AdminPayments = () => {
 
   const fetchPaymentMethods = async () => {
     try {
-      const response = await fetch('https://api.userphoto.my.id/api/payment-methods');
-      const data = await response.json();
+      const data = await apiFetch('/api/payment-methods');
       setPaymentMethods(data);
     } catch (error) {
       console.error('Error fetching payment methods:', error);
@@ -24,29 +24,15 @@ const AdminPayments = () => {
 
   const handleSubmit = async (methodData) => {
     try {
-      const url = editingMethod
-        ? `https://api.userphoto.my.id/api/payment-methods/${editingMethod.id}`
-        : 'https://api.userphoto.my.id/api/payment-methods';
-
+      const path = editingMethod
+        ? `/api/payment-methods/${editingMethod.id}`
+        : '/api/payment-methods';
       const method = editingMethod ? 'PUT' : 'POST';
-
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
-        },
-        body: JSON.stringify(methodData),
-      });
-
-      if (response.ok) {
-        fetchPaymentMethods();
-        setShowModal(false);
-        setEditingMethod(null);
-        toast.success('Metode pembayaran berhasil disimpan!');
-      } else {
-        toast.error('Error menyimpan metode pembayaran');
-      }
+      await apiFetch(path, { method, body: JSON.stringify(methodData) });
+      fetchPaymentMethods();
+      setShowModal(false);
+      setEditingMethod(null);
+      toast.success('Metode pembayaran berhasil disimpan!');
     } catch (error) {
       console.error('Error:', error);
       toast.error('Error menyimpan metode pembayaran');
@@ -88,16 +74,9 @@ const AdminPayments = () => {
     if (!confirmed) return;
 
     try {
-      const response = await fetch(`https://api.userphoto.my.id/api/payment-methods/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
-        }
-      });
-
-      if (response.ok) {
-        fetchPaymentMethods();
-        toast.success('Metode pembayaran berhasil dihapus!');
+      await apiFetch(`/api/payment-methods/${id}`, { method: 'DELETE' });
+      fetchPaymentMethods();
+      toast.success('Metode pembayaran berhasil dihapus!');
       } else {
         toast.error('Error menghapus metode pembayaran');
       }

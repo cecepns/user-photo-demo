@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import AOS from "aos";
 import "aos/dist/aos.css";
 import { imageUrl } from "../utils/imageUrl";
+import { apiFetch } from "../utils/api";
 
 const Home = () => {
   const [heroContent, setHeroContent] = useState(null);
@@ -27,11 +28,8 @@ const Home = () => {
 
   const fetchHeroContent = async () => {
     try {
-      const response = await fetch('https://api.userphoto.my.id/api/content-sections/hero_section');
-      if (response.ok) {
-        const data = await response.json();
-        setHeroContent(data);
-      }
+      const data = await apiFetch('/api/content-sections/hero_section');
+      setHeroContent(data);
     } catch (error) {
       console.error('Error fetching hero content:', error);
     }
@@ -39,11 +37,8 @@ const Home = () => {
 
   const fetchServicesContent = async () => {
     try {
-      const response = await fetch('https://api.userphoto.my.id/api/content-sections/services_preview_section');
-      if (response.ok) {
-        const data = await response.json();
-        setServicesContent(data);
-      }
+      const data = await apiFetch('/api/content-sections/services_preview_section');
+      setServicesContent(data);
     } catch (error) {
       console.error('Error fetching services content:', error);
     }
@@ -51,11 +46,8 @@ const Home = () => {
 
   const fetchServiceCards = async () => {
     try {
-      const response = await fetch('https://api.userphoto.my.id/api/service-cards?card_type=service');
-      if (response.ok) {
-        const data = await response.json();
-        setServiceCards(data);
-      }
+      const data = await apiFetch('/api/service-cards?card_type=service');
+      setServiceCards(data);
     } catch (error) {
       console.error('Error fetching service cards:', error);
     }
@@ -63,11 +55,8 @@ const Home = () => {
 
   const fetchCtaContent = async () => {
     try {
-      const response = await fetch('https://api.userphoto.my.id/api/content-sections/home_cta_section');
-      if (response.ok) {
-        const data = await response.json();
-        setCtaContent(data);
-      }
+      const data = await apiFetch('/api/content-sections/home_cta_section');
+      setCtaContent(data);
     } catch (error) {
       console.error('Error fetching CTA content:', error);
     }

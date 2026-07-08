@@ -3,6 +3,7 @@ import { Helmet } from 'react-helmet-async';
 import { Plus, Edit, Trash2, FileText, Eye } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import AdminLayout from '../../components/AdminLayout';
+import { apiFetch } from '../../utils/api';
 
 const AdminArticles = () => {
   const [articles, setArticles] = useState([]);
@@ -15,8 +16,7 @@ const AdminArticles = () => {
 
   const fetchArticles = async () => {
     try {
-      const response = await fetch('https://api.userphoto.my.id/api/articles');
-      const data = await response.json();
+      const data = await apiFetch('/api/articles');
       setArticles(data);
     } catch (error) {
       console.error('Error fetching articles:', error);
@@ -25,29 +25,15 @@ const AdminArticles = () => {
 
   const handleSubmit = async (articleData) => {
     try {
-      const url = editingArticle
-        ? `https://api.userphoto.my.id/api/articles/${editingArticle.id}`
-        : 'https://api.userphoto.my.id/api/articles';
-
+      const path = editingArticle
+        ? `/api/articles/${editingArticle.id}`
+        : '/api/articles';
       const method = editingArticle ? 'PUT' : 'POST';
-
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
-        },
-        body: JSON.stringify(articleData),
-      });
-
-      if (response.ok) {
-        fetchArticles();
-        setShowModal(false);
-        setEditingArticle(null);
-        toast.success('Artikel berhasil disimpan!');
-      } else {
-        toast.error('Error menyimpan artikel');
-      }
+      await apiFetch(path, { method, body: JSON.stringify(articleData) });
+      fetchArticles();
+      setShowModal(false);
+      setEditingArticle(null);
+      toast.success('Artikel berhasil disimpan!');
     } catch (error) {
       console.error('Error:', error);
       toast.error('Error menyimpan artikel');
@@ -89,19 +75,9 @@ const AdminArticles = () => {
     if (!confirmed) return;
 
     try {
-      const response = await fetch(`https://api.userphoto.my.id/api/articles/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
-        }
-      });
-
-      if (response.ok) {
-        fetchArticles();
-        toast.success('Artikel berhasil dihapus!');
-      } else {
-        toast.error('Error menghapus artikel');
-      }
+      await apiFetch(`/api/articles/${id}`, { method: 'DELETE' });
+      fetchArticles();
+      toast.success('Artikel berhasil dihapus!');
     } catch (error) {
       console.error('Error:', error);
       toast.error('Error menghapus artikel');

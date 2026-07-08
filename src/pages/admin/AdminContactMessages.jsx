@@ -4,6 +4,7 @@ import { Eye, Trash2, ChevronLeft, ChevronRight, X, Phone, MessageSquare } from 
 import toast, { Toaster } from 'react-hot-toast';
 import AdminLayout from '../../components/AdminLayout';
 import { formatDate } from '../../utils/formatters';
+import { apiFetch } from '../../utils/api';
 
 const AdminContactMessages = () => {
   const [messages, setMessages] = useState([]);
@@ -24,24 +25,11 @@ const AdminContactMessages = () => {
   const fetchMessages = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`https://api.userphoto.my.id/api/contact-messages?page=${pagination.page}&limit=${pagination.limit}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
-        }
-      });
-      const data = await response.json();
-
-      // Handle both old format (array) and new format (object with pagination)
+      const data = await apiFetch(`/api/contact-messages?page=${pagination.page}&limit=${pagination.limit}`);
       if (Array.isArray(data)) {
-        // Old format - no pagination
         setMessages(data);
-        setPagination(prev => ({
-          ...prev,
-          total: data.length,
-          totalPages: 1
-        }));
+        setPagination(prev => ({ ...prev, total: data.length, totalPages: 1 }));
       } else {
-        // New format - with pagination
         setMessages(data.messages || []);
         setPagination(prev => ({
           ...prev,
@@ -52,11 +40,7 @@ const AdminContactMessages = () => {
     } catch (error) {
       console.error('Error fetching contact messages:', error);
       setMessages([]);
-      setPagination(prev => ({
-        ...prev,
-        total: 0,
-        totalPages: 1
-      }));
+      setPagination(prev => ({ ...prev, total: 0, totalPages: 1 }));
     } finally {
       setLoading(false);
     }
@@ -68,23 +52,12 @@ const AdminContactMessages = () => {
     }
 
     try {
-      const response = await fetch(`https://api.userphoto.my.id/api/contact-messages/${messageId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
-        }
-      });
-
-      if (response.ok) {
-        toast.success('Pesan berhasil dihapus');
-        fetchMessages();
-      } else {
-        const error = await response.json();
-        toast.error(error.message || 'Gagal menghapus pesan');
-      }
+      await apiFetch(`/api/contact-messages/${messageId}`, { method: 'DELETE' });
+      toast.success('Pesan berhasil dihapus');
+      fetchMessages();
     } catch (error) {
       console.error('Error deleting message:', error);
-      toast.error('Gagal menghapus pesan');
+      toast.error(error.data?.message || 'Gagal menghapus pesan');
     }
   };
 

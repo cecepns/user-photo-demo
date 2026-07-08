@@ -7,6 +7,7 @@ import AOS from 'aos';
 import 'aos/dist/aos.css';
 import PaymentInstructions from '../components/PaymentInstructions';
 import { imageUrl } from '../utils/imageUrl';
+import { apiFetch } from '../utils/api';
 
 // Helper function to format price in Indonesian Rupiah format
 const formatPrice = (price) => {
@@ -58,21 +59,12 @@ const ServiceDetail = () => {
 
   const fetchServiceData = async () => {
     try {
-      // Fetch service details
-      const serviceResponse = await fetch(`https://api.userphoto.my.id/api/services/${id}`);
-      const serviceData = await serviceResponse.json();
+      const serviceData = await apiFetch(`/api/services/${id}`);
       setService(serviceData);
-
-      // Fetch service items
-      const itemsResponse = await fetch(`https://api.userphoto.my.id/api/services/${id}/items`);
-      const itemsData = await itemsResponse.json();
+      const itemsData = await apiFetch(`/api/services/${id}/items`);
       setItems(itemsData);
-
-      // Fetch service features
-      const featuresResponse = await fetch(`https://api.userphoto.my.id/api/service-features`);
-      const featuresData = await featuresResponse.json();
+      const featuresData = await apiFetch(`/api/service-features`);
       setFeatures(featuresData);
-      // Don't auto-select items - start with empty selection
     } catch (error) {
       console.error('Error fetching service data:', error);
     } finally {
@@ -82,11 +74,8 @@ const ServiceDetail = () => {
 
   const fetchButtonContent = async () => {
     try {
-      const response = await fetch('https://api.userphoto.my.id/api/content-sections/button_item_detail');
-      if (response.ok) {
-        const data = await response.json();
-        setButtonContent(data);
-      }
+      const data = await apiFetch('/api/content-sections/button_item_detail');
+      setButtonContent(data);
     } catch (error) {
       console.error('Error fetching button content:', error);
     }
@@ -619,21 +608,12 @@ const BookingModal = ({ service, selectedItems, onClose, onOrderSuccess }) => {
         booking_amount: parseFloat(formData.booking_amount)
       };
 
-      const response = await fetch('https://api.userphoto.my.id/api/orders', {
+      const result = await apiFetch('/api/orders', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(orderData),
       });
-
-      if (response.ok) {
-        const result = await response.json();
-        toast.success('Pesanan berhasil dikirim! Silakan lanjutkan dengan pembayaran.');
-        onOrderSuccess({ ...orderData, id: result.id });
-      } else {
-        toast.error('Error mengirim pesanan. Silakan coba lagi.');
-      }
+      toast.success('Pesanan berhasil dikirim! Silakan lanjutkan dengan pembayaran.');
+      onOrderSuccess({ ...orderData, id: result.id });
     } catch (error) {
       console.error('Error:', error);
       toast.error('Error mengirim pesanan. Silakan coba lagi.');

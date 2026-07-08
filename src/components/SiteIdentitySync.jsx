@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { replaceBrandTokens, useSiteIdentity } from '../hooks/useSiteIdentity';
-import { API_BASE } from '../utils/endpoints';
+import { apiFetch } from '../utils/api';
 import { ShieldAlert } from 'lucide-react';
 
 function hexToRgb(hex) {
@@ -56,22 +56,9 @@ const SiteIdentitySync = () => {
     let active = true;
     const fetchTenantConfig = async () => {
       try {
-        const subdomainParam = new URLSearchParams(window.location.search).get('tenant');
-        const headers = {};
-        if (subdomainParam) {
-          headers['X-Tenant-Subdomain'] = subdomainParam;
-        } else {
-          // If we saved it to localStorage previously in apiFetch
-          const savedTenant = localStorage.getItem('selected_tenant_subdomain');
-          if (savedTenant && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-            headers['X-Tenant-Subdomain'] = savedTenant;
-          }
-        }
-
-        const response = await fetch(`${API_BASE}/api/tenant/config`, { headers });
-        if (!response.ok) return;
-
-        const config = await response.json();
+        // apiFetch automatically detects the subdomain from window.location.hostname
+        // and sends it as X-Tenant-Subdomain header — works in localhost AND production
+        const config = await apiFetch('/api/tenant/config');
         if (active) {
           setTenantStatus({
             loading: false,

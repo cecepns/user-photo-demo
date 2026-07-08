@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
-
-const API_BASE = 'https://api.userphoto.my.id';
+import { apiFetch } from '../utils/api';
+import { API_BASE } from '../utils/endpoints';
 function imageUrl(value) {
   if (!value) return '';
   if (value.startsWith('http')) return value;
@@ -24,15 +24,9 @@ const Gallery = () => {
   const fetchGalleryData = async () => {
     try {
       setLoading(true);
-
-      // Fetch categories
-      const categoriesResponse = await fetch('https://api.userphoto.my.id/api/gallery/categories');
-      const categoriesData = await categoriesResponse.json();
+      const categoriesData = await apiFetch('/api/gallery/categories');
       setCategories(categoriesData);
-
-      // Fetch images
-      const imagesResponse = await fetch('https://api.userphoto.my.id/api/gallery/images');
-      const imagesData = await imagesResponse.json();
+      const imagesData = await apiFetch('/api/gallery/images');
       setImages(imagesData);
     } catch (error) {
       console.error('Error fetching gallery data:', error);
@@ -43,11 +37,8 @@ const Gallery = () => {
 
   const fetchHeroContent = async () => {
     try {
-      const response = await fetch('https://api.userphoto.my.id/api/content-sections/gallery_hero_section');
-      if (response.ok) {
-        const data = await response.json();
-        setHeroContent(data);
-      }
+      const data = await apiFetch('/api/content-sections/gallery_hero_section');
+      setHeroContent(data);
     } catch (error) {
       console.error('Error fetching hero content:', error);
     }

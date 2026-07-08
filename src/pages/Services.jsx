@@ -3,6 +3,7 @@ import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
 import PropTypes from "prop-types";
 import { imageUrl } from "../utils/imageUrl";
+import { apiFetch } from "../utils/api";
 
 // Helper function to format price in Indonesian Rupiah format
 const formatPrice = (price) => {
@@ -22,10 +23,7 @@ const Services = () => {
 
   const fetchServices = async () => {
     try {
-      const response = await fetch(
-        "https://api.userphoto.my.id/api/services"
-      );
-      const data = await response.json();
+      const data = await apiFetch("/api/services");
       setServices(data);
     } catch (error) {
       console.error("Error fetching services:", error);
@@ -34,13 +32,8 @@ const Services = () => {
 
   const fetchHeroContent = async () => {
     try {
-      const response = await fetch(
-        "https://api.userphoto.my.id/api/content-sections/services_hero_section"
-      );
-      if (response.ok) {
-        const data = await response.json();
-        setHeroContent(data);
-      }
+      const data = await apiFetch("/api/content-sections/services_hero_section");
+      setHeroContent(data);
     } catch (error) {
       console.error("Error fetching hero content:", error);
     }

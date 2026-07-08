@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import toast from 'react-hot-toast';
 import { formatRupiah } from '../utils/formatters';
 import { useSiteIdentity } from '../hooks/useSiteIdentity';
+import { apiFetch } from '../utils/api';
 
 const CustomServiceModal = ({ isOpen, onClose }) => {
   const { contact: siteContact } = useSiteIdentity();
@@ -27,8 +28,7 @@ const CustomServiceModal = ({ isOpen, onClose }) => {
 
   const fetchServiceOptions = async () => {
     try {
-      const response = await fetch('https://api.userphoto.my.id/api/items');
-      const data = await response.json();
+      const data = await apiFetch('/api/items');
       setServiceOptions(data);
     } catch (error) {
       console.error('Error fetching service options:', error);
@@ -68,11 +68,8 @@ const CustomServiceModal = ({ isOpen, onClose }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('https://api.userphoto.my.id/api/custom-requests', {
+      await apiFetch('/api/custom-requests', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           ...formData,
           services: formData.services.map(serviceId => {
@@ -81,23 +78,18 @@ const CustomServiceModal = ({ isOpen, onClose }) => {
           }).join(', ')
         }),
       });
-
-      if (response.ok) {
-        toast.success('Permintaan layanan kustom berhasil dikirim! Kami akan menghubungi Anda segera.');
-        setFormData({
-          name: '',
-          email: '',
-          phone: '',
-          wedding_date: '',
-          guest_count: '',
-          budget: '',
-          services: [],
-          additional_requests: ''
-        });
-        onClose();
-      } else {
-        toast.error('Error mengirim permintaan. Silakan coba lagi.');
-      }
+      toast.success('Permintaan layanan kustom berhasil dikirim! Kami akan menghubungi Anda segera.');
+      setFormData({
+        name: '',
+        email: '',
+        phone: '',
+        wedding_date: '',
+        guest_count: '',
+        budget: '',
+        services: [],
+        additional_requests: ''
+      });
+      onClose();
     } catch (error) {
       console.error('Error:', error);
       toast.error('Error mengirim permintaan. Silakan coba lagi.');

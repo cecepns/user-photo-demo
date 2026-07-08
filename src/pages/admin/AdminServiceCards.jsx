@@ -3,6 +3,7 @@ import { Helmet } from 'react-helmet-async';
 import { Edit, Plus, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import AdminLayout from '../../components/AdminLayout';
+import { apiFetch } from '../../utils/api';
 
 const AdminServiceCards = () => {
   const [cards, setCards] = useState([]);
@@ -27,12 +28,7 @@ const AdminServiceCards = () => {
 
   const fetchCards = async () => {
     try {
-      const response = await fetch('https://api.userphoto.my.id/api/service-cards', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
-        }
-      });
-      const data = await response.json();
+      const data = await apiFetch('/api/service-cards');
       setCards(data);
     } catch (error) {
       console.error('Error fetching cards:', error);
@@ -46,34 +42,19 @@ const AdminServiceCards = () => {
     e.preventDefault();
 
     try {
-      const url = editingCard
-        ? `https://api.userphoto.my.id/api/service-cards/${editingCard.id}`
-        : 'https://api.userphoto.my.id/api/service-cards';
-
+      const path = editingCard
+        ? `/api/service-cards/${editingCard.id}`
+        : '/api/service-cards';
       const method = editingCard ? 'PUT' : 'POST';
-
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
-        },
-        body: JSON.stringify(formData)
-      });
-
-      if (response.ok) {
-        toast.success(editingCard ? 'Card berhasil diperbarui' : 'Card berhasil dibuat');
-        setShowModal(false);
-        setEditingCard(null);
-        resetForm();
-        fetchCards();
-      } else {
-        const error = await response.json();
-        toast.error(error.message || 'Terjadi kesalahan');
-      }
+      await apiFetch(path, { method, body: JSON.stringify(formData) });
+      toast.success(editingCard ? 'Card berhasil diperbarui' : 'Card berhasil dibuat');
+      setShowModal(false);
+      setEditingCard(null);
+      resetForm();
+      fetchCards();
     } catch (error) {
       console.error('Error saving card:', error);
-      toast.error('Gagal menyimpan card');
+      toast.error(error.data?.message || 'Gagal menyimpan card');
     }
   };
 
@@ -97,23 +78,12 @@ const AdminServiceCards = () => {
     if (!confirm('Apakah Anda yakin ingin menghapus card ini?')) return;
 
     try {
-      const response = await fetch(`https://api.userphoto.my.id/api/service-cards/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
-        }
-      });
-
-      if (response.ok) {
-        toast.success('Card berhasil dihapus');
-        fetchCards();
-      } else {
-        const error = await response.json();
-        toast.error(error.message || 'Terjadi kesalahan');
-      }
+      await apiFetch(`/api/service-cards/${id}`, { method: 'DELETE' });
+      toast.success('Card berhasil dihapus');
+      fetchCards();
     } catch (error) {
       console.error('Error deleting card:', error);
-      toast.error('Gagal menghapus card');
+      toast.error(error.data?.message || 'Gagal menghapus card');
     }
   };
 

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
+import { apiFetch } from '../utils/api';
 
 const About = () => {
   const [heroContent, setHeroContent] = useState(null);
@@ -14,26 +15,12 @@ const About = () => {
 
   const fetchAboutContent = async () => {
     try {
-      // Fetch hero section content
-      const heroResponse = await fetch('https://api.userphoto.my.id/api/content-sections/about_hero_section');
-      if (heroResponse.ok) {
-        const heroData = await heroResponse.json();
-        setHeroContent(heroData);
-      }
-
-      // Fetch mission section content
-      const missionResponse = await fetch('https://api.userphoto.my.id/api/content-sections/about_mission_section');
-      if (missionResponse.ok) {
-        const missionData = await missionResponse.json();
-        setMissionContent(missionData);
-      }
-
-      // Fetch CTA section content
-      const ctaResponse = await fetch('https://api.userphoto.my.id/api/content-sections/about_cta_section');
-      if (ctaResponse.ok) {
-        const ctaData = await ctaResponse.json();
-        setCtaContent(ctaData);
-      }
+      const heroData = await apiFetch('/api/content-sections/about_hero_section');
+      setHeroContent(heroData);
+      const missionData = await apiFetch('/api/content-sections/about_mission_section');
+      setMissionContent(missionData);
+      const ctaData = await apiFetch('/api/content-sections/about_cta_section');
+      setCtaContent(ctaData);
     } catch (error) {
       console.error('Error fetching about content:', error);
     }
@@ -41,11 +28,8 @@ const About = () => {
 
   const fetchAboutCards = async () => {
     try {
-      const response = await fetch('https://api.userphoto.my.id/api/service-cards?card_type=about');
-      if (response.ok) {
-        const data = await response.json();
-        setAboutCards(data);
-      }
+      const data = await apiFetch('/api/service-cards?card_type=about');
+      setAboutCards(data);
     } catch (error) {
       console.error('Error fetching about cards:', error);
     }

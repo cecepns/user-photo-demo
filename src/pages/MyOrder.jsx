@@ -5,8 +5,7 @@ import toast from "react-hot-toast";
 import { formatRupiah } from "../utils/formatters";
 import { imageUrl } from "../utils/imageUrl";
 import { formatPhotoStatus, formatVideoStatus } from "../constants/orderProgress";
-
-const API_BASE = "https://api.userphoto.my.id/api";
+import { apiFetch } from "../utils/api";
 
 const toNumber = (value) => {
   const n = typeof value === "number" ? value : parseFloat(value);
@@ -70,18 +69,20 @@ const MyOrder = () => {
     setOrderProgress(null);
     try {
       const tryFetchOrder = async () => {
-        const response = await fetch(
-          `${API_BASE}/orders/public/${encodeURIComponent(id)}?phone=${encodeURIComponent(phone)}`
-        );
-        const data = await response.json();
-        return { response, data, source: "order" };
+        try {
+          const data = await apiFetch(`/api/orders/public/${encodeURIComponent(id)}?phone=${encodeURIComponent(phone)}`);
+          return { ok: true, data, source: "order" };
+        } catch (e) {
+          return { ok: false, data: e.data || {}, source: "order" };
+        }
       };
       const tryFetchCustom = async () => {
-        const response = await fetch(
-          `${API_BASE}/custom-requests/public/${encodeURIComponent(id)}?phone=${encodeURIComponent(phone)}`
-        );
-        const data = await response.json();
-        return { response, data, source: "custom_request" };
+        try {
+          const data = await apiFetch(`/api/custom-requests/public/${encodeURIComponent(id)}?phone=${encodeURIComponent(phone)}`);
+          return { ok: true, data, source: "custom_request" };
+        } catch (e) {
+          return { ok: false, data: e.data || {}, source: "custom_request" };
+        }
       };
 
       let lookupResult;
@@ -89,15 +90,15 @@ const MyOrder = () => {
         lookupResult = await tryFetchCustom();
       } else {
         lookupResult = await tryFetchOrder();
-        if (!lookupResult.response.ok) {
+        if (!lookupResult.ok) {
           const fallback = await tryFetchCustom();
-          if (fallback.response.ok) {
+          if (fallback.ok) {
             lookupResult = fallback;
           }
         }
       }
 
-      if (!lookupResult.response.ok) {
+      if (!lookupResult.ok) {
         throw new Error(lookupResult.data?.message || "Pesanan tidak ditemukan");
       }
 
@@ -106,22 +107,22 @@ const MyOrder = () => {
 
       const apiSource =
         lookupResult.source === "custom_request" ? "custom_request" : "order";
-      const progRes = await fetch(
-        `${API_BASE}/album-progress/public/${apiSource}/${lookupResult.data.id}?phone=${encodeURIComponent(phone)}`
-      );
-      const progJson = await progRes.json().catch(() => ({}));
-      if (progRes.ok) {
+      try {
+        const progJson = await apiFetch(
+          `/api/album-progress/public/${apiSource}/${lookupResult.data.id}?phone=${encodeURIComponent(phone)}`
+        );
         setAlbumProgress(progJson.progress || null);
-      } else {
+      } catch {
         setAlbumProgress(null);
       }
 
-      const orderProgRes = await fetch(
-        `${API_BASE}/order-progress/public/${apiSource}/${lookupResult.data.id}?phone=${encodeURIComponent(phone)}`
-      );
-      const orderProgJson = await orderProgRes.json().catch(() => ({}));
-      if (orderProgRes.ok) {
+      try {
+        const orderProgJson = await apiFetch(
+          `/api/order-progress/public/${apiSource}/${lookupResult.data.id}?phone=${encodeURIComponent(phone)}`
+        );
         setOrderProgress(orderProgJson.progress || null);
+      } catch {
+        setOrderProgress(null);
       }
     } catch (error) {
       setOrder(null);
