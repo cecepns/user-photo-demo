@@ -27,7 +27,7 @@ const AdminServiceCards = () => {
 
   const fetchCards = async () => {
     try {
-      const response = await fetch('https://api.kingcreativestudio.my.id/user-photo/api/service-cards', {
+      const response = await fetch('https://api.userphoto.my.idapi/service-cards', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
         }
@@ -44,14 +44,14 @@ const AdminServiceCards = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     try {
-      const url = editingCard 
-        ? `https://api.kingcreativestudio.my.id/user-photo/api/service-cards/${editingCard.id}`
-        : 'https://api.kingcreativestudio.my.id/user-photo/api/service-cards';
-      
+      const url = editingCard
+        ? `https://api.userphoto.my.idapi/service-cards/${editingCard.id}`
+        : 'https://api.userphoto.my.idapi/service-cards';
+
       const method = editingCard ? 'PUT' : 'POST';
-      
+
       const response = await fetch(url, {
         method,
         headers: {
@@ -97,7 +97,7 @@ const AdminServiceCards = () => {
     if (!confirm('Apakah Anda yakin ingin menghapus card ini?')) return;
 
     try {
-      const response = await fetch(`https://api.kingcreativestudio.my.id/user-photo/api/service-cards/${id}`, {
+      const response = await fetch(`https://api.userphoto.my.idapi/service-cards/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
@@ -204,9 +204,8 @@ const AdminServiceCards = () => {
                         <div className="text-sm font-semibold text-gray-900">{card.title}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold ${
-                          card.card_type === "service" ? "bg-blue-100 text-blue-800" : "bg-green-100 text-green-800"
-                        }`}>
+                        <span className={`inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold ${card.card_type === "service" ? "bg-blue-100 text-blue-800" : "bg-green-100 text-green-800"
+                          }`}>
                           {card.card_type === "service" ? "Service" : "About"}
                         </span>
                       </td>
@@ -216,9 +215,8 @@ const AdminServiceCards = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold ${
-                          card.is_active ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                        }`}>
+                        <span className={`inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold ${card.is_active ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                          }`}>
                           {card.is_active ? "Aktif" : "Nonaktif"}
                         </span>
                       </td>
@@ -269,7 +267,7 @@ const AdminServiceCards = () => {
                       <input
                         type="text"
                         value={formData.title}
-                        onChange={(e) => setFormData({...formData, title: e.target.value})}
+                        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                         placeholder="Dokumentasi Wedding"
                         required
@@ -283,7 +281,7 @@ const AdminServiceCards = () => {
                       <input
                         type="text"
                         value={formData.icon}
-                        onChange={(e) => setFormData({...formData, icon: e.target.value})}
+                        onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                         placeholder="Masukan Icon, Contoh : 💒"
                       />
@@ -298,7 +296,7 @@ const AdminServiceCards = () => {
                       </label>
                       <select
                         value={formData.card_type}
-                        onChange={(e) => setFormData({...formData, card_type: e.target.value})}
+                        onChange={(e) => setFormData({ ...formData, card_type: e.target.value })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                         required
                       >
@@ -314,7 +312,7 @@ const AdminServiceCards = () => {
                     </label>
                     <textarea
                       value={formData.description}
-                      onChange={(e) => setFormData({...formData, description: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                       rows={3}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                       placeholder="Deskripsi layanan..."
@@ -330,7 +328,7 @@ const AdminServiceCards = () => {
                         <input
                           type="url"
                           value={formData.image_url}
-                          onChange={(e) => setFormData({...formData, image_url: e.target.value})}
+                          onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                           placeholder="https://example.com/image.jpg"
                         />
@@ -344,7 +342,7 @@ const AdminServiceCards = () => {
                           <input
                             type="text"
                             value={formData.button_text}
-                            onChange={(e) => setFormData({...formData, button_text: e.target.value})}
+                            onChange={(e) => setFormData({ ...formData, button_text: e.target.value })}
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                             placeholder="Lihat Paket →"
                           />
@@ -357,7 +355,7 @@ const AdminServiceCards = () => {
                           <input
                             type="text"
                             value={formData.button_url}
-                            onChange={(e) => setFormData({...formData, button_url: e.target.value})}
+                            onChange={(e) => setFormData({ ...formData, button_url: e.target.value })}
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                             placeholder="/services"
                           />
@@ -373,7 +371,7 @@ const AdminServiceCards = () => {
                       </label>
                       <select
                         value={formData.is_active}
-                        onChange={(e) => setFormData({...formData, is_active: e.target.value === 'true'})}
+                        onChange={(e) => setFormData({ ...formData, is_active: e.target.value === 'true' })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                       >
                         <option value={true}>Aktif</option>
@@ -388,7 +386,7 @@ const AdminServiceCards = () => {
                       <input
                         type="number"
                         value={formData.sort_order}
-                        onChange={(e) => setFormData({...formData, sort_order: parseInt(e.target.value) || 0})}
+                        onChange={(e) => setFormData({ ...formData, sort_order: parseInt(e.target.value) || 0 })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                         placeholder="0"
                       />

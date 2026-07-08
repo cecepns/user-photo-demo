@@ -18,7 +18,7 @@ const Home = () => {
       once: true,
       mirror: false,
     });
-    
+
     fetchHeroContent();
     fetchServicesContent();
     fetchServiceCards();
@@ -27,7 +27,7 @@ const Home = () => {
 
   const fetchHeroContent = async () => {
     try {
-      const response = await fetch('https://api.kingcreativestudio.my.id/user-photo/api/content-sections/hero_section');
+      const response = await fetch('https://api.userphoto.my.idapi/content-sections/hero_section');
       if (response.ok) {
         const data = await response.json();
         setHeroContent(data);
@@ -39,7 +39,7 @@ const Home = () => {
 
   const fetchServicesContent = async () => {
     try {
-      const response = await fetch('https://api.kingcreativestudio.my.id/user-photo/api/content-sections/services_preview_section');
+      const response = await fetch('https://api.userphoto.my.idapi/content-sections/services_preview_section');
       if (response.ok) {
         const data = await response.json();
         setServicesContent(data);
@@ -51,7 +51,7 @@ const Home = () => {
 
   const fetchServiceCards = async () => {
     try {
-      const response = await fetch('https://api.kingcreativestudio.my.id/user-photo/api/service-cards?card_type=service');
+      const response = await fetch('https://api.userphoto.my.idapi/service-cards?card_type=service');
       if (response.ok) {
         const data = await response.json();
         setServiceCards(data);
@@ -63,7 +63,7 @@ const Home = () => {
 
   const fetchCtaContent = async () => {
     try {
-      const response = await fetch('https://api.kingcreativestudio.my.id/user-photo/api/content-sections/home_cta_section');
+      const response = await fetch('https://api.userphoto.my.idapi/content-sections/home_cta_section');
       if (response.ok) {
         const data = await response.json();
         setCtaContent(data);
@@ -96,12 +96,12 @@ const Home = () => {
             <div data-aos="fade-right" data-aos-delay="200">
               <h1 className="text-3xl md:text-5xl lg:text-7xl font-bold text-gray-800 mb-6 leading-tight">
                 {heroContent ? heroContent.title : 'Hari'}
-                {heroContent && heroContent.subtitle 
+                {heroContent && heroContent.subtitle
                   ? heroContent.subtitle.split(', ').map((part, index) => (
-                      <span key={index} className={`block ${index === 0 ? 'text-gradient' : ''}`}>
-                        {part}
-                      </span>
-                    ))
+                    <span key={index} className={`block ${index === 0 ? 'text-gradient' : ''}`}>
+                      {part}
+                    </span>
+                  ))
                   : <span className="text-gradient block">Pernikahan</span>
                 }
               </h1>
@@ -113,8 +113,8 @@ const Home = () => {
                 data-aos="fade-up"
                 data-aos-delay="400"
               >
-                <Link 
-                  to={heroContent ? heroContent.button_url : '/contact'} 
+                <Link
+                  to={heroContent ? heroContent.button_url : '/contact'}
                   className="btn-primary-outline text-center"
                 >
                   {heroContent ? heroContent.button_text : 'Konsultasi Gratis'}

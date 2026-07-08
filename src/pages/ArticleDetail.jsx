@@ -13,7 +13,7 @@ const ArticleDetail = () => {
 
   const fetchArticle = async () => {
     try {
-      const response = await fetch(`https://api.kingcreativestudio.my.id/user-photo/api/articles/${id}`);
+      const response = await fetch(`https://api.userphoto.my.idapi/articles/${id}`);
       const data = await response.json();
       setArticle(data);
     } catch (error) {
@@ -75,10 +75,10 @@ const ArticleDetail = () => {
                 {article.title}
               </h1>
               <div className="flex items-center text-gray-500 mb-6">
-                <span>{new Date(article.created_at).toLocaleDateString('id-ID', { 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric' 
+                <span>{new Date(article.created_at).toLocaleDateString('id-ID', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
                 })}</span>
                 <span className="mx-2">•</span>
                 <span>{article.category || 'Tips Pernikahan'}</span>

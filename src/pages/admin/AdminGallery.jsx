@@ -4,7 +4,7 @@ import { Plus, Edit, Trash2, Image, Star, Eye, EyeOff, Upload } from 'lucide-rea
 import toast, { Toaster } from 'react-hot-toast';
 import AdminLayout from '../../components/AdminLayout';
 
-const API_BASE = 'https://api.kingcreativestudio.my.id/user-photo';
+const API_BASE = 'https://api.userphoto.my.id';
 function imageUrl(value) {
   if (!value) return '';
   if (value.startsWith('http')) return value;
@@ -44,10 +44,10 @@ const AdminGallery = () => {
 
   const fetchImages = async () => {
     try {
-      const url = selectedCategory === 'all' 
+      const url = selectedCategory === 'all'
         ? `${API_BASE}/api/gallery/images`
         : `${API_BASE}/api/gallery/images?category_id=${selectedCategory}`;
-      
+
       const response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
@@ -105,14 +105,14 @@ const AdminGallery = () => {
 
   const handleImageSubmit = async (e) => {
     e.preventDefault();
-    
+
     try {
-      const url = editingImage 
+      const url = editingImage
         ? `${API_BASE}/api/gallery/images/${editingImage.id}`
         : `${API_BASE}/api/gallery/images`;
-      
+
       const method = editingImage ? 'PUT' : 'POST';
-      
+
       const response = await fetch(url, {
         method,
         headers: {
@@ -146,14 +146,14 @@ const AdminGallery = () => {
 
   const handleCategorySubmit = async (e) => {
     e.preventDefault();
-    
+
     try {
-      const url = editingCategory 
-        ? `https://api.kingcreativestudio.my.id/user-photo/api/gallery/categories/${editingCategory.id}`
-        : 'https://api.kingcreativestudio.my.id/user-photo/api/gallery/categories';
-      
+      const url = editingCategory
+        ? `https://api.userphoto.my.idapi/gallery/categories/${editingCategory.id}`
+        : 'https://api.userphoto.my.idapi/gallery/categories';
+
       const method = editingCategory ? 'PUT' : 'POST';
-      
+
       const response = await fetch(url, {
         method,
         headers: {
@@ -215,7 +215,7 @@ const AdminGallery = () => {
     });
 
     if (!confirmed) return;
-    
+
     try {
       const response = await fetch(`${API_BASE}/api/gallery/images/${id}`, {
         method: 'DELETE',
@@ -269,7 +269,7 @@ const AdminGallery = () => {
     });
 
     if (!confirmed) return;
-    
+
     try {
       const response = await fetch(`${API_BASE}/api/gallery/categories/${id}`, {
         method: 'DELETE',
@@ -354,22 +354,20 @@ const AdminGallery = () => {
           <div className="flex space-x-1 bg-gray-100 rounded-lg p-1">
             <button
               onClick={() => setActiveTab('images')}
-              className={`flex-1 py-2 px-4 rounded-md font-medium transition-colors flex items-center justify-center gap-2 ${
-                activeTab === 'images'
-                  ? 'bg-white text-primary-700 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
+              className={`flex-1 py-2 px-4 rounded-md font-medium transition-colors flex items-center justify-center gap-2 ${activeTab === 'images'
+                ? 'bg-white text-primary-700 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+                }`}
             >
               <Image size={16} />
               Gambar ({images.length})
             </button>
             <button
               onClick={() => setActiveTab('categories')}
-              className={`flex-1 py-2 px-4 rounded-md font-medium transition-colors flex items-center justify-center gap-2 ${
-                activeTab === 'categories'
-                  ? 'bg-white text-primary-700 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
+              className={`flex-1 py-2 px-4 rounded-md font-medium transition-colors flex items-center justify-center gap-2 ${activeTab === 'categories'
+                ? 'bg-white text-primary-700 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+                }`}
             >
               <Star size={16} />
               Kategori ({categories.length})
@@ -550,7 +548,7 @@ const AdminGallery = () => {
                   <input
                     type="text"
                     value={imageForm.title}
-                    onChange={(e) => setImageForm({...imageForm, title: e.target.value})}
+                    onChange={(e) => setImageForm({ ...imageForm, title: e.target.value })}
                     className="w-full border border-gray-300 rounded-md px-3 py-2"
                     required
                   />
@@ -559,7 +557,7 @@ const AdminGallery = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">Deskripsi</label>
                   <textarea
                     value={imageForm.description}
-                    onChange={(e) => setImageForm({...imageForm, description: e.target.value})}
+                    onChange={(e) => setImageForm({ ...imageForm, description: e.target.value })}
                     className="w-full border border-gray-300 rounded-md px-3 py-2"
                     rows="3"
                   />
@@ -591,7 +589,7 @@ const AdminGallery = () => {
                   <input
                     type="text"
                     value={imageForm.image_url}
-                    onChange={(e) => setImageForm({...imageForm, image_url: e.target.value})}
+                    onChange={(e) => setImageForm({ ...imageForm, image_url: e.target.value })}
                     placeholder="URL atau pilih upload di atas (filename disimpan)"
                     className="w-full border border-gray-300 rounded-md px-3 py-2 mt-2 text-sm"
                     required
@@ -601,7 +599,7 @@ const AdminGallery = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">Kategori</label>
                   <select
                     value={imageForm.category_id}
-                    onChange={(e) => setImageForm({...imageForm, category_id: e.target.value})}
+                    onChange={(e) => setImageForm({ ...imageForm, category_id: e.target.value })}
                     className="w-full border border-gray-300 rounded-md px-3 py-2"
                   >
                     <option value="">Pilih Kategori</option>
@@ -618,7 +616,7 @@ const AdminGallery = () => {
                       type="checkbox"
                       id="is_featured"
                       checked={imageForm.is_featured}
-                      onChange={(e) => setImageForm({...imageForm, is_featured: e.target.checked})}
+                      onChange={(e) => setImageForm({ ...imageForm, is_featured: e.target.checked })}
                       className="mr-2"
                     />
                     <label htmlFor="is_featured" className="text-sm text-gray-700">Featured</label>
@@ -628,7 +626,7 @@ const AdminGallery = () => {
                     <input
                       type="number"
                       value={imageForm.sort_order}
-                      onChange={(e) => setImageForm({...imageForm, sort_order: parseInt(e.target.value)})}
+                      onChange={(e) => setImageForm({ ...imageForm, sort_order: parseInt(e.target.value) })}
                       className="w-24 border border-gray-300 rounded-md px-3 py-2"
                     />
                   </div>
@@ -666,7 +664,7 @@ const AdminGallery = () => {
                   <input
                     type="text"
                     value={categoryForm.name}
-                    onChange={(e) => setCategoryForm({...categoryForm, name: e.target.value})}
+                    onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
                     className="w-full border border-gray-300 rounded-md px-3 py-2"
                     required
                   />
@@ -675,7 +673,7 @@ const AdminGallery = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">Deskripsi</label>
                   <textarea
                     value={categoryForm.description}
-                    onChange={(e) => setCategoryForm({...categoryForm, description: e.target.value})}
+                    onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
                     className="w-full border border-gray-300 rounded-md px-3 py-2"
                     rows="3"
                   />
@@ -685,7 +683,7 @@ const AdminGallery = () => {
                   <input
                     type="number"
                     value={categoryForm.sort_order}
-                    onChange={(e) => setCategoryForm({...categoryForm, sort_order: parseInt(e.target.value)})}
+                    onChange={(e) => setCategoryForm({ ...categoryForm, sort_order: parseInt(e.target.value) })}
                     className="w-full border border-gray-300 rounded-md px-3 py-2"
                   />
                 </div>

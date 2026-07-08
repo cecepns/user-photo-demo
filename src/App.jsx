@@ -39,6 +39,7 @@ import AdminFreelanceCalendar from './pages/admin/AdminFreelanceCalendar';
 import AdminChangePassword from './pages/admin/AdminChangePassword';
 import FreelancerLogin from './pages/freelancer/FreelancerLogin';
 import FreelancerCalendar from './pages/freelancer/FreelancerCalendar';
+import MasterAdmin from './pages/admin/MasterAdmin';
 import ProtectedRoute from './components/ProtectedRoute';
 import ProtectedFreelancerRoute from './components/ProtectedFreelancerRoute';
 import SiteIdentitySync from './components/SiteIdentitySync';
@@ -53,6 +54,11 @@ function App() {
           <Routes>
             {/* Admin Routes */}
             <Route path="/admin/login" element={<AdminLogin />} />
+            <Route path="/master-admin" element={
+              <ProtectedRoute>
+                <MasterAdmin />
+              </ProtectedRoute>
+            } />
             <Route path="/freelancer/login" element={<FreelancerLogin />} />
             <Route path="/freelancer/calendar" element={
               <ProtectedFreelancerRoute>

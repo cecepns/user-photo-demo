@@ -6,7 +6,7 @@ import { formatRupiah } from "../utils/formatters";
 import { imageUrl } from "../utils/imageUrl";
 import { formatPhotoStatus, formatVideoStatus } from "../constants/orderProgress";
 
-const API_BASE = "https://api.kingcreativestudio.my.id/user-photo/api";
+const API_BASE = "https://api.userphoto.my.idapi";
 
 const toNumber = (value) => {
   const n = typeof value === "number" ? value : parseFloat(value);
@@ -29,11 +29,11 @@ const weddingDateToInputValue = (value) => {
 };
 
 const formatProgressStatus = (s) =>
-  ({
-    pending: "Pending",
-    diproses: "Diproses",
-    selesai: "Selesai",
-  }[s] || s || "-");
+({
+  pending: "Pending",
+  diproses: "Diproses",
+  selesai: "Selesai",
+}[s] || s || "-");
 
 const MyOrder = () => {
   const [invoiceId, setInvoiceId] = useState("");
@@ -350,7 +350,7 @@ const MyOrder = () => {
                                 )
                               ));
                             }
-                          } catch {}
+                          } catch { }
                           return null;
                         })()}
                       </dl>
@@ -393,10 +393,10 @@ const MyOrder = () => {
                           {displayItems.map((item, index) => {
                             const unitPrice = toNumber(
                               item.final_price ??
-                                item.custom_price ??
-                                item.item_price ??
-                                item.price ??
-                                0
+                              item.custom_price ??
+                              item.item_price ??
+                              item.price ??
+                              0
                             );
                             return (
                               <li

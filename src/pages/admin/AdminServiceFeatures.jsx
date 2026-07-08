@@ -24,7 +24,7 @@ const AdminServiceFeatures = () => {
     try {
       const token = localStorage.getItem("admin_token");
       const response = await fetch(
-        "https://api.kingcreativestudio.my.id/user-photo/api/service-features",
+        "https://api.userphoto.my.idapi/service-features",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -52,8 +52,8 @@ const AdminServiceFeatures = () => {
     try {
       const token = localStorage.getItem("admin_token");
       const url = editingFeature
-        ? `https://api.kingcreativestudio.my.id/user-photo/api/service-features/${editingFeature.id}`
-        : "https://api.kingcreativestudio.my.id/user-photo/api/service-features";
+        ? `https://api.userphoto.my.idapi/service-features/${editingFeature.id}`
+        : "https://api.userphoto.my.idapi/service-features";
 
       const method = editingFeature ? "PUT" : "POST";
       const postData = {
@@ -111,7 +111,7 @@ const AdminServiceFeatures = () => {
     try {
       const token = localStorage.getItem("admin_token");
       const response = await fetch(
-        `https://api.kingcreativestudio.my.id/user-photo/api/service-features/${id}`,
+        `https://api.userphoto.my.idapi/service-features/${id}`,
         {
           method: "DELETE",
           headers: {
@@ -206,9 +206,8 @@ const AdminServiceFeatures = () => {
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold ${
-                          feature.is_active ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                        }`}>
+                        <span className={`inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold ${feature.is_active ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                          }`}>
                           {feature.is_active ? "Aktif" : "Nonaktif"}
                         </span>
                       </td>

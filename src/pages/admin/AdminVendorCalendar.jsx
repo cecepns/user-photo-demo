@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import AdminLayout from "../../components/AdminLayout";
 import { toLocalDate } from "../../utils/formatters";
 
-const API_BASE = "https://api.kingcreativestudio.my.id/user-photo/api";
+const API_BASE = "https://api.userphoto.my.idapi";
 
 const VENDOR_COLOR_POOL = [
   "bg-green-600 text-white",
@@ -208,7 +208,7 @@ const AdminVendorCalendar = () => {
     return result;
   }, [selectedDateEvents]);
 
-   const getCalendarDays = () => {
+  const getCalendarDays = () => {
     const year = calendarMonth.getFullYear();
     const month = calendarMonth.getMonth();
     const firstDay = new Date(year, month, 1);
@@ -417,9 +417,8 @@ const AdminVendorCalendar = () => {
                       key={key}
                       type="button"
                       onClick={() => setSelectedDate(key)}
-                      className={`min-h-20 border border-gray-100 p-1 text-left align-top ${
-                        vendorsForDay.length > 0 ? "bg-blue-50" : "bg-white"
-                      } ${isSelected ? "ring-2 ring-primary-500 z-10" : ""}`}
+                      className={`min-h-20 border border-gray-100 p-1 text-left align-top ${vendorsForDay.length > 0 ? "bg-blue-50" : "bg-white"
+                        } ${isSelected ? "ring-2 ring-primary-500 z-10" : ""}`}
                     >
                       <div className="text-sm text-blue-700 font-medium mb-1 text-center">
                         {date.getDate()}
@@ -556,13 +555,13 @@ const AdminVendorCalendar = () => {
                     <p className="font-medium text-gray-900">
                       {selectedEventDetail.wedding_date
                         ? toLocalDate(selectedEventDetail.wedding_date).toLocaleDateString(
-                            "id-ID",
-                            {
-                              day: "2-digit",
-                              month: "long",
-                              year: "numeric",
-                            }
-                          )
+                          "id-ID",
+                          {
+                            day: "2-digit",
+                            month: "long",
+                            year: "numeric",
+                          }
+                        )
                         : "-"}
                     </p>
                   </div>

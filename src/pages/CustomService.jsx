@@ -6,7 +6,7 @@ import { ChevronLeft, ChevronRight, X, Image as ImageIcon } from "lucide-react";
 import { formatRupiah } from "../utils/formatters";
 import { useSiteIdentity } from "../hooks/useSiteIdentity";
 
-const API_BASE = "https://api.kingcreativestudio.my.id/user-photo";
+const API_BASE = "https://api.userphoto.my.id";
 function itemImageUrl(filename) {
   if (!filename || filename.startsWith("http")) return filename || "";
   return `${API_BASE}/uploads-weddingsapp/${filename}`;
@@ -81,7 +81,7 @@ const CustomService = () => {
   const fetchCategories = async () => {
     try {
       const response = await fetch(
-        "https://api.kingcreativestudio.my.id/user-photo/api/items/categories"
+        "https://api.userphoto.my.idapi/items/categories"
       );
       const data = await response.json();
       setCategories(data);
@@ -93,10 +93,10 @@ const CustomService = () => {
   const fetchServiceOptions = async (category = "") => {
     try {
       const url = category
-        ? `https://api.kingcreativestudio.my.id/user-photo/api/items?category=${encodeURIComponent(
-            category
-          )}`
-        : "https://api.kingcreativestudio.my.id/user-photo/api/items";
+        ? `https://api.userphoto.my.idapi/items?category=${encodeURIComponent(
+          category
+        )}`
+        : "https://api.userphoto.my.idapi/items";
       const response = await fetch(url);
       const data = await response.json();
       setServiceOptions(data);
@@ -109,7 +109,7 @@ const CustomService = () => {
   const fetchPaymentMethods = async () => {
     try {
       const response = await fetch(
-        "https://api.kingcreativestudio.my.id/user-photo/api/payment-methods"
+        "https://api.userphoto.my.idapi/payment-methods"
       );
       const data = await response.json();
       setPaymentMethods(data);
@@ -124,7 +124,7 @@ const CustomService = () => {
   const fetchCustomServiceContent = async () => {
     try {
       const response = await fetch(
-        "https://api.kingcreativestudio.my.id/user-photo/api/content-sections/custom_service_section"
+        "https://api.userphoto.my.idapi/content-sections/custom_service_section"
       );
       if (response.ok) {
         const data = await response.json();
@@ -171,7 +171,7 @@ const CustomService = () => {
     e.preventDefault();
     try {
       const response = await fetch(
-        "https://api.kingcreativestudio.my.id/user-photo/api/custom-requests",
+        "https://api.userphoto.my.idapi/custom-requests",
         {
           method: "POST",
           headers: {
@@ -309,11 +309,10 @@ const CustomService = () => {
                     {paymentMethods.map((method) => (
                       <div
                         key={method.id}
-                        className={`p-4 border rounded-lg cursor-pointer transition-all ${
-                          selectedPaymentMethod?.id === method.id
-                            ? "border-primary-500 bg-primary-50"
-                            : "border-gray-300 hover:border-primary-300"
-                        }`}
+                        className={`p-4 border rounded-lg cursor-pointer transition-all ${selectedPaymentMethod?.id === method.id
+                          ? "border-primary-500 bg-primary-50"
+                          : "border-gray-300 hover:border-primary-300"
+                          }`}
                         onClick={() => setSelectedPaymentMethod(method)}
                       >
                         <div className="flex items-center justify-between">
@@ -570,15 +569,14 @@ const CustomService = () => {
                         }));
                       }
                     }}
-                    className={`w-full sm:w-auto px-6 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      formData.services.length === serviceOptions.length &&
+                    className={`w-full sm:w-auto px-6 py-2 rounded-lg text-sm font-medium transition-colors ${formData.services.length === serviceOptions.length &&
                       serviceOptions.length > 0
-                        ? "bg-red-600 text-white hover:bg-red-700"
-                        : "bg-primary-600 text-white hover:bg-primary-700"
-                    }`}
+                      ? "bg-red-600 text-white hover:bg-red-700"
+                      : "bg-primary-600 text-white hover:bg-primary-700"
+                      }`}
                   >
                     {formData.services.length === serviceOptions.length &&
-                    serviceOptions.length > 0
+                      serviceOptions.length > 0
                       ? "Hapus Semua"
                       : "Pilih Semua"}
                   </button>
@@ -647,11 +645,10 @@ const CustomService = () => {
                   return (
                     <div
                       key={service.id}
-                      className={`rounded-2xl overflow-hidden border-2 shadow-lg transition-all duration-300 hover:shadow-xl ${
-                        formData.services.includes(service.id)
-                          ? "border-primary-500 ring-2 ring-primary-200"
-                          : "border-gray-200 hover:border-primary-300"
-                      }`}
+                      className={`rounded-2xl overflow-hidden border-2 shadow-lg transition-all duration-300 hover:shadow-xl ${formData.services.includes(service.id)
+                        ? "border-primary-500 ring-2 ring-primary-200"
+                        : "border-gray-200 hover:border-primary-300"
+                        }`}
                     >
                       <div className="flex flex-col bg-gradient-to-r from-primary-600 to-secondary-600">
                         {/* Content: title, description, price, button - always on top */}
@@ -678,11 +675,10 @@ const CustomService = () => {
                             <button
                               type="button"
                               onClick={() => handleServiceToggle(service)}
-                              className={`w-full sm:w-auto px-6 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                                formData.services.includes(service.id)
-                                  ? "bg-white text-primary-600 hover:bg-white/90 shadow"
-                                  : "bg-white/20 text-white hover:bg-white/30 border border-white/40"
-                              }`}
+                              className={`w-full sm:w-auto px-6 py-2.5 rounded-xl text-sm font-medium transition-all ${formData.services.includes(service.id)
+                                ? "bg-white text-primary-600 hover:bg-white/90 shadow"
+                                : "bg-white/20 text-white hover:bg-white/30 border border-white/40"
+                                }`}
                             >
                               {formData.services.includes(service.id)
                                 ? "✓ Dipilih"
@@ -786,11 +782,10 @@ const CustomService = () => {
                                 e.stopPropagation();
                                 setLightboxIndex(i);
                               }}
-                              className={`w-2.5 h-2.5 rounded-full transition-colors ${
-                                i === lightboxIndex
-                                  ? "bg-white scale-125"
-                                  : "bg-white/50 hover:bg-white/70"
-                              }`}
+                              className={`w-2.5 h-2.5 rounded-full transition-colors ${i === lightboxIndex
+                                ? "bg-white scale-125"
+                                : "bg-white/50 hover:bg-white/70"
+                                }`}
                               aria-label={`Gambar ${i + 1}`}
                             />
                           ))}
@@ -809,11 +804,10 @@ const CustomService = () => {
                 <button
                   onClick={handleContinueToForm}
                   disabled={formData.services.length === 0}
-                  className={`px-4 md:px-8 py-3 md:py-4 rounded-lg text-lg font-medium transition-all duration-300 shadow-lg ${
-                    formData.services.length === 0
-                      ? "bg-gray-300 text-gray-500 cursor-not-allowed shadow-md"
-                      : "btn-primary text-white hover:bg-green-700 hover:shadow-xl transform hover:scale-105"
-                  }`}
+                  className={`px-4 md:px-8 py-3 md:py-4 rounded-lg text-lg font-medium transition-all duration-300 shadow-lg ${formData.services.length === 0
+                    ? "bg-gray-300 text-gray-500 cursor-not-allowed shadow-md"
+                    : "btn-primary text-white hover:bg-green-700 hover:shadow-xl transform hover:scale-105"
+                    }`}
                 >
                   <div className="flex items-center gap-2">
                     <span>Lanjutkan</span>

@@ -23,7 +23,7 @@ import jsPDF from "jspdf";
 import QRCode from "qrcode";
 import { useSiteIdentity } from "../../hooks/useSiteIdentity";
 
-const API_BASE = "https://api.kingcreativestudio.my.id/user-photo";
+const API_BASE = "https://api.userphoto.my.id";
 function imageUrl(value) {
   if (!value) return "";
   if (value.startsWith("http")) return value;
@@ -333,7 +333,7 @@ const AdminSuratJalan = () => {
           },
         };
       });
-      
+
       setOrderOptions(options);
       return options;
     } catch (error) {
@@ -398,7 +398,7 @@ const AdminSuratJalan = () => {
       } else {
         setSelectedOrder(null);
       }
-      
+
       setFormData({
         order_id: item.order_id || "",
         custom_request_id: item.custom_request_id || "",
@@ -601,26 +601,26 @@ const AdminSuratJalan = () => {
     return new Promise((resolve, reject) => {
       let timeoutId;
       let resolved = false;
-      
+
       const tryLoadImage = (useCORS = true) => {
         const img = new Image();
-        
+
         if (useCORS) {
           img.crossOrigin = "anonymous";
         }
-        
+
         img.onload = () => {
           if (resolved) return;
           resolved = true;
           clearTimeout(timeoutId);
-          
+
           try {
             const canvas = document.createElement('canvas');
             canvas.width = img.width;
             canvas.height = img.height;
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0);
-            
+
             try {
               const dataURL = canvas.toDataURL('image/jpeg', 0.85);
               resolve({ dataURL, width: img.width, height: img.height });
@@ -637,7 +637,7 @@ const AdminSuratJalan = () => {
             reject(error);
           }
         };
-        
+
         img.onerror = (error) => {
           if (resolved) return;
           console.error('Image load error:', error, 'URL:', url);
@@ -650,10 +650,10 @@ const AdminSuratJalan = () => {
             reject(new Error('Failed to load image: ' + url));
           }
         };
-        
+
         img.src = url + (url.includes('?') ? '&' : '?') + '_t=' + Date.now();
       };
-      
+
       // Set timeout
       timeoutId = setTimeout(() => {
         if (!resolved) {
@@ -661,7 +661,7 @@ const AdminSuratJalan = () => {
           reject(new Error('Image load timeout: ' + url));
         }
       }, timeout);
-      
+
       // Start loading with CORS
       tryLoadImage(true);
     });
@@ -669,7 +669,7 @@ const AdminSuratJalan = () => {
 
   const generatePDF = async (item) => {
     const loadingToast = toast.loading("Memuat gambar dan membuat PDF...");
-    
+
     try {
       const doc = new jsPDF();
 
@@ -768,7 +768,7 @@ const AdminSuratJalan = () => {
       doc.setFont("helvetica", "bold");
       doc.text("1. Plaminan:", 20, currentY);
       currentY += 6;
-      
+
       if (item.plaminan_image) {
         try {
           toast.loading("Memuat gambar Plaminan...", { id: loadingToast });
@@ -776,16 +776,16 @@ const AdminSuratJalan = () => {
           const { dataURL, width, height } = await loadImageAsDataURL(url, 15000);
           const aspectRatio = width / height;
           const imgHeight = Math.min(maxImageHeight, imageWidth / aspectRatio);
-          
+
           // Check if we need a new page
           if (currentY + imgHeight > 270) {
             doc.addPage();
             currentY = 20;
           }
-          
+
           doc.addImage(dataURL, 'JPEG', 20, currentY, imageWidth, imgHeight);
           currentY += imgHeight + 8;
-          
+
           // Small delay to prevent overwhelming the server
           await new Promise(resolve => setTimeout(resolve, 300));
         } catch (error) {
@@ -809,11 +809,11 @@ const AdminSuratJalan = () => {
         doc.addPage();
         currentY = 20;
       }
-      
+
       doc.setFont("helvetica", "bold");
       doc.text("2. Pintu Masuk:", 20, currentY);
       currentY += 6;
-      
+
       if (item.pintu_masuk_image) {
         try {
           toast.loading("Memuat gambar Pintu Masuk...", { id: loadingToast });
@@ -821,15 +821,15 @@ const AdminSuratJalan = () => {
           const { dataURL, width, height } = await loadImageAsDataURL(url, 15000);
           const aspectRatio = width / height;
           const imgHeight = Math.min(maxImageHeight, imageWidth / aspectRatio);
-          
+
           if (currentY + imgHeight > 270) {
             doc.addPage();
             currentY = 20;
           }
-          
+
           doc.addImage(dataURL, 'JPEG', 20, currentY, imageWidth, imgHeight);
           currentY += imgHeight + 8;
-          
+
           // Small delay to prevent overwhelming the server
           await new Promise(resolve => setTimeout(resolve, 300));
         } catch (error) {
@@ -853,11 +853,11 @@ const AdminSuratJalan = () => {
         doc.addPage();
         currentY = 20;
       }
-      
+
       doc.setFont("helvetica", "bold");
       doc.text("3. Dekorasi:", 20, currentY);
       currentY += 6;
-      
+
       if (item.dekorasi_image) {
         try {
           toast.loading("Memuat gambar Dekorasi...", { id: loadingToast });
@@ -865,12 +865,12 @@ const AdminSuratJalan = () => {
           const { dataURL, width, height } = await loadImageAsDataURL(url, 15000);
           const aspectRatio = width / height;
           const imgHeight = Math.min(maxImageHeight, imageWidth / aspectRatio);
-          
+
           if (currentY + imgHeight > 270) {
             doc.addPage();
             currentY = 20;
           }
-          
+
           doc.addImage(dataURL, 'JPEG', 20, currentY, imageWidth, imgHeight);
           currentY += imgHeight + 8;
         } catch (error) {
@@ -894,7 +894,7 @@ const AdminSuratJalan = () => {
         doc.addPage();
         currentY = 20;
       }
-      
+
       doc.setFontSize(12);
       doc.setFont("helvetica", "bold");
       doc.text("Catatan:", 20, currentY);
@@ -902,12 +902,12 @@ const AdminSuratJalan = () => {
       doc.setFontSize(10);
       doc.setFont("helvetica", "normal");
       currentY += 8;
-      
+
       if (item.warna_kain) {
         doc.text(`Warna Kain: ${item.warna_kain}`, 20, currentY);
         currentY += 6;
       }
-      
+
       if (item.ukuran_tenda) {
         doc.text(`Ukuran Tenda: ${item.ukuran_tenda}`, 20, currentY);
         currentY += 6;
@@ -939,7 +939,7 @@ const AdminSuratJalan = () => {
 
       doc.setFontSize(10);
       doc.setFont("helvetica", "normal");
-      
+
       // Left signature
       doc.text("Pengirim,", 30, currentY);
       doc.text("_________________", 25, currentY + 20);
@@ -952,10 +952,10 @@ const AdminSuratJalan = () => {
 
       // Save PDF
       toast.loading("Membuat PDF...", { id: loadingToast });
-      
+
       const fileName = `surat-jalan-${item.id}-${new Date().toISOString().split("T")[0]}.pdf`;
       doc.save(fileName);
-      
+
       toast.success("PDF berhasil dibuat!", { id: loadingToast });
     } catch (error) {
       toast.error("Gagal membuat PDF. Periksa console untuk detail.", { id: loadingToast });
@@ -1104,16 +1104,14 @@ const AdminSuratJalan = () => {
                             key={key}
                             type="button"
                             onClick={() => setSelectedDate(key)}
-                            className={`h-14 border border-gray-100 flex flex-col items-center justify-center relative transition ${
-                              hasItems
-                                ? "bg-red-200 hover:bg-red-100"
-                                : "bg-blue-50 hover:bg-blue-100"
-                            } ${isSelected ? "ring-2 ring-[#2f4274] z-10" : ""}`}
+                            className={`h-14 border border-gray-100 flex flex-col items-center justify-center relative transition ${hasItems
+                              ? "bg-red-200 hover:bg-red-100"
+                              : "bg-blue-50 hover:bg-blue-100"
+                              } ${isSelected ? "ring-2 ring-[#2f4274] z-10" : ""}`}
                           >
                             <span
-                              className={`text-sm font-medium ${
-                                hasItems ? "text-red-700" : "text-blue-700"
-                              }`}
+                              className={`text-sm font-medium ${hasItems ? "text-red-700" : "text-blue-700"
+                                }`}
                             >
                               {d}
                             </span>
@@ -1201,121 +1199,120 @@ const AdminSuratJalan = () => {
 
         {/* Table */}
         {viewMode === "table" && (
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[800px]">
-              <thead>
-                <tr className="bg-gradient-to-r from-[#2f4274] to-[#3d5285] text-white">
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-white/95">Tanggal Acara</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-white/95">Nama Client</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-white/95">No. Surat</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-white/95">Paket</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-white/95">Vendor</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-white/95 w-36">Edit</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-100">
-                {loading ? (
-                  <tr>
-                    <td colSpan="6" className="px-6 py-16 text-center">
-                      <div className="flex flex-col items-center gap-3 text-gray-400">
-                        <div className="w-10 h-10 border-2 border-[#2f4274]/30 border-t-[#2f4274] rounded-full animate-spin" />
-                        <span className="text-sm font-medium">Memuat data...</span>
-                      </div>
-                    </td>
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[800px]">
+                <thead>
+                  <tr className="bg-gradient-to-r from-[#2f4274] to-[#3d5285] text-white">
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-white/95">Tanggal Acara</th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-white/95">Nama Client</th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-white/95">No. Surat</th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-white/95">Paket</th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-white/95">Vendor</th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-white/95 w-36">Edit</th>
                   </tr>
-                ) : suratJalanList.length > 0 ? (
-                  suratJalanList.map((item, idx) => (
-                    <tr
-                      key={item.id}
-                      className={`transition-colors duration-150 hover:bg-[#2f4274]/[0.04] ${idx % 2 === 1 ? "bg-gray-50/50" : ""}`}
-                    >
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-semibold text-gray-900">
-                          {item.wedding_date ? formatDate(item.wedding_date) : "-"}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-semibold text-gray-900">{item.client_name}</div>
-                        <div className="text-xs text-gray-500">{item.client_phone || "-"}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-semibold text-gray-900">
-                          SJ/{String(item.id).padStart(4, "0")}/{new Date(item.created_at).getFullYear()}
-                        </div>
-                        <div className="text-xs text-gray-500">{formatDate(item.created_at)}</div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-gray-900">{item.package_name}</div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-gray-900">{item.vendor_name || "Chekusphoto"}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          <button onClick={() => handleViewDetail(item)} className="p-2 rounded-lg text-[#2f4274] bg-[#2f4274]/10 hover:bg-[#2f4274]/20" title="Detail"><Eye size={16} /></button>
-                          <button onClick={() => handleOpenModal(item)} className="p-2 rounded-lg text-green-600 bg-green-50 hover:bg-green-100" title="Edit"><Edit size={16} /></button>
-                          <button onClick={() => generatePDF(item)} className="p-2 rounded-lg text-purple-600 bg-purple-50 hover:bg-purple-100" title="PDF"><Download size={16} /></button>
-                          <button onClick={() => handleDelete(item.id)} className="p-2 rounded-lg text-red-600 bg-red-50 hover:bg-red-100" title="Hapus"><Trash2 size={16} /></button>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-100">
+                  {loading ? (
+                    <tr>
+                      <td colSpan="6" className="px-6 py-16 text-center">
+                        <div className="flex flex-col items-center gap-3 text-gray-400">
+                          <div className="w-10 h-10 border-2 border-[#2f4274]/30 border-t-[#2f4274] rounded-full animate-spin" />
+                          <span className="text-sm font-medium">Memuat data...</span>
                         </div>
                       </td>
                     </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="6" className="px-6 py-16 text-center">
-                      <div className="flex flex-col items-center gap-2 text-gray-400">
-                        <FileText size={32} className="text-gray-300" />
-                        <span className="text-sm font-medium">Belum ada surat jalan</span>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Pagination - only in table view */}
-          {viewMode === "table" && pagination.totalPages > 1 && (
-            <div className="flex flex-wrap items-center justify-between gap-4 bg-white rounded-xl border border-gray-100 px-6 py-4 shadow-sm mt-4">
-              <div className="text-sm text-gray-600">
-                <span className="font-medium text-gray-800">
-                  {(pagination.page - 1) * pagination.limit + 1}–{Math.min(pagination.page * pagination.limit, pagination.total)}
-                </span>
-                <span className="mx-1">dari</span>
-                <span className="font-medium text-gray-800">{pagination.total}</span>
-                <span className="ml-1">surat jalan</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => handlePageChange(pagination.page - 1)}
-                  disabled={pagination.page === 1}
-                  className="p-2 rounded-lg text-gray-600 bg-gray-100 hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-gray-100 transition-colors"
-                >
-                  <ChevronLeft size={18} />
-                </button>
-                {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((page) => (
-                  <button
-                    key={page}
-                    onClick={() => handlePageChange(page)}
-                    className={`min-w-[2.25rem] py-2 px-2.5 rounded-lg text-sm font-semibold transition-colors ${
-                      page === pagination.page ? "bg-[#2f4274] text-white shadow-md shadow-[#2f4274]/25" : "text-gray-600 bg-gray-100 hover:bg-gray-200"
-                    }`}
-                  >
-                    {page}
-                  </button>
-                ))}
-                <button
-                  onClick={() => handlePageChange(pagination.page + 1)}
-                  disabled={pagination.page === pagination.totalPages}
-                  className="p-2 rounded-lg text-gray-600 bg-gray-100 hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-gray-100 transition-colors"
-                >
-                  <ChevronRight size={18} />
-                </button>
-              </div>
+                  ) : suratJalanList.length > 0 ? (
+                    suratJalanList.map((item, idx) => (
+                      <tr
+                        key={item.id}
+                        className={`transition-colors duration-150 hover:bg-[#2f4274]/[0.04] ${idx % 2 === 1 ? "bg-gray-50/50" : ""}`}
+                      >
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-semibold text-gray-900">
+                            {item.wedding_date ? formatDate(item.wedding_date) : "-"}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-semibold text-gray-900">{item.client_name}</div>
+                          <div className="text-xs text-gray-500">{item.client_phone || "-"}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-semibold text-gray-900">
+                            SJ/{String(item.id).padStart(4, "0")}/{new Date(item.created_at).getFullYear()}
+                          </div>
+                          <div className="text-xs text-gray-500">{formatDate(item.created_at)}</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-gray-900">{item.package_name}</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-gray-900">{item.vendor_name || "Chekusphoto"}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center gap-2">
+                            <button onClick={() => handleViewDetail(item)} className="p-2 rounded-lg text-[#2f4274] bg-[#2f4274]/10 hover:bg-[#2f4274]/20" title="Detail"><Eye size={16} /></button>
+                            <button onClick={() => handleOpenModal(item)} className="p-2 rounded-lg text-green-600 bg-green-50 hover:bg-green-100" title="Edit"><Edit size={16} /></button>
+                            <button onClick={() => generatePDF(item)} className="p-2 rounded-lg text-purple-600 bg-purple-50 hover:bg-purple-100" title="PDF"><Download size={16} /></button>
+                            <button onClick={() => handleDelete(item.id)} className="p-2 rounded-lg text-red-600 bg-red-50 hover:bg-red-100" title="Hapus"><Trash2 size={16} /></button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="6" className="px-6 py-16 text-center">
+                        <div className="flex flex-col items-center gap-2 text-gray-400">
+                          <FileText size={32} className="text-gray-300" />
+                          <span className="text-sm font-medium">Belum ada surat jalan</span>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
-          )}
-        </div>
+
+            {/* Pagination - only in table view */}
+            {viewMode === "table" && pagination.totalPages > 1 && (
+              <div className="flex flex-wrap items-center justify-between gap-4 bg-white rounded-xl border border-gray-100 px-6 py-4 shadow-sm mt-4">
+                <div className="text-sm text-gray-600">
+                  <span className="font-medium text-gray-800">
+                    {(pagination.page - 1) * pagination.limit + 1}–{Math.min(pagination.page * pagination.limit, pagination.total)}
+                  </span>
+                  <span className="mx-1">dari</span>
+                  <span className="font-medium text-gray-800">{pagination.total}</span>
+                  <span className="ml-1">surat jalan</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => handlePageChange(pagination.page - 1)}
+                    disabled={pagination.page === 1}
+                    className="p-2 rounded-lg text-gray-600 bg-gray-100 hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-gray-100 transition-colors"
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+                  {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((page) => (
+                    <button
+                      key={page}
+                      onClick={() => handlePageChange(page)}
+                      className={`min-w-[2.25rem] py-2 px-2.5 rounded-lg text-sm font-semibold transition-colors ${page === pagination.page ? "bg-[#2f4274] text-white shadow-md shadow-[#2f4274]/25" : "text-gray-600 bg-gray-100 hover:bg-gray-200"
+                        }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => handlePageChange(pagination.page + 1)}
+                    disabled={pagination.page === pagination.totalPages}
+                    className="p-2 rounded-lg text-gray-600 bg-gray-100 hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-gray-100 transition-colors"
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         )}
 
         {/* Add/Edit Modal */}
@@ -1380,11 +1377,11 @@ const AdminSuratJalan = () => {
                         }),
                         option: (base, state) => ({
                           ...base,
-                          backgroundColor: state.isSelected 
-                            ? '#3b82f6' 
-                            : state.isFocused 
-                            ? '#dbeafe' 
-                            : 'white',
+                          backgroundColor: state.isSelected
+                            ? '#3b82f6'
+                            : state.isFocused
+                              ? '#dbeafe'
+                              : 'white',
                           color: state.isSelected ? 'white' : '#1f2937',
                           cursor: 'pointer',
                           '&:active': {

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 
-const API_BASE = 'https://api.kingcreativestudio.my.id/user-photo';
+const API_BASE = 'https://api.userphoto.my.id';
 function imageUrl(value) {
   if (!value) return '';
   if (value.startsWith('http')) return value;
@@ -24,14 +24,14 @@ const Gallery = () => {
   const fetchGalleryData = async () => {
     try {
       setLoading(true);
-      
+
       // Fetch categories
-      const categoriesResponse = await fetch('https://api.kingcreativestudio.my.id/user-photo/api/gallery/categories');
+      const categoriesResponse = await fetch('https://api.userphoto.my.idapi/gallery/categories');
       const categoriesData = await categoriesResponse.json();
       setCategories(categoriesData);
-      
+
       // Fetch images
-      const imagesResponse = await fetch('https://api.kingcreativestudio.my.id/user-photo/api/gallery/images');
+      const imagesResponse = await fetch('https://api.userphoto.my.idapi/gallery/images');
       const imagesData = await imagesResponse.json();
       setImages(imagesData);
     } catch (error) {
@@ -43,7 +43,7 @@ const Gallery = () => {
 
   const fetchHeroContent = async () => {
     try {
-      const response = await fetch('https://api.kingcreativestudio.my.id/user-photo/api/content-sections/gallery_hero_section');
+      const response = await fetch('https://api.userphoto.my.idapi/content-sections/gallery_hero_section');
       if (response.ok) {
         const data = await response.json();
         setHeroContent(data);
@@ -53,8 +53,8 @@ const Gallery = () => {
     }
   };
 
-  const filteredImages = activeCategory === 'all' 
-    ? images 
+  const filteredImages = activeCategory === 'all'
+    ? images
     : images.filter(img => img.category_id == activeCategory);
 
   if (loading) {
@@ -106,11 +106,10 @@ const Gallery = () => {
             <div className="flex flex-wrap justify-center gap-4">
               <button
                 onClick={() => setActiveCategory('all')}
-                className={`px-6 py-3 rounded-full font-medium transition-all duration-300 ${
-                  activeCategory === 'all'
-                    ? 'bg-primary-600 text-white shadow-lg'
-                    : 'bg-gray-100 text-gray-700 hover:bg-primary-100 hover:text-primary-700'
-                }`}
+                className={`px-6 py-3 rounded-full font-medium transition-all duration-300 ${activeCategory === 'all'
+                  ? 'bg-primary-600 text-white shadow-lg'
+                  : 'bg-gray-100 text-gray-700 hover:bg-primary-100 hover:text-primary-700'
+                  }`}
               >
                 Semua
               </button>
@@ -118,11 +117,10 @@ const Gallery = () => {
                 <button
                   key={category.id}
                   onClick={() => setActiveCategory(category.id.toString())}
-                  className={`px-6 py-3 rounded-full font-medium transition-all duration-300 ${
-                    activeCategory === category.id.toString()
-                      ? 'bg-primary-600 text-white shadow-lg'
-                      : 'bg-gray-100 text-gray-700 hover:bg-primary-100 hover:text-primary-700'
-                  }`}
+                  className={`px-6 py-3 rounded-full font-medium transition-all duration-300 ${activeCategory === category.id.toString()
+                    ? 'bg-primary-600 text-white shadow-lg'
+                    : 'bg-gray-100 text-gray-700 hover:bg-primary-100 hover:text-primary-700'
+                    }`}
                 >
                   {category.name}
                 </button>

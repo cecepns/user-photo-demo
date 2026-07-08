@@ -22,13 +22,13 @@ const MIN_BOOKING_AMOUNT = 300000;
 const calculateTotalPrice = (items, basePrice = 0) => {
   // Convert basePrice to number if it's a string
   const numBasePrice = typeof basePrice === 'string' ? parseFloat(basePrice) : basePrice;
-  
+
   const itemsTotal = items.reduce((total, item) => {
     const price = item.final_price || item.item_price || item.price;
     const numPrice = typeof price === 'string' ? parseFloat(price) : price;
     return total + (isNaN(numPrice) ? 0 : numPrice);
   }, 0);
-  
+
   // Fix floating point precision by rounding to nearest integer
   return Math.round(numBasePrice + itemsTotal);
 };
@@ -59,17 +59,17 @@ const ServiceDetail = () => {
   const fetchServiceData = async () => {
     try {
       // Fetch service details
-      const serviceResponse = await fetch(`https://api.kingcreativestudio.my.id/user-photo/api/services/${id}`);
+      const serviceResponse = await fetch(`https://api.userphoto.my.idapi/services/${id}`);
       const serviceData = await serviceResponse.json();
       setService(serviceData);
 
       // Fetch service items
-      const itemsResponse = await fetch(`https://api.kingcreativestudio.my.id/user-photo/api/services/${id}/items`);
+      const itemsResponse = await fetch(`https://api.userphoto.my.idapi/services/${id}/items`);
       const itemsData = await itemsResponse.json();
       setItems(itemsData);
 
       // Fetch service features
-      const featuresResponse = await fetch(`https://api.kingcreativestudio.my.id/user-photo/api/service-features`);
+      const featuresResponse = await fetch(`https://api.userphoto.my.idapi/service-features`);
       const featuresData = await featuresResponse.json();
       setFeatures(featuresData);
       // Don't auto-select items - start with empty selection
@@ -82,7 +82,7 @@ const ServiceDetail = () => {
 
   const fetchButtonContent = async () => {
     try {
-      const response = await fetch('https://api.kingcreativestudio.my.id/user-photo/api/content-sections/button_item_detail');
+      const response = await fetch('https://api.userphoto.my.idapi/content-sections/button_item_detail');
       if (response.ok) {
         const data = await response.json();
         setButtonContent(data);
@@ -149,7 +149,7 @@ const ServiceDetail = () => {
         {/* Hero Section */}
         <section className="relative min-h-[60vh] flex items-center bg-gray-900 text-white overflow-hidden px-4 sm:px-6 lg:px-8">
           {/* <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent"></div> */}
-          
+
           <div className="max-w-7xl mx-auto w-full relative z-10">
             {/* Breadcrumb */}
             <nav className="mb-8 mt-10" data-aos="fade-down">
@@ -227,11 +227,10 @@ const ServiceDetail = () => {
                       </h3>
                       <button
                         onClick={handleSelectAll}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors mt-2 sm:mt-0 ${
-                          selectedItems.length === items.length && items.length > 0
-                            ? 'bg-red-600 text-white hover:bg-red-700'
-                            : 'bg-primary-600 text-white hover:bg-primary-700'
-                        }`}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors mt-2 sm:mt-0 ${selectedItems.length === items.length && items.length > 0
+                          ? 'bg-red-600 text-white hover:bg-red-700'
+                          : 'bg-primary-600 text-white hover:bg-primary-700'
+                          }`}
                       >
                         {selectedItems.length === items.length && items.length > 0 ? 'Hapus Semua' : 'Pilih Semua'}
                       </button>
@@ -257,11 +256,10 @@ const ServiceDetail = () => {
                               </div>
                               <button
                                 onClick={() => handleItemToggle(item)}
-                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                                  selectedItems.find(i => i.id === item.id)
-                                    ? 'bg-primary-600 text-white'
-                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                }`}
+                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${selectedItems.find(i => i.id === item.id)
+                                  ? 'bg-primary-600 text-white'
+                                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                  }`}
                               >
                                 {selectedItems.find(i => i.id === item.id) ? 'Dipilih' : 'Pilih'}
                               </button>
@@ -270,7 +268,7 @@ const ServiceDetail = () => {
                         </div>
                       ))}
                     </div>
-                    
+
                     {/* Booking Button below service items */}
                     {/* <div className="mt-8 text-center" data-aos="fade-up" data-aos-delay="400">
                       <button
@@ -311,7 +309,7 @@ const ServiceDetail = () => {
                           {formatPrice(service.base_price)}
                         </span>
                       </div>
-                      
+
                       <div className="border-t pt-4">
                         {selectedItems.length > 0 && (
                           <>
@@ -374,7 +372,7 @@ const ServiceDetail = () => {
                 Siap Memesan {service.name}?
               </h2>
               <p className="text-lg sm:text-xl text-gray-300 mb-8">
-                Jangan ragu untuk menghubungi kami. Tim kami siap membantu Anda 
+                Jangan ragu untuk menghubungi kami. Tim kami siap membantu Anda
                 merencanakan hari pernikahan yang sempurna.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center" data-aos="fade-up" data-aos-delay="300">
@@ -429,13 +427,13 @@ const PaymentInstructionsModal = ({ orderData, onClose }) => {
   // const downloadInvoice = () => {
   //   // Create PDF document
   //   const doc = new jsPDF();
-    
+
   //   // ===== PAGE 1 =====
   //   // Company header
   //   doc.setFontSize(16);
   //   doc.setFont('helvetica', 'bold');
   //   doc.text('Chekusphoto', 20, 20);
-    
+
   //   // Company details
   //   doc.setFontSize(10);
   //   doc.setFont('helvetica', 'normal');
@@ -443,23 +441,23 @@ const PaymentInstructionsModal = ({ orderData, onClose }) => {
   //   doc.text('Telephone: 089646829459', 20, 37);
   //   doc.text('Email: edo19priyatno@gmail.com', 20, 44);
   //   doc.text('Website: https://sites.google.com/view/userwedding/beranda', 20, 51);
-    
+
   //   // Invoice details (right side)
   //   doc.setFontSize(12);
   //   doc.setFont('helvetica', 'bold');
   //   doc.text('INVOICE', 150, 20);
-    
+
   //   doc.setFontSize(10);
   //   doc.setFont('helvetica', 'normal');
   //   doc.text(`No. Invoice: ${orderData.id || 'N/A'}`, 150, 30);
   //   doc.text(`Tanggal Invoice: ${new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}`, 150, 37);
   //   doc.text(`Jatuh Tempo: ${new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}`, 150, 44);
-    
+
   //   // Bill To section
   //   doc.setFontSize(12);
   //   doc.setFont('helvetica', 'bold');
   //   doc.text('Dibayar Kepada:', 20, 70);
-    
+
   //   doc.setFontSize(10);
   //   doc.setFont('helvetica', 'normal');
   //   doc.text(orderData.name, 20, 77);
@@ -467,12 +465,12 @@ const PaymentInstructionsModal = ({ orderData, onClose }) => {
   //   doc.text(orderData.phone, 20, 91);
   //   doc.text(orderData.address, 20, 98);
   //   doc.text(`Tanggal Pernikahan: ${orderData.wedding_date}`, 20, 105);
-    
+
   //   // Service table header
   //   const startY = 120;
   //   doc.setFillColor(52, 152, 219); // Blue background
   //   doc.rect(20, startY, 170, 8, 'F');
-    
+
   //   doc.setFontSize(10);
   //   doc.setFont('helvetica', 'bold');
   //   doc.setTextColor(255, 255, 255); // White text
@@ -480,14 +478,14 @@ const PaymentInstructionsModal = ({ orderData, onClose }) => {
   //   doc.text('Deskripsi', 40, startY + 6);
   //   doc.text('Jml', 140, startY + 6);
   //   doc.text('Harga', 170, startY + 6);
-    
+
   //   // Reset text color
   //   doc.setTextColor(0, 0, 0);
-    
+
   //   // Service items
   //   let currentY = startY + 15;
   //   let itemNumber = 1;
-    
+
   //   // Main service item (base price)
   //   doc.setFontSize(10);
   //   doc.setFont('helvetica', 'normal');
@@ -495,7 +493,7 @@ const PaymentInstructionsModal = ({ orderData, onClose }) => {
   //   doc.text(orderData.service_name, 40, currentY);
   //   doc.text('1', 140, currentY);
   //   doc.text(formatPrice(orderData.base_price || 0), 170, currentY);
-    
+
   //   // Selected items as sub-items
   //   if (orderData.selected_items && orderData.selected_items.length > 0) {
   //     currentY += 8;
@@ -507,7 +505,7 @@ const PaymentInstructionsModal = ({ orderData, onClose }) => {
   //       currentY += 5;
   //     });
   //   }
-    
+
   //   // Add total service row
   //   currentY += 8;
   //   doc.setFontSize(10);
@@ -516,29 +514,29 @@ const PaymentInstructionsModal = ({ orderData, onClose }) => {
   //   doc.text('Total Harga Layanan:', 40, currentY);
   //   doc.text('', 140, currentY); // Empty quantity
   //   doc.text(formatPrice(calculateTotalPrice(orderData.selected_items, orderData.base_price || 0)), 170, currentY);
-    
+
   //   // Add payment details
   //   doc.setFontSize(14);
   //   doc.setFont('helvetica', 'bold');
   //   doc.text('Detail Pembayaran:', 20, currentY + 20);
-    
+
   //   doc.setFontSize(10);
   //   doc.setFont('helvetica', 'normal');
   //   doc.text(`Total Harga Layanan: ${formatPrice(calculateTotalPrice(orderData.selected_items, orderData.base_price || 0))}`, 20, currentY + 30);
   //   doc.text(`Metode Pembayaran: ${selectedPaymentMethod?.name || 'Transfer Bank'}`, 20, currentY + 37);
   //   doc.text(`Biaya Booking: ${formatPrice(MIN_BOOKING_AMOUNT)}`, 20, currentY + 44);
   //   doc.text(`Total Pembayaran Diperlukan: ${formatPrice(MIN_BOOKING_AMOUNT)}`, 20, currentY + 51);
-    
+
   //   // Add bank account information
   //   doc.setFontSize(12);
   //   doc.setFont('helvetica', 'bold');
   //   doc.text('Rekening Tujuan:', 20, currentY + 65);
-    
+
   //   doc.setFontSize(10);
   //   doc.setFont('helvetica', 'normal');
   //   doc.text(`Nomor Rekening: ${selectedPaymentMethod?.account_number || 'N/A'}`, 20, currentY + 75);
   //   doc.text(`Atas Nama: ${selectedPaymentMethod?.details || 'N/A'}`, 20, currentY + 82);
-      
+
   //   doc.text('Terima kasih telah memilih layanan kami!', 105, 280, { align: 'center' });
 
   //   // Save the PDF
@@ -566,7 +564,7 @@ const PaymentInstructionsModal = ({ orderData, onClose }) => {
                 Download Invoice
               </button> */}
             </div>
-            
+
 
             <PaymentInstructions
               totalAmount={orderData.total_amount}
@@ -606,7 +604,7 @@ const BookingModal = ({ service, selectedItems, onClose, onOrderSuccess }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     setIsSubmitting(true);
 
     try {
@@ -620,8 +618,8 @@ const BookingModal = ({ service, selectedItems, onClose, onOrderSuccess }) => {
         total_amount: totalAmount,
         booking_amount: parseFloat(formData.booking_amount)
       };
-      
-      const response = await fetch('https://api.kingcreativestudio.my.id/user-photo/api/orders', {
+
+      const response = await fetch('https://api.userphoto.my.idapi/orders', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -670,7 +668,7 @@ const BookingModal = ({ service, selectedItems, onClose, onOrderSuccess }) => {
                 {/* Customer Information */}
                 <div className="space-y-4">
                   <h4 className="font-semibold text-lg text-gray-800">Informasi Pelanggan</h4>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Nama Lengkap</label>
                     <input
@@ -811,11 +809,11 @@ const BookingModal = ({ service, selectedItems, onClose, onOrderSuccess }) => {
                 {/* Order Summary */}
                 <div className="space-y-4">
                   <h4 className="font-semibold text-lg text-gray-800">Ringkasan Pesanan</h4>
-                  
+
                   <div className="bg-gray-50 rounded-lg p-4">
                     <h5 className="font-semibold text-gray-800 mb-3">{service.name}</h5>
                     <p className="text-gray-600 mb-4 whitespace-pre-line">{service.description}</p>
-                    
+
                     {selectedItems.length > 0 && (
                       <div className="space-y-2 mb-4">
                         <h6 className="font-medium text-gray-700">Item Tambahan:</h6>
@@ -827,7 +825,7 @@ const BookingModal = ({ service, selectedItems, onClose, onOrderSuccess }) => {
                         ))}
                       </div>
                     )}
-                    
+
                     <div className="border-t pt-3">
                       <div className="flex justify-between items-center text-sm mb-2">
                         <span>Total Harga Layanan:</span>

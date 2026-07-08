@@ -32,7 +32,7 @@ const AdminOrdersHistory = () => {
     setLoading(true);
     try {
       const response = await fetch(
-        `https://api.kingcreativestudio.my.id/user-photo/api/orders?page=${ordersPagination.page}&limit=${ordersPagination.limit}&status=confirmed,completed,cancelled`,
+        `https://api.userphoto.my.idapi/orders?page=${ordersPagination.page}&limit=${ordersPagination.limit}&status=confirmed,completed,cancelled`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("admin_token")}`,
@@ -87,7 +87,7 @@ const AdminOrdersHistory = () => {
   const handleStatusUpdate = async (orderId, newStatus) => {
     try {
       const response = await fetch(
-        `https://api.kingcreativestudio.my.id/user-photo/api/orders/${orderId}/status`,
+        `https://api.userphoto.my.idapi/orders/${orderId}/status`,
         {
           method: "PUT",
           headers: {
@@ -149,7 +149,7 @@ const AdminOrdersHistory = () => {
 
     try {
       const response = await fetch(
-        `https://api.kingcreativestudio.my.id/user-photo/api/orders/${orderId}`,
+        `https://api.userphoto.my.idapi/orders/${orderId}`,
         {
           method: "DELETE",
           headers: {
@@ -277,9 +277,8 @@ const AdminOrdersHistory = () => {
                     orders.map((order, idx) => (
                       <tr
                         key={order.id}
-                        className={`transition-colors duration-150 hover:bg-[#2f4274]/[0.04] ${
-                          idx % 2 === 1 ? "bg-gray-50/50" : ""
-                        }`}
+                        className={`transition-colors duration-150 hover:bg-[#2f4274]/[0.04] ${idx % 2 === 1 ? "bg-gray-50/50" : ""
+                          }`}
                       >
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-xs text-gray-500 font-medium">
@@ -419,11 +418,10 @@ const AdminOrdersHistory = () => {
                     <button
                       key={page}
                       onClick={() => handleOrdersPageChange(page)}
-                      className={`min-w-[2.25rem] py-2 px-2.5 rounded-lg text-sm font-semibold transition-colors ${
-                        page === ordersPagination.page
-                          ? "bg-[#2f4274] text-white shadow-md shadow-[#2f4274]/25"
-                          : "text-gray-600 bg-gray-100 hover:bg-gray-200"
-                      }`}
+                      className={`min-w-[2.25rem] py-2 px-2.5 rounded-lg text-sm font-semibold transition-colors ${page === ordersPagination.page
+                        ? "bg-[#2f4274] text-white shadow-md shadow-[#2f4274]/25"
+                        : "text-gray-600 bg-gray-100 hover:bg-gray-200"
+                        }`}
                     >
                       {page}
                     </button>

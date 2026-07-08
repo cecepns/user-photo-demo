@@ -50,58 +50,332 @@ function unlinkUploadIfStored(value) {
 
 // Serve uploaded files (only filename in DB; URL = /uploads-weddingsapp/filename)
 app.use('/uploads-weddingsapp', express.static(UPLOAD_DIR));
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 8080;
 const JWT_SECRET = 'your-secret-key-change-in-production';
 
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(tenantResolver);
 
 // MySQL Database connection
 const dbConfig = {
   host: 'localhost',
-  user: 'root',
-  password: '', // Change this to your MySQL password
-  database: 'wedding_organizer',
+  user: 'userphot_main',
+  password: 'userphot_main', // Change this to your MySQL password
+  database: 'userphot_main',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
   dateStrings: true
 };
 
-let db;
+const { AsyncLocalStorage } = require('async_hooks');
+const tenantStorage = new AsyncLocalStorage();
+const tenantPools = new Map();
 
-// Initialize database connection
-async function initializeDatabase() {
+let db;
+let masterPool;
+
+// db proxy that forwards all database calls to either the tenant-specific connection pool
+// (if running inside a tenant context) or to the master connection pool.
+db = new Proxy({}, {
+  get(target, prop) {
+    const store = tenantStorage.getStore();
+    const activePool = store && store.pool ? store.pool : masterPool;
+    if (!activePool) {
+      throw new Error('Database connection pool is not initialized.');
+    }
+    const val = activePool[prop];
+    if (typeof val === 'function') {
+      return val.bind(activePool);
+    }
+    return val;
+  }
+});
+
+function getTenantSubdomain(req) {
+  // 1. Check custom header (useful for local development or API clients)
+  const headerSubdomain = req.headers['x-tenant-subdomain'];
+  if (headerSubdomain) {
+    return headerSubdomain;
+  }
+
+  // 2. Extract from hostname
+  const host = req.headers.host || req.hostname;
+  if (!host) return null;
+
+  const hostname = host.split(':')[0].toLowerCase();
+  if (hostname === 'localhost' || hostname === '127.0.0.1') return null;
+
+  // Local development subdomain check
+  if (hostname.includes('localhost')) {
+    const parts = hostname.split('.');
+    if (parts.length >= 2) {
+      return parts[0];
+    }
+    return null;
+  }
+
+  // Domain utama: user-photo.my.id
+  const baseSuffix = '.user-photo.my.id';
+  if (hostname.endsWith(baseSuffix)) {
+    const sub = hostname.slice(0, -baseSuffix.length);
+    if (sub === 'api' || sub === 'www' || sub === 'admin' || sub === 'master') {
+      return null;
+    }
+    return sub;
+  }
+
+  return null;
+}
+
+async function getTenantPool(tenant) {
+  if (tenantPools.has(tenant.db_name)) {
+    return tenantPools.get(tenant.db_name);
+  }
+
+  const tenantDbConfig = {
+    ...dbConfig,
+    database: tenant.db_name,
+    connectionLimit: 5,
+    multipleStatements: true
+  };
+
   try {
-    // Create connection without database first
+    // Create database if not exists
     const connection = await mysql.createConnection({
       host: dbConfig.host,
       user: dbConfig.user,
       password: dbConfig.password
     });
-
-    // Create database if it doesn't exist
-    await connection.execute(`CREATE DATABASE IF NOT EXISTS ${dbConfig.database}`);
+    await connection.execute(`CREATE DATABASE IF NOT EXISTS ${tenant.db_name}`);
     await connection.end();
+  } catch (err) {
+    // Di cPanel/shared hosting, user database sering kali tidak punya hak 'CREATE DATABASE' global.
+    // Kita abaikan error ini dan lanjutkan, dengan asumsi database sudah dibuat manual di cPanel.
+    console.warn(`[warning] Gagal menjalankan CREATE DATABASE secara otomatis (cPanel/Shared Hosting): ${err.message}. Pastikan database ${tenant.db_name} sudah dibuat manual di cPanel dan user Anda telah dihubungkan.`);
+  }
 
-    // Create connection pool with database
-    db = mysql.createPool(dbConfig);
+  try {
+    // Create pool
+    const pool = mysql.createPool(tenantDbConfig);
 
     // Read and execute SQL schema
     const fs = require('fs');
-    const sql = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
-    
-    // Split SQL statements and execute them
-    const statements = sql
+    let schemaPath = path.join(__dirname, 'schema.sql');
+    if (!fs.existsSync(schemaPath)) {
+      schemaPath = path.join(__dirname, 'backend', 'schema.sql');
+    }
+    if (!fs.existsSync(schemaPath)) {
+      throw new Error(`schema.sql not found at ${path.join(__dirname, 'schema.sql')} or ${path.join(__dirname, 'backend', 'schema.sql')}`);
+    }
+
+    const sql = fs.readFileSync(schemaPath, 'utf8');
+    const cleanSql = sql
+      .replace(/--.*$/gm, '')
+      .replace(/\/\*[\s\S]*?\*\//g, '');
+
+    const statements = cleanSql
       .split(';')
       .map(stmt => stmt.trim())
-      .filter(stmt => stmt.length > 0 && !stmt.startsWith('--'));
-    
+      .filter(stmt => stmt.length > 0);
+
     for (const statement of statements) {
       if (statement.trim()) {
         try {
-          await db.execute(statement);
+          await pool.execute(statement);
+        } catch (error) {
+          const ignoreErrors = [
+            'already exists',
+            'Duplicate entry',
+            'Duplicate column',
+            'ER_TABLE_EXISTS_ERROR',
+            'ER_DUP_FIELDNAME'
+          ];
+          const shouldIgnore = ignoreErrors.some(msg => error.message.includes(msg) || (error.code && error.code.includes(msg)));
+          if (!shouldIgnore) {
+            console.error(`Error executing statement in database ${tenant.db_name}:`, error.message);
+            throw error;
+          }
+        }
+      }
+    }
+
+    // Ensure default admin user exists
+    const hashedPassword = bcrypt.hashSync('admin123', 10);
+    await pool.execute(
+      `INSERT IGNORE INTO admins (email, password) VALUES (?, ?)`,
+      ['admin@weddingbliss.com', hashedPassword]
+    );
+
+    // Create surat_jalan table if not exists
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS surat_jalan (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        order_id INT,
+        custom_request_id INT,
+        maps_link TEXT,
+        piring_kontrak INT,
+        nama_pasangan VARCHAR(255),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    // Run pending migrations
+    await runMigrations(pool, { silent: true });
+
+    tenantPools.set(tenant.db_name, pool);
+    console.log(`Successfully initialized database connection pool for tenant: ${tenant.name} (${tenant.db_name})`);
+    return pool;
+  } catch (error) {
+    console.error(`Failed to initialize connection pool for tenant ${tenant.name}:`, error);
+    throw error;
+  }
+}
+
+async function tenantResolver(req, res, next) {
+  if (!masterPool) {
+    return res.status(503).json({ message: 'Database is initializing. Please try again in a few seconds.' });
+  }
+
+  const subdomain = getTenantSubdomain(req);
+
+  if (!subdomain || subdomain === 'www' || subdomain === 'admin' || subdomain === 'master' || subdomain === 'localhost') {
+    return tenantStorage.run({ pool: masterPool, tenant: null }, () => {
+      req.tenant = null;
+      next();
+    });
+  }
+
+  try {
+    const [rows] = await masterPool.execute(
+      'SELECT * FROM tenants WHERE subdomain = ? OR custom_domain = ?',
+      [subdomain, subdomain]
+    );
+
+    if (rows.length === 0) {
+      return tenantStorage.run({ pool: masterPool, tenant: null }, () => {
+        req.tenant = null;
+        next();
+      });
+    }
+
+    const tenant = rows[0];
+
+    // Check if tenant is inactive or expired, but allow /api/tenant/config to pass through
+    const isConfigRoute = req.path === '/api/tenant/config';
+
+    if (!isConfigRoute) {
+      if (!tenant.is_active) {
+        return res.status(403).json({
+          message: 'Website ini telah dinonaktifkan oleh administrator.',
+          code: 'TENANT_INACTIVE'
+        });
+      }
+
+      const now = new Date();
+      // Format now date string to compare only the date part or full date
+      if (tenant.expired_at && new Date(tenant.expired_at + 'T23:59:59') < now) {
+        return res.status(403).json({
+          message: 'Masa aktif website ini telah berakhir. Silakan lakukan perpanjangan layanan.',
+          code: 'TENANT_EXPIRED'
+        });
+      }
+    }
+
+    const pool = await getTenantPool(tenant);
+
+    tenantStorage.run({ pool, tenant }, () => {
+      req.tenant = tenant;
+      next();
+    });
+  } catch (error) {
+    console.error('Tenant resolver error:', error);
+    res.status(500).json({ message: 'Error resolving tenant database.' });
+  }
+}
+
+// Initialize database connection
+async function initializeDatabase() {
+  try {
+    // Di cPanel/shared hosting, hubungkan langsung menggunakan database config agar tidak ditolak (Access Denied)
+    try {
+      const connection = await mysql.createConnection({
+        host: dbConfig.host,
+        user: dbConfig.user,
+        password: dbConfig.password,
+        database: dbConfig.database
+      });
+      await connection.end();
+    } catch (err) {
+      // Jika database belum ada, coba buat tanpa database (untuk local development)
+      try {
+        const connection = await mysql.createConnection({
+          host: dbConfig.host,
+          user: dbConfig.user,
+          password: dbConfig.password
+        });
+        await connection.execute(`CREATE DATABASE IF NOT EXISTS ${dbConfig.database}`);
+        await connection.end();
+      } catch (innerErr) {
+        console.warn('[warning] Gagal membuat database master otomatis, mencoba lanjut dengan pool.', innerErr.message);
+      }
+    }
+
+    // Create connection pool with database
+    masterPool = mysql.createPool(dbConfig);
+
+    // Initialize tenants table in master database if it doesn't exist
+    await masterPool.execute(`
+      CREATE TABLE IF NOT EXISTS tenants (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        subdomain VARCHAR(100) NOT NULL UNIQUE,
+        custom_domain VARCHAR(255) UNIQUE,
+        db_name VARCHAR(255) NOT NULL UNIQUE,
+        logo_url VARCHAR(500),
+        primary_color VARCHAR(7) DEFAULT '#2f4274',
+        expired_at DATE NULL,
+        is_active BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    // Ensure columns exist if table was already created in a previous version
+    try {
+      await masterPool.execute('ALTER TABLE tenants ADD COLUMN expired_at DATE NULL');
+    } catch (_) { }
+    try {
+      await masterPool.execute('ALTER TABLE tenants ADD COLUMN is_active BOOLEAN DEFAULT true');
+    } catch (_) { }
+
+    // Read and execute SQL schema
+    const fs = require('fs');
+    let schemaPath = path.join(__dirname, 'schema.sql');
+    if (!fs.existsSync(schemaPath)) {
+      schemaPath = path.join(__dirname, 'backend', 'schema.sql');
+    }
+    if (!fs.existsSync(schemaPath)) {
+      throw new Error(`schema.sql not found at ${path.join(__dirname, 'schema.sql')} or ${path.join(__dirname, 'backend', 'schema.sql')}`);
+    }
+    const sql = fs.readFileSync(schemaPath, 'utf8');
+    const cleanSql = sql
+      .replace(/--.*$/gm, '')
+      .replace(/\/\*[\s\S]*?\*\//g, '');
+
+    // Split SQL statements and execute them
+    const statements = cleanSql
+      .split(';')
+      .map(stmt => stmt.trim())
+      .filter(stmt => stmt.length > 0);
+
+    for (const statement of statements) {
+      if (statement.trim()) {
+        try {
+          await masterPool.execute(statement);
         } catch (error) {
           // Ignore errors for existing tables/data
           if (!error.message.includes('already exists') && !error.message.includes('Duplicate entry')) {
@@ -113,13 +387,13 @@ async function initializeDatabase() {
 
     // Create default admin user
     const hashedPassword = bcrypt.hashSync('admin123', 10);
-    await db.execute(
-      `INSERT IGNORE INTO admins (email, password) VALUES (?, ?)`, 
+    await masterPool.execute(
+      `INSERT IGNORE INTO admins (email, password) VALUES (?, ?)`,
       ['admin@weddingbliss.com', hashedPassword]
     );
 
     // Create surat_jalan table if not exists
-    await db.execute(`
+    await masterPool.execute(`
       CREATE TABLE IF NOT EXISTS surat_jalan (
         id INT PRIMARY KEY AUTO_INCREMENT,
         order_id INT,
@@ -141,8 +415,7 @@ async function initializeDatabase() {
       )
     `);
 
-    await runMigrations(db);
-
+    await runMigrations(masterPool);
 
     console.log('Database initialized successfully');
   } catch (error) {
@@ -211,6 +484,246 @@ function parseOrderSource(value) {
 }
 
 // Routes
+
+// Endpoint untuk mengambil konfigurasi brand berdasarkan host saat ini
+app.get('/api/tenant/config', (req, res) => {
+  if (req.tenant) {
+    const now = new Date();
+    const isExpired = req.tenant.expired_at && new Date(req.tenant.expired_at + 'T23:59:59') < now;
+
+    return res.json({
+      name: req.tenant.name,
+      subdomain: req.tenant.subdomain,
+      logo_url: req.tenant.logo_url,
+      primary_color: req.tenant.primary_color || '#2f4274',
+      is_active: Boolean(req.tenant.is_active),
+      is_expired: Boolean(isExpired),
+      expired_at: req.tenant.expired_at
+    });
+  }
+
+  res.json({
+    name: 'Userphoto Platform',
+    subdomain: 'master',
+    logo_url: null,
+    primary_color: '#2f4274',
+    is_active: true,
+    is_expired: false,
+    expired_at: null
+  });
+});
+
+// Master API to register/create a new tenant/brand
+app.post('/api/admin/tenants', async (req, res) => {
+  const { name, subdomain, custom_domain, logo_url, primary_color, expired_at, is_active } = req.body;
+  if (!name || !subdomain) {
+    return res.status(400).json({ message: 'Name and subdomain are required.' });
+  }
+
+  // Sanitasi subdomain untuk nama database
+  const sanitizedSubdomain = subdomain.toLowerCase().replace(/[^a-z0-9_-]/g, '');
+  const dbName = `userphot_${sanitizedSubdomain}`;
+
+  try {
+    // Check if subdomain is taken
+    const [existing] = await masterPool.execute(
+      'SELECT id FROM tenants WHERE subdomain = ? OR custom_domain = ?',
+      [subdomain, subdomain]
+    );
+    if (existing.length > 0) {
+      return res.status(400).json({ message: 'Subdomain or custom domain is already taken.' });
+    }
+
+    // 1. Insert tenant info into master database
+    const [result] = await masterPool.execute(
+      'INSERT INTO tenants (name, subdomain, custom_domain, db_name, logo_url, primary_color, expired_at, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [
+        name,
+        subdomain,
+        custom_domain || null,
+        dbName,
+        logo_url || null,
+        primary_color || '#2f4274',
+        expired_at || null,
+        is_active === undefined ? true : Boolean(is_active)
+      ]
+    );
+
+    const tenantId = result.insertId;
+
+    // 2. Trigger dynamic database creation and migration run
+    const tenant = {
+      id: tenantId,
+      name,
+      subdomain,
+      custom_domain,
+      db_name: dbName,
+      logo_url,
+      primary_color,
+      expired_at,
+      is_active
+    };
+
+    // This will create the database, tables, run migrations, and setup admin account
+    await getTenantPool(tenant);
+
+    res.status(201).json({
+      message: 'Tenant berhasil dibuat dan database telah diinisialisasi.',
+      tenant
+    });
+  } catch (error) {
+    console.error('Failed to create tenant:', error);
+    res.status(500).json({ message: error.message || 'Terjadi kesalahan saat membuat tenant.' });
+  }
+});
+
+// PUT to update a tenant
+app.put('/api/admin/tenants/:id', async (req, res) => {
+  const { id } = req.params;
+  const { name, subdomain, custom_domain, logo_url, primary_color, expired_at, is_active } = req.body;
+
+  if (!name || !subdomain) {
+    return res.status(400).json({ message: 'Name and subdomain are required.' });
+  }
+
+  try {
+    // Check if subdomain is taken by another tenant
+    const [existing] = await masterPool.execute(
+      'SELECT id FROM tenants WHERE (subdomain = ? OR custom_domain = ?) AND id != ?',
+      [subdomain, subdomain, id]
+    );
+    if (existing.length > 0) {
+      return res.status(400).json({ message: 'Subdomain or custom domain is already taken.' });
+    }
+
+    await masterPool.execute(
+      `UPDATE tenants 
+       SET name = ?, subdomain = ?, custom_domain = ?, logo_url = ?, primary_color = ?, expired_at = ?, is_active = ? 
+       WHERE id = ?`,
+      [
+        name,
+        subdomain,
+        custom_domain || null,
+        logo_url || null,
+        primary_color || '#2f4274',
+        expired_at || null,
+        is_active === undefined ? true : Boolean(is_active),
+        id
+      ]
+    );
+
+    // If tenant pool exists in cache, delete it so it will be re-instantiated with new configuration
+    const [tenantRows] = await masterPool.execute('SELECT * FROM tenants WHERE id = ?', [id]);
+    if (tenantRows.length > 0) {
+      const updatedTenant = tenantRows[0];
+      if (tenantPools.has(updatedTenant.db_name)) {
+        const pool = tenantPools.get(updatedTenant.db_name);
+        await pool.end().catch(() => { });
+        tenantPools.delete(updatedTenant.db_name);
+      }
+    }
+
+    res.json({ message: 'Tenant berhasil diperbarui.' });
+  } catch (error) {
+    console.error('Failed to update tenant:', error);
+    res.status(500).json({ message: error.message || 'Gagal memperbarui tenant.' });
+  }
+});
+
+// DELETE a tenant
+app.delete('/api/admin/tenants/:id', async (req, res) => {
+  const { id } = req.params;
+  const { dropDatabase } = req.query;
+
+  try {
+    const [rows] = await masterPool.execute('SELECT * FROM tenants WHERE id = ?', [id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ message: 'Tenant not found.' });
+    }
+    const tenant = rows[0];
+
+    // Close connections in pool if active
+    if (tenantPools.has(tenant.db_name)) {
+      const pool = tenantPools.get(tenant.db_name);
+      await pool.end().catch(() => { });
+      tenantPools.delete(tenant.db_name);
+    }
+
+    // Optional: Drop database
+    if (dropDatabase === 'true') {
+      try {
+        const connection = await mysql.createConnection({
+          host: dbConfig.host,
+          user: dbConfig.user,
+          password: dbConfig.password
+        });
+        await connection.execute(`DROP DATABASE IF EXISTS ${tenant.db_name}`);
+        await connection.end();
+        console.log(`Database ${tenant.db_name} dropped.`);
+      } catch (err) {
+        console.error(`Failed to drop database ${tenant.db_name}:`, err);
+      }
+    }
+
+    // Delete tenant from master tenants table
+    await masterPool.execute('DELETE FROM tenants WHERE id = ?', [id]);
+
+    res.json({ message: 'Tenant berhasil dihapus.' });
+  } catch (error) {
+    console.error('Failed to delete tenant:', error);
+    res.status(500).json({ message: error.message || 'Gagal menghapus tenant.' });
+  }
+});
+
+// Reset tenant admin credentials
+app.post('/api/admin/tenants/:id/reset-admin', async (req, res) => {
+  const { id } = req.params;
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ message: 'Email dan password baru wajib diisi.' });
+  }
+
+  try {
+    const [rows] = await masterPool.execute('SELECT * FROM tenants WHERE id = ?', [id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ message: 'Tenant tidak ditemukan.' });
+    }
+    const tenant = rows[0];
+
+    const pool = await getTenantPool(tenant);
+    const hashedPassword = bcrypt.hashSync(password, 10);
+
+    const [adminRows] = await pool.execute('SELECT id FROM admins LIMIT 1');
+    if (adminRows.length > 0) {
+      await pool.execute(
+        'UPDATE admins SET email = ?, password = ? WHERE id = ?',
+        [email, hashedPassword, adminRows[0].id]
+      );
+    } else {
+      await pool.execute(
+        'INSERT INTO admins (email, password) VALUES (?, ?)',
+        [email, hashedPassword]
+      );
+    }
+
+    res.json({ message: 'Email dan password admin brand berhasil diperbarui.' });
+  } catch (error) {
+    console.error('Failed to reset tenant credentials:', error);
+    res.status(500).json({ message: error.message || 'Gagal mengatur ulang kredensial admin.' });
+  }
+});
+
+// Endpoint untuk list tenants (hanya bisa diakses di master/platform context)
+app.get('/api/admin/tenants', async (req, res) => {
+  try {
+    const [rows] = await masterPool.execute('SELECT * FROM tenants ORDER BY created_at DESC');
+    res.json(rows);
+  } catch (error) {
+    console.error('Failed to fetch tenants:', error);
+    res.status(500).json({ message: 'Database error' });
+  }
+});
 
 // Admin login
 app.post('/api/admin/login', async (req, res) => {
@@ -383,15 +896,15 @@ app.get('/api/services', async (req, res) => {
 
 app.get('/api/services/:id', async (req, res) => {
   const { id } = req.params;
-  
+
   try {
     const [rows] = await db.execute('SELECT * FROM services WHERE id = ?', [id]);
     const service = rows[0];
-    
+
     if (!service) {
       return res.status(404).json({ message: 'Service not found' });
     }
-    
+
     res.json(service);
   } catch (error) {
     console.error('Service detail error:', error);
@@ -401,7 +914,7 @@ app.get('/api/services/:id', async (req, res) => {
 
 app.post('/api/services', authenticateAdmin, async (req, res) => {
   const { name, description, base_price, image } = req.body;
-  
+
   try {
     const [result] = await db.execute(
       'INSERT INTO services (name, description, base_price, image) VALUES (?, ?, ?, ?)',
@@ -417,7 +930,7 @@ app.post('/api/services', authenticateAdmin, async (req, res) => {
 app.put('/api/services/:id', authenticateAdmin, async (req, res) => {
   const { name, description, base_price, image } = req.body;
   const { id } = req.params;
-  
+
   try {
     const [rows] = await db.execute('SELECT image FROM services WHERE id = ?', [id]);
     const oldImage = rows[0] && rows[0].image;
@@ -425,7 +938,7 @@ app.put('/api/services/:id', authenticateAdmin, async (req, res) => {
       'UPDATE services SET name = ?, description = ?, base_price = ?, image = ? WHERE id = ?',
       [name, description, base_price, image, id]
     );
-    
+
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: 'Service not found' });
     }
@@ -439,12 +952,12 @@ app.put('/api/services/:id', authenticateAdmin, async (req, res) => {
 
 app.delete('/api/services/:id', authenticateAdmin, async (req, res) => {
   const { id } = req.params;
-  
+
   try {
     const [rows] = await db.execute('SELECT image FROM services WHERE id = ?', [id]);
     const row = rows[0];
     const [result] = await db.execute('DELETE FROM services WHERE id = ?', [id]);
-    
+
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: 'Service not found' });
     }
@@ -478,18 +991,18 @@ function parseItemImages(rows) {
 app.get('/api/items', async (req, res) => {
   try {
     const { category } = req.query;
-    
+
     let query = 'SELECT * FROM items WHERE is_active = true';
     const params = [];
-    
+
     // Add category filter if provided
     if (category) {
       query += ' AND category = ?';
       params.push(category);
     }
-    
+
     query += ' ORDER BY category, name';
-    
+
     const [items] = await db.execute(query, params);
     res.json(parseItemImages(items));
   } catch (error) {
@@ -511,15 +1024,15 @@ app.get('/api/items/categories', async (req, res) => {
 
 app.get('/api/items/:id', async (req, res) => {
   const { id } = req.params;
-  
+
   try {
     const [rows] = await db.execute('SELECT * FROM items WHERE id = ?', [id]);
     const item = rows[0];
-    
+
     if (!item) {
       return res.status(404).json({ message: 'Item not found' });
     }
-    
+
     const [parsed] = parseItemImages([item]);
     res.json(parsed);
   } catch (error) {
@@ -531,7 +1044,7 @@ app.get('/api/items/:id', async (req, res) => {
 app.post('/api/items', authenticateAdmin, async (req, res) => {
   const { name, description, price, category, images } = req.body;
   const imagesJson = Array.isArray(images) ? JSON.stringify(images) : (images && typeof images === 'string' ? images : '[]');
-  
+
   try {
     const [result] = await db.execute(
       'INSERT INTO items (name, description, price, category, images) VALUES (?, ?, ?, ?, ?)',
@@ -556,7 +1069,7 @@ app.put('/api/items/:id', authenticateAdmin, async (req, res) => {
   const { name, description, price, category, is_active, images } = req.body;
   const { id } = req.params;
   const imagesJson = Array.isArray(images) ? JSON.stringify(images) : (images && typeof images === 'string' ? images : null);
-  
+
   try {
     const [oldRows] = await db.execute('SELECT images FROM items WHERE id = ?', [id]);
     const oldImagesRaw = oldRows[0] && oldRows[0].images;
@@ -591,7 +1104,7 @@ app.put('/api/items/:id', authenticateAdmin, async (req, res) => {
         [name, description, price, category, is_active, id]
       );
     }
-    
+
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: 'Item not found' });
     }
@@ -605,19 +1118,19 @@ app.put('/api/items/:id', authenticateAdmin, async (req, res) => {
 
 app.delete('/api/items/:id', authenticateAdmin, async (req, res) => {
   const { id } = req.params;
-  
+
   try {
     // Check if item is used in any service
     const [usageCheck] = await db.execute('SELECT COUNT(*) as count FROM service_items WHERE item_id = ?', [id]);
-    
+
     if (usageCheck[0].count > 0) {
       return res.status(400).json({ message: 'Cannot delete item that is used in services. Deactivate it instead.' });
     }
-    
+
     const [rows] = await db.execute('SELECT images FROM items WHERE id = ?', [id]);
     const row = rows[0];
     const [result] = await db.execute('DELETE FROM items WHERE id = ?', [id]);
-    
+
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: 'Item not found' });
     }
@@ -639,7 +1152,7 @@ app.delete('/api/items/:id', authenticateAdmin, async (req, res) => {
 // Service items routes (updated for new schema)
 app.get('/api/services/:serviceId/items', async (req, res) => {
   const { serviceId } = req.params;
-  
+
   try {
     const [items] = await db.execute(`
       SELECT si.*, i.name, i.description, i.price as item_price, i.category,
@@ -659,20 +1172,20 @@ app.get('/api/services/:serviceId/items', async (req, res) => {
 app.post('/api/services/:serviceId/items', authenticateAdmin, async (req, res) => {
   const { serviceId } = req.params;
   const { item_id, custom_price, is_required, sort_order } = req.body;
-  
+
   try {
     // Check if item exists
     const [itemCheck] = await db.execute('SELECT id FROM items WHERE id = ? AND is_active = true', [item_id]);
     if (itemCheck.length === 0) {
       return res.status(404).json({ message: 'Item not found' });
     }
-    
+
     // Check if service exists
     const [serviceCheck] = await db.execute('SELECT id FROM services WHERE id = ?', [serviceId]);
     if (serviceCheck.length === 0) {
       return res.status(404).json({ message: 'Service not found' });
     }
-    
+
     const [result] = await db.execute(
       'INSERT INTO service_items (service_id, item_id, custom_price, is_required, sort_order) VALUES (?, ?, ?, ?, ?)',
       [serviceId, item_id, custom_price, is_required, sort_order]
@@ -691,17 +1204,17 @@ app.post('/api/services/:serviceId/items', authenticateAdmin, async (req, res) =
 app.put('/api/service-items/:id', authenticateAdmin, async (req, res) => {
   const { custom_price, is_required, sort_order } = req.body;
   const { id } = req.params;
-  
+
   try {
     const [result] = await db.execute(
       'UPDATE service_items SET custom_price = ?, is_required = ?, sort_order = ? WHERE id = ?',
       [custom_price, is_required, sort_order, id]
     );
-    
+
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: 'Service item not found' });
     }
-    
+
     res.json({ message: 'Service item updated successfully' });
   } catch (error) {
     console.error('Update service item error:', error);
@@ -711,14 +1224,14 @@ app.put('/api/service-items/:id', authenticateAdmin, async (req, res) => {
 
 app.delete('/api/service-items/:id', authenticateAdmin, async (req, res) => {
   const { id } = req.params;
-  
+
   try {
     const [result] = await db.execute('DELETE FROM service_items WHERE id = ?', [id]);
-    
+
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: 'Service item not found' });
     }
-    
+
     res.json({ message: 'Service item removed successfully' });
   } catch (error) {
     console.error('Remove service item error:', error);
@@ -739,7 +1252,7 @@ app.get('/api/payment-methods', async (req, res) => {
 
 app.post('/api/payment-methods', authenticateAdmin, async (req, res) => {
   const { type, name, account_number, details } = req.body;
-  
+
   try {
     const [result] = await db.execute(
       'INSERT INTO payment_methods (type, name, account_number, details) VALUES (?, ?, ?, ?)',
@@ -755,17 +1268,17 @@ app.post('/api/payment-methods', authenticateAdmin, async (req, res) => {
 app.put('/api/payment-methods/:id', authenticateAdmin, async (req, res) => {
   const { type, name, account_number, details } = req.body;
   const { id } = req.params;
-  
+
   try {
     const [result] = await db.execute(
       'UPDATE payment_methods SET type = ?, name = ?, account_number = ?, details = ? WHERE id = ?',
       [type, name, account_number, details, id]
     );
-    
+
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: 'Payment method not found' });
     }
-    
+
     res.json({ message: 'Payment method updated successfully' });
   } catch (error) {
     console.error('Update payment method error:', error);
@@ -775,14 +1288,14 @@ app.put('/api/payment-methods/:id', authenticateAdmin, async (req, res) => {
 
 app.delete('/api/payment-methods/:id', authenticateAdmin, async (req, res) => {
   const { id } = req.params;
-  
+
   try {
     const [result] = await db.execute('DELETE FROM payment_methods WHERE id = ?', [id]);
-    
+
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: 'Payment method not found' });
     }
-    
+
     res.json({ message: 'Payment method deleted successfully' });
   } catch (error) {
     console.error('Delete payment method error:', error);
@@ -815,14 +1328,14 @@ app.get('/api/orders', authenticateAdmin, async (req, res) => {
     }
 
     const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
-    
+
     // Get total count
     const [countResult] = await db.execute(
       `SELECT COUNT(*) as total FROM orders ${whereSql}`,
       params
     );
     const total = countResult[0].total;
-    
+
     // Get paginated orders with service base_price and progress
     const [orders] = await db.execute(`
       SELECT o.*, s.base_price,
@@ -834,7 +1347,7 @@ app.get('/api/orders', authenticateAdmin, async (req, res) => {
       ORDER BY o.created_at DESC 
       LIMIT ? OFFSET ?
     `, [...params, limit, offset]);
-    
+
     res.json({
       orders,
       pagination: {
@@ -1372,17 +1885,17 @@ app.post('/api/orders', async (req, res) => {
 app.put('/api/orders/:id/status', authenticateAdmin, async (req, res) => {
   const { status } = req.body;
   const { id } = req.params;
-  
+
   try {
     const [result] = await db.execute(
       'UPDATE orders SET status = ? WHERE id = ?',
       [status, id]
     );
-    
+
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: 'Order not found' });
     }
-    
+
     res.json({ message: 'Order status updated successfully' });
   } catch (error) {
     console.error('Update order status error:', error);
@@ -1392,14 +1905,14 @@ app.put('/api/orders/:id/status', authenticateAdmin, async (req, res) => {
 
 app.delete('/api/orders/:id', authenticateAdmin, async (req, res) => {
   const { id } = req.params;
-  
+
   try {
     const [result] = await db.execute('DELETE FROM orders WHERE id = ?', [id]);
-    
+
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: 'Order not found' });
     }
-    
+
     // Clean up polymorphic relationships
     await db.execute('DELETE FROM order_financials WHERE order_source = \'order\' AND order_id = ?', [id]);
     await db.execute('DELETE FROM order_progress WHERE order_source = \'order\' AND order_id = ?', [id]);
@@ -1416,17 +1929,17 @@ app.delete('/api/orders/:id', authenticateAdmin, async (req, res) => {
 app.put('/api/orders/:id/booking-amount', authenticateAdmin, async (req, res) => {
   const { booking_amount } = req.body;
   const { id } = req.params;
-  
+
   try {
     const [result] = await db.execute(
       'UPDATE orders SET booking_amount = ? WHERE id = ?',
       [booking_amount, id]
     );
-    
+
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: 'Order not found' });
     }
-    
+
     res.json({ message: 'Booking amount updated successfully' });
   } catch (error) {
     console.error('Update booking amount error:', error);
@@ -1510,12 +2023,12 @@ app.post('/api/custom-requests', async (req, res) => {
     name, email, phone, wedding_date, booking_amount, services, additional_requests,
     bride_name, groom_name, reference_source
   } = req.body;
-  
+
   // Debug: Log the received data
   console.log('Received custom request data:', {
     name, email, phone, wedding_date, booking_amount, services, additional_requests
   });
-  
+
   // Debug: Check for undefined values
   const fields = { name, email, phone, wedding_date, booking_amount, services, additional_requests };
   Object.keys(fields).forEach(key => {
@@ -1523,10 +2036,10 @@ app.post('/api/custom-requests', async (req, res) => {
       console.log(`WARNING: ${key} is undefined`);
     }
   });
-  
+
   // Validate required fields
   if (!name || !email || !phone || !wedding_date ||
-      name.trim() === '' || email.trim() === '' || phone.trim() === '' || wedding_date.trim() === '') {
+    name.trim() === '' || email.trim() === '' || phone.trim() === '' || wedding_date.trim() === '') {
     return res.status(400).json({ message: 'Missing required fields: name, email, phone, wedding_date' });
   }
   if (!bride_name?.trim() || !groom_name?.trim()) {
@@ -1546,10 +2059,10 @@ app.post('/api/custom-requests', async (req, res) => {
     groom_name.trim(),
     reference_source || null
   ];
-  
+
   // Debug: Log the parameters being sent to database
   console.log('Database parameters:', params);
-  
+
   try {
     const [result] = await db.execute(
       `INSERT INTO custom_requests (
@@ -1735,7 +2248,7 @@ app.get('/api/custom-requests', authenticateAdmin, async (req, res) => {
        ORDER BY cr.created_at DESC LIMIT ? OFFSET ?`,
       [...listParams, limit, offset]
     );
-    
+
     // Calculate total_amount and items details for each request based on services
     const requestsWithTotal = await Promise.all(
       requests.map(async (request) => {
@@ -1747,7 +2260,7 @@ app.get('/api/custom-requests', authenticateAdmin, async (req, res) => {
         };
       })
     );
-    
+
     res.json({
       requests: requestsWithTotal,
       pagination: {
@@ -1780,14 +2293,14 @@ app.get('/api/custom-requests/:id', authenticateAdmin, async (req, res) => {
 
 app.delete('/api/custom-requests/:id', authenticateAdmin, async (req, res) => {
   const { id } = req.params;
-  
+
   try {
     const [result] = await db.execute('DELETE FROM custom_requests WHERE id = ?', [id]);
-    
+
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: 'Custom request not found' });
     }
-    
+
     // Clean up polymorphic relationships
     await db.execute('DELETE FROM order_financials WHERE order_source = \'custom_request\' AND order_id = ?', [id]);
     await db.execute('DELETE FROM order_progress WHERE order_source = \'custom_request\' AND order_id = ?', [id]);
@@ -1804,17 +2317,17 @@ app.delete('/api/custom-requests/:id', authenticateAdmin, async (req, res) => {
 app.put('/api/custom-requests/:id/booking-amount', authenticateAdmin, async (req, res) => {
   const { booking_amount } = req.body;
   const { id } = req.params;
-  
+
   try {
     const [result] = await db.execute(
       'UPDATE custom_requests SET booking_amount = ? WHERE id = ?',
       [booking_amount, id]
     );
-    
+
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: 'Custom request not found' });
     }
-    
+
     res.json({ message: 'Booking amount updated successfully' });
   } catch (error) {
     console.error('Update booking amount error:', error);
@@ -1825,23 +2338,23 @@ app.put('/api/custom-requests/:id/booking-amount', authenticateAdmin, async (req
 app.put('/api/custom-requests/:id/status', authenticateAdmin, async (req, res) => {
   const { status } = req.body;
   const { id } = req.params;
-  
+
   // Validate status
   const validStatuses = ['pending', 'confirmed', 'completed', 'cancelled'];
   if (!validStatuses.includes(status)) {
     return res.status(400).json({ message: 'Invalid status' });
   }
-  
+
   try {
     const [result] = await db.execute(
       'UPDATE custom_requests SET status = ? WHERE id = ?',
       [status, id]
     );
-    
+
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: 'Custom request not found' });
     }
-    
+
     res.json({ message: 'Status updated successfully' });
   } catch (error) {
     console.error('Update status error:', error);
@@ -1862,15 +2375,15 @@ app.get('/api/articles', async (req, res) => {
 
 app.get('/api/articles/:id', async (req, res) => {
   const { id } = req.params;
-  
+
   try {
     const [rows] = await db.execute('SELECT * FROM articles WHERE id = ?', [id]);
     const article = rows[0];
-    
+
     if (!article) {
       return res.status(404).json({ message: 'Article not found' });
     }
-    
+
     res.json(article);
   } catch (error) {
     console.error('Article error:', error);
@@ -1880,7 +2393,7 @@ app.get('/api/articles/:id', async (req, res) => {
 
 app.post('/api/articles', authenticateAdmin, async (req, res) => {
   const { title, content, excerpt, image, category } = req.body;
-  
+
   try {
     const [result] = await db.execute(
       'INSERT INTO articles (title, content, excerpt, image, category) VALUES (?, ?, ?, ?, ?)',
@@ -1896,7 +2409,7 @@ app.post('/api/articles', authenticateAdmin, async (req, res) => {
 app.put('/api/articles/:id', authenticateAdmin, async (req, res) => {
   const { title, content, excerpt, image, category } = req.body;
   const { id } = req.params;
-  
+
   try {
     const [rows] = await db.execute('SELECT image FROM articles WHERE id = ?', [id]);
     const oldImage = rows[0] && rows[0].image;
@@ -1904,7 +2417,7 @@ app.put('/api/articles/:id', authenticateAdmin, async (req, res) => {
       'UPDATE articles SET title = ?, content = ?, excerpt = ?, image = ?, category = ? WHERE id = ?',
       [title, content, excerpt, image, category, id]
     );
-    
+
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: 'Article not found' });
     }
@@ -1918,12 +2431,12 @@ app.put('/api/articles/:id', authenticateAdmin, async (req, res) => {
 
 app.delete('/api/articles/:id', authenticateAdmin, async (req, res) => {
   const { id } = req.params;
-  
+
   try {
     const [rows] = await db.execute('SELECT image FROM articles WHERE id = ?', [id]);
     const row = rows[0];
     const [result] = await db.execute('DELETE FROM articles WHERE id = ?', [id]);
-    
+
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: 'Article not found' });
     }
@@ -1948,7 +2461,7 @@ app.get('/api/gallery/categories', async (req, res) => {
 
 app.post('/api/gallery/categories', authenticateAdmin, async (req, res) => {
   const { name, description, sort_order } = req.body;
-  
+
   try {
     const [result] = await db.execute(
       'INSERT INTO gallery_categories (name, description, sort_order) VALUES (?, ?, ?)',
@@ -1964,17 +2477,17 @@ app.post('/api/gallery/categories', authenticateAdmin, async (req, res) => {
 app.put('/api/gallery/categories/:id', authenticateAdmin, async (req, res) => {
   const { name, description, is_active, sort_order } = req.body;
   const { id } = req.params;
-  
+
   try {
     const [result] = await db.execute(
       'UPDATE gallery_categories SET name = ?, description = ?, is_active = ?, sort_order = ? WHERE id = ?',
       [name, description, is_active, sort_order, id]
     );
-    
+
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: 'Gallery category not found' });
     }
-    
+
     res.json({ message: 'Gallery category updated successfully' });
   } catch (error) {
     console.error('Update gallery category error:', error);
@@ -1984,21 +2497,21 @@ app.put('/api/gallery/categories/:id', authenticateAdmin, async (req, res) => {
 
 app.delete('/api/gallery/categories/:id', authenticateAdmin, async (req, res) => {
   const { id } = req.params;
-  
+
   try {
     // Check if category has images
     const [imageCheck] = await db.execute('SELECT COUNT(*) as count FROM gallery_images WHERE category_id = ?', [id]);
-    
+
     if (imageCheck[0].count > 0) {
       return res.status(400).json({ message: 'Cannot delete category that has images. Deactivate it instead.' });
     }
-    
+
     const [result] = await db.execute('DELETE FROM gallery_categories WHERE id = ?', [id]);
-    
+
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: 'Gallery category not found' });
     }
-    
+
     res.json({ message: 'Gallery category deleted successfully' });
   } catch (error) {
     console.error('Delete gallery category error:', error);
@@ -2009,7 +2522,7 @@ app.delete('/api/gallery/categories/:id', authenticateAdmin, async (req, res) =>
 // Gallery images routes
 app.get('/api/gallery/images', async (req, res) => {
   const { category_id, featured } = req.query;
-  
+
   try {
     let query = `
       SELECT gi.*, gc.name as category_name 
@@ -2018,18 +2531,18 @@ app.get('/api/gallery/images', async (req, res) => {
       WHERE gi.is_active = true
     `;
     const params = [];
-    
+
     if (category_id) {
       query += ' AND gi.category_id = ?';
       params.push(category_id);
     }
-    
+
     if (featured === 'true') {
       query += ' AND gi.is_featured = true';
     }
-    
+
     query += ' ORDER BY gi.sort_order, gi.created_at DESC';
-    
+
     const [images] = await db.execute(query, params);
     res.json(images);
   } catch (error) {
@@ -2040,7 +2553,7 @@ app.get('/api/gallery/images', async (req, res) => {
 
 app.get('/api/gallery/images/:id', async (req, res) => {
   const { id } = req.params;
-  
+
   try {
     const [rows] = await db.execute(`
       SELECT gi.*, gc.name as category_name 
@@ -2049,11 +2562,11 @@ app.get('/api/gallery/images/:id', async (req, res) => {
       WHERE gi.id = ?
     `, [id]);
     const image = rows[0];
-    
+
     if (!image) {
       return res.status(404).json({ message: 'Gallery image not found' });
     }
-    
+
     res.json(image);
   } catch (error) {
     console.error('Gallery image error:', error);
@@ -2063,7 +2576,7 @@ app.get('/api/gallery/images/:id', async (req, res) => {
 
 app.post('/api/gallery/images', authenticateAdmin, async (req, res) => {
   const { title, description, image_url, category_id, is_featured, sort_order } = req.body;
-  
+
   try {
     const [result] = await db.execute(
       'INSERT INTO gallery_images (title, description, image_url, category_id, is_featured, sort_order) VALUES (?, ?, ?, ?, ?, ?)',
@@ -2079,7 +2592,7 @@ app.post('/api/gallery/images', authenticateAdmin, async (req, res) => {
 app.put('/api/gallery/images/:id', authenticateAdmin, async (req, res) => {
   const { title, description, image_url, category_id, is_featured, is_active, sort_order } = req.body;
   const { id } = req.params;
-  
+
   try {
     const [rows] = await db.execute('SELECT image_url FROM gallery_images WHERE id = ?', [id]);
     const oldUrl = rows[0] && rows[0].image_url;
@@ -2087,7 +2600,7 @@ app.put('/api/gallery/images/:id', authenticateAdmin, async (req, res) => {
       'UPDATE gallery_images SET title = ?, description = ?, image_url = ?, category_id = ?, is_featured = ?, is_active = ?, sort_order = ? WHERE id = ?',
       [title, description, image_url, category_id, is_featured, is_active, sort_order, id]
     );
-    
+
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: 'Gallery image not found' });
     }
@@ -2101,12 +2614,12 @@ app.put('/api/gallery/images/:id', authenticateAdmin, async (req, res) => {
 
 app.delete('/api/gallery/images/:id', authenticateAdmin, async (req, res) => {
   const { id } = req.params;
-  
+
   try {
     const [rows] = await db.execute('SELECT image_url FROM gallery_images WHERE id = ?', [id]);
     const row = rows[0];
     const [result] = await db.execute('DELETE FROM gallery_images WHERE id = ?', [id]);
-    
+
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: 'Gallery image not found' });
     }
@@ -2134,15 +2647,15 @@ app.get('/api/content-sections', async (req, res) => {
 
 app.get('/api/content-sections/:sectionName', async (req, res) => {
   const { sectionName } = req.params;
-  
+
   try {
     const [rows] = await db.execute('SELECT * FROM content_sections WHERE section_name = ? AND is_active = true', [sectionName]);
     const section = rows[0];
-    
+
     if (!section) {
       return res.status(404).json({ message: 'Content section not found' });
     }
-    
+
     res.json(section);
   } catch (error) {
     console.error('Content section error:', error);
@@ -2152,7 +2665,7 @@ app.get('/api/content-sections/:sectionName', async (req, res) => {
 
 app.post('/api/content-sections', authenticateAdmin, async (req, res) => {
   const { section_name, title, subtitle, description, image_url, button_text, button_url, sort_order } = req.body;
-  
+
   try {
     const [result] = await db.execute(
       'INSERT INTO content_sections (section_name, title, subtitle, description, image_url, button_text, button_url, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
@@ -2172,7 +2685,7 @@ app.post('/api/content-sections', authenticateAdmin, async (req, res) => {
 app.put('/api/content-sections/:id', authenticateAdmin, async (req, res) => {
   const { title, subtitle, description, image_url, button_text, button_url, is_active, sort_order } = req.body;
   const { id } = req.params;
-  
+
   try {
     const [rows] = await db.execute('SELECT image_url FROM content_sections WHERE id = ?', [id]);
     const oldUrl = rows[0] && rows[0].image_url;
@@ -2180,7 +2693,7 @@ app.put('/api/content-sections/:id', authenticateAdmin, async (req, res) => {
       'UPDATE content_sections SET title = ?, subtitle = ?, description = ?, image_url = ?, button_text = ?, button_url = ?, is_active = ?, sort_order = ? WHERE id = ?',
       [title, subtitle, description, image_url, button_text, button_url, is_active, sort_order, id]
     );
-    
+
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: 'Content section not found' });
     }
@@ -2194,12 +2707,12 @@ app.put('/api/content-sections/:id', authenticateAdmin, async (req, res) => {
 
 app.delete('/api/content-sections/:id', authenticateAdmin, async (req, res) => {
   const { id } = req.params;
-  
+
   try {
     const [rows] = await db.execute('SELECT image_url FROM content_sections WHERE id = ?', [id]);
     const row = rows[0];
     const [result] = await db.execute('DELETE FROM content_sections WHERE id = ?', [id]);
-    
+
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: 'Content section not found' });
     }
@@ -2215,18 +2728,18 @@ app.delete('/api/content-sections/:id', authenticateAdmin, async (req, res) => {
 app.get('/api/service-cards', async (req, res) => {
   try {
     const { card_type } = req.query;
-    
+
     let query = 'SELECT * FROM service_cards WHERE is_active = true';
     const params = [];
-    
+
     // Filter by card_type if provided
     if (card_type) {
       query += ' AND card_type = ?';
       params.push(card_type);
     }
-    
+
     query += ' ORDER BY card_type, sort_order, created_at DESC';
-    
+
     const [cards] = await db.execute(query, params);
     res.json(cards);
   } catch (error) {
@@ -2237,15 +2750,15 @@ app.get('/api/service-cards', async (req, res) => {
 
 app.get('/api/service-cards/:id', async (req, res) => {
   const { id } = req.params;
-  
+
   try {
     const [rows] = await db.execute('SELECT * FROM service_cards WHERE id = ?', [id]);
     const card = rows[0];
-    
+
     if (!card) {
       return res.status(404).json({ message: 'Service card not found' });
     }
-    
+
     res.json(card);
   } catch (error) {
     console.error('Service card error:', error);
@@ -2255,7 +2768,7 @@ app.get('/api/service-cards/:id', async (req, res) => {
 
 app.post('/api/service-cards', authenticateAdmin, async (req, res) => {
   const { title, description, icon, image_url, button_text, button_url, card_type, sort_order } = req.body;
-  
+
   try {
     const [result] = await db.execute(
       'INSERT INTO service_cards (title, description, icon, image_url, button_text, button_url, card_type, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
@@ -2271,7 +2784,7 @@ app.post('/api/service-cards', authenticateAdmin, async (req, res) => {
 app.put('/api/service-cards/:id', authenticateAdmin, async (req, res) => {
   const { title, description, icon, image_url, button_text, button_url, card_type, is_active, sort_order } = req.body;
   const { id } = req.params;
-  
+
   try {
     const [rows] = await db.execute('SELECT image_url FROM service_cards WHERE id = ?', [id]);
     const oldUrl = rows[0] && rows[0].image_url;
@@ -2279,7 +2792,7 @@ app.put('/api/service-cards/:id', authenticateAdmin, async (req, res) => {
       'UPDATE service_cards SET title = ?, description = ?, icon = ?, image_url = ?, button_text = ?, button_url = ?, card_type = ?, is_active = ?, sort_order = ? WHERE id = ?',
       [title, description, icon, image_url, button_text, button_url, card_type, is_active, sort_order, id]
     );
-    
+
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: 'Card not found' });
     }
@@ -2293,12 +2806,12 @@ app.put('/api/service-cards/:id', authenticateAdmin, async (req, res) => {
 
 app.delete('/api/service-cards/:id', authenticateAdmin, async (req, res) => {
   const { id } = req.params;
-  
+
   try {
     const [rows] = await db.execute('SELECT image_url FROM service_cards WHERE id = ?', [id]);
     const row = rows[0];
     const [result] = await db.execute('DELETE FROM service_cards WHERE id = ?', [id]);
-    
+
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: 'Service card not found' });
     }
@@ -2323,15 +2836,15 @@ app.get('/api/service-features', async (req, res) => {
 
 app.get('/api/service-features/:id', async (req, res) => {
   const { id } = req.params;
-  
+
   try {
     const [rows] = await db.execute('SELECT * FROM service_features WHERE id = ?', [id]);
     const feature = rows[0];
-    
+
     if (!feature) {
       return res.status(404).json({ message: 'Service feature not found' });
     }
-    
+
     res.json(feature);
   } catch (error) {
     console.error('Service feature error:', error);
@@ -2341,7 +2854,7 @@ app.get('/api/service-features/:id', async (req, res) => {
 
 app.post('/api/service-features', authenticateAdmin, async (req, res) => {
   const { title, description, icon, sort_order } = req.body;
-  
+
   try {
     const [result] = await db.execute(
       'INSERT INTO service_features (title, description, icon, sort_order) VALUES (?, ?, ?, ?)',
@@ -2357,17 +2870,17 @@ app.post('/api/service-features', authenticateAdmin, async (req, res) => {
 app.put('/api/service-features/:id', authenticateAdmin, async (req, res) => {
   const { title, description, icon, is_active, sort_order } = req.body;
   const { id } = req.params;
-  
+
   try {
     const [result] = await db.execute(
       'UPDATE service_features SET title = ?, description = ?, icon = ?, is_active = ?, sort_order = ? WHERE id = ?',
       [title, description, icon, is_active, sort_order, id]
     );
-    
+
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: 'Service feature not found' });
     }
-    
+
     res.json({ message: 'Service feature updated successfully' });
   } catch (error) {
     console.error('Update service feature error:', error);
@@ -2377,14 +2890,14 @@ app.put('/api/service-features/:id', authenticateAdmin, async (req, res) => {
 
 app.delete('/api/service-features/:id', authenticateAdmin, async (req, res) => {
   const { id } = req.params;
-  
+
   try {
     const [result] = await db.execute('DELETE FROM service_features WHERE id = ?', [id]);
-    
+
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: 'Service feature not found' });
     }
-    
+
     res.json({ message: 'Service feature deleted successfully' });
   } catch (error) {
     console.error('Delete service feature error:', error);
@@ -2484,17 +2997,17 @@ app.get('/api/surat-jalan', authenticateAdmin, async (req, res) => {
       unlinkUploadIfStored(row.dekorasi_image);
     }
     await db.execute('DELETE FROM surat_jalan WHERE wedding_date < CURDATE()');
-    
+
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const offset = (page - 1) * limit;
     const search = (req.query.search || req.query.q || '').trim();
-    
+
     let countSql = 'SELECT COUNT(*) as total FROM surat_jalan';
     let listSql = 'SELECT * FROM surat_jalan';
     const countParams = [];
     const listParams = [];
-    
+
     if (search) {
       const pattern = `%${search}%`;
       countSql += ' WHERE client_name LIKE ?';
@@ -2502,15 +3015,15 @@ app.get('/api/surat-jalan', authenticateAdmin, async (req, res) => {
       countParams.push(pattern);
       listParams.push(pattern);
     }
-    
+
     listSql += ' ORDER BY wedding_date ASC, created_at DESC LIMIT ? OFFSET ?';
     listParams.push(limit, offset);
-    
+
     const [countResult] = await db.execute(countSql, countParams);
     const total = countResult[0].total;
-    
+
     const [suratJalan] = await db.execute(listSql, listParams);
-    
+
     res.json({
       suratJalan,
       pagination: {
@@ -2528,15 +3041,15 @@ app.get('/api/surat-jalan', authenticateAdmin, async (req, res) => {
 
 app.get('/api/surat-jalan/:id', authenticateAdmin, async (req, res) => {
   const { id } = req.params;
-  
+
   try {
     const [rows] = await db.execute('SELECT * FROM surat_jalan WHERE id = ?', [id]);
     const suratJalan = rows[0];
-    
+
     if (!suratJalan) {
       return res.status(404).json({ message: 'Surat jalan not found' });
     }
-    
+
     res.json(suratJalan);
   } catch (error) {
     console.error('Surat jalan detail error:', error);
@@ -2545,12 +3058,12 @@ app.get('/api/surat-jalan/:id', authenticateAdmin, async (req, res) => {
 });
 
 app.post('/api/surat-jalan', authenticateAdmin, async (req, res) => {
-  const { 
-    order_id, 
+  const {
+    order_id,
     custom_request_id,
-    client_name, 
-    client_phone, 
-    client_address, 
+    client_name,
+    client_phone,
+    client_address,
     wedding_date,
     package_name,
     plaminan_image,
@@ -2580,7 +3093,7 @@ app.post('/api/surat-jalan', authenticateAdmin, async (req, res) => {
   }
   const finalOrderId = oid && !Number.isNaN(oid) ? oid : null;
   const finalCustomId = crid && !Number.isNaN(crid) ? crid : null;
-  
+
   try {
     const [result] = await db.execute(
       `INSERT INTO surat_jalan (
@@ -2603,10 +3116,10 @@ app.post('/api/surat-jalan', authenticateAdmin, async (req, res) => {
 
 app.put('/api/surat-jalan/:id', authenticateAdmin, async (req, res) => {
   const { id } = req.params;
-  const { 
-    client_name, 
-    client_phone, 
-    client_address, 
+  const {
+    client_name,
+    client_phone,
+    client_address,
     wedding_date,
     package_name,
     plaminan_image,
@@ -2620,7 +3133,7 @@ app.put('/api/surat-jalan/:id', authenticateAdmin, async (req, res) => {
     maps_link,
     notes
   } = req.body;
-  
+
   try {
     const [oldRows] = await db.execute('SELECT plaminan_image, pintu_masuk_image, dekorasi_image FROM surat_jalan WHERE id = ?', [id]);
     const old = oldRows[0];
@@ -2636,7 +3149,7 @@ app.put('/api/surat-jalan/:id', authenticateAdmin, async (req, res) => {
         warna_kain, ukuran_tenda, piring, nama_pasangan, vendor_name, maps_link || null, notes, id
       ]
     );
-    
+
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: 'Surat jalan not found' });
     }
@@ -2654,12 +3167,12 @@ app.put('/api/surat-jalan/:id', authenticateAdmin, async (req, res) => {
 
 app.delete('/api/surat-jalan/:id', authenticateAdmin, async (req, res) => {
   const { id } = req.params;
-  
+
   try {
     const [rows] = await db.execute('SELECT plaminan_image, pintu_masuk_image, dekorasi_image FROM surat_jalan WHERE id = ?', [id]);
     const row = rows[0];
     const [result] = await db.execute('DELETE FROM surat_jalan WHERE id = ?', [id]);
-    
+
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: 'Surat jalan not found' });
     }
@@ -3102,7 +3615,7 @@ app.delete('/api/freelance-calendar/:id', authenticateAdmin, async (req, res) =>
 // Contact form
 app.post('/api/contact', async (req, res) => {
   const { name, email, phone, address, instagram, consultation_date, message } = req.body;
-  
+
   try {
     const [result] = await db.execute(
       'INSERT INTO contact_messages (name, email, phone, address, instagram, consultation_date, message) VALUES (?, ?, ?, ?, ?, ?, ?)',
@@ -3121,17 +3634,17 @@ app.get('/api/contact-messages', authenticateAdmin, async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const offset = (page - 1) * limit;
-    
+
     // Get total count
     const [countResult] = await db.execute('SELECT COUNT(*) as total FROM contact_messages');
     const total = countResult[0].total;
-    
+
     // Get paginated contact messages
     const [messages] = await db.execute(
       'SELECT * FROM contact_messages ORDER BY created_at DESC LIMIT ? OFFSET ?',
       [limit, offset]
     );
-    
+
     res.json({
       messages,
       pagination: {
@@ -3150,14 +3663,14 @@ app.get('/api/contact-messages', authenticateAdmin, async (req, res) => {
 // Delete contact message
 app.delete('/api/contact-messages/:id', authenticateAdmin, async (req, res) => {
   const { id } = req.params;
-  
+
   try {
     const [result] = await db.execute('DELETE FROM contact_messages WHERE id = ?', [id]);
-    
+
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: 'Contact message not found' });
     }
-    
+
     res.json({ message: 'Contact message deleted successfully' });
   } catch (error) {
     console.error('Delete contact message error:', error);
@@ -4317,7 +4830,7 @@ app.post('/api/freelancers-inhouse', authenticateAdmin, async (req, res) => {
   const phoneNorm = normalizeFreelancerPhone(phone);
   const rekening = req.body?.rekening ? String(req.body.rekening).trim() : null;
   const alamat = req.body?.alamat ? String(req.body.alamat).trim() : null;
-  
+
   // Dynamic rates handling
   const ratesInput = req.body?.rates || [];
   const ratesArr = Array.isArray(ratesInput) ? ratesInput : [];

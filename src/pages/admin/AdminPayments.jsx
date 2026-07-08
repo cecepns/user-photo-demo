@@ -14,7 +14,7 @@ const AdminPayments = () => {
 
   const fetchPaymentMethods = async () => {
     try {
-      const response = await fetch('https://api.kingcreativestudio.my.id/user-photo/api/payment-methods');
+      const response = await fetch('https://api.userphoto.my.idapi/payment-methods');
       const data = await response.json();
       setPaymentMethods(data);
     } catch (error) {
@@ -24,12 +24,12 @@ const AdminPayments = () => {
 
   const handleSubmit = async (methodData) => {
     try {
-      const url = editingMethod 
-        ? `https://api.kingcreativestudio.my.id/user-photo/api/payment-methods/${editingMethod.id}`
-        : 'https://api.kingcreativestudio.my.id/user-photo/api/payment-methods';
-      
+      const url = editingMethod
+        ? `https://api.userphoto.my.idapi/payment-methods/${editingMethod.id}`
+        : 'https://api.userphoto.my.idapi/payment-methods';
+
       const method = editingMethod ? 'PUT' : 'POST';
-      
+
       const response = await fetch(url, {
         method,
         headers: {
@@ -88,7 +88,7 @@ const AdminPayments = () => {
     if (!confirmed) return;
 
     try {
-      const response = await fetch(`https://api.kingcreativestudio.my.id/user-photo/api/payment-methods/${id}`, {
+      const response = await fetch(`https://api.userphoto.my.idapi/payment-methods/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
@@ -274,8 +274,8 @@ const PaymentMethodModal = ({ method, onSubmit, onClose }) => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {formData.type === 'bank' ? 'Nama Bank' : 
-                   formData.type === 'qris' ? 'Penyedia QRIS' : 'Nama E-Wallet'}
+                  {formData.type === 'bank' ? 'Nama Bank' :
+                    formData.type === 'qris' ? 'Penyedia QRIS' : 'Nama E-Wallet'}
                 </label>
                 <input
                   type="text"
@@ -283,8 +283,8 @@ const PaymentMethodModal = ({ method, onSubmit, onClose }) => {
                   value={formData.name}
                   onChange={handleInputChange}
                   required
-                  placeholder={formData.type === 'bank' ? 'e.g., Bank Central Asia' : 
-                             formData.type === 'qris' ? 'e.g., QRIS Payment' : 'e.g., GoPay'}
+                  placeholder={formData.type === 'bank' ? 'e.g., Bank Central Asia' :
+                    formData.type === 'qris' ? 'e.g., QRIS Payment' : 'e.g., GoPay'}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                 />
               </div>
@@ -314,9 +314,9 @@ const PaymentMethodModal = ({ method, onSubmit, onClose }) => {
                   value={formData.details}
                   onChange={handleInputChange}
                   rows={3}
-                  placeholder={formData.type === 'bank' ? 'Nama rekening: WeddingBliss Indonesia' : 
-                             formData.type === 'qris' ? 'Instruksi untuk pembayaran QRIS' : 
-                             'Instruksi tambahan'}
+                  placeholder={formData.type === 'bank' ? 'Nama rekening: WeddingBliss Indonesia' :
+                    formData.type === 'qris' ? 'Instruksi untuk pembayaran QRIS' :
+                      'Instruksi tambahan'}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                 ></textarea>
               </div>

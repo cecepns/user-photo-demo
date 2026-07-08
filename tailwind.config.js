@@ -8,16 +8,16 @@ export default {
     extend: {
       colors: {
         primary: {
-          50: '#f0f4f8',
-          100: '#d9e2ec',
-          200: '#bcccdc',
-          300: '#9fb3c8',
-          400: '#829ab1',
-          500: '#2f4274',
-          600: '#2a3b68',
-          700: '#25325c',
-          800: '#202950',
-          900: '#1b2044',
+          50: 'var(--color-primary-50, #f0f4f8)',
+          100: 'var(--color-primary-100, #d9e2ec)',
+          200: 'var(--color-primary-200, #bcccdc)',
+          300: 'var(--color-primary-300, #9fb3c8)',
+          400: 'var(--color-primary-400, #829ab1)',
+          500: 'var(--color-primary-500, #2f4274)',
+          600: 'var(--color-primary-600, #2a3b68)',
+          700: 'var(--color-primary-700, #25325c)',
+          800: 'var(--color-primary-800, #202950)',
+          900: 'var(--color-primary-900, #1b2044)',
         },
         secondary: {
           50: '#f0f9ff',
