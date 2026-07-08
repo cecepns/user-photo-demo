@@ -84,6 +84,17 @@ const AdminDetailAcara = () => {
   }, [fetchList]);
 
   const loadOrderOptions = async (inputValue) => {
+    // Build set of order keys already used in detail acara
+    const usedOrderKeys = new Set(
+      items
+        .filter((item) => item.order_id && item.order_source)
+        .map((item) =>
+          item.order_source === 'custom_request'
+            ? `custom:${item.order_id}`
+            : `order:${item.order_id}`
+        )
+    );
+
     const data = await apiGet(`${API_ENDPOINTS.ORDERS.SEARCH}?q=${encodeURIComponent(inputValue || '')}`);
     const rows = Array.isArray(data) ? data : [];
     return rows.map((row) => {
@@ -92,9 +103,12 @@ const AdminDetailAcara = () => {
       const svc = row.service_name || (isCustom ? 'Layanan custom' : '-');
       const prefix = isCustom ? 'C' : '';
       const tag = isCustom ? 'Custom' : 'Biasa';
+      const key = isCustom ? `custom:${row.id}` : `order:${row.id}`;
+      const alreadyUsed = usedOrderKeys.has(key);
       return {
-        value: isCustom ? `custom:${row.id}` : `order:${row.id}`,
-        label: `#${prefix}${row.id} — ${row.name || '-'}${row.bride_name || row.groom_name ? ` (${row.bride_name || '-'} & ${row.groom_name || '-'})` : ''} — ${svc} (${tag}) · ${datePart}`,
+        value: key,
+        label: `#${prefix}${row.id} — ${row.name || '-'}${row.bride_name || row.groom_name ? ` (${row.bride_name || '-'} & ${row.groom_name || '-'})` : ''} — ${svc} (${tag}) · ${datePart}${alreadyUsed ? ' · ✓ Sudah digunakan' : ''}`,
+        isDisabled: alreadyUsed,
         order: {
           id: row.id,
           source: isCustom ? 'custom_request' : 'order',
@@ -443,12 +457,20 @@ const AdminDetailAcara = () => {
 
                   placeholder="Ketik nama client / HP..."
                   classNamePrefix="rs"
+                  isOptionDisabled={(opt) => opt.isDisabled}
                   styles={{
                     control: (base) => ({
                       ...base,
                       borderRadius: 8,
                       borderColor: '#d1d5db',
                       minHeight: 42,
+                    }),
+                    option: (base, { isDisabled }) => ({
+                      ...base,
+                      color: isDisabled ? '#9ca3af' : base.color,
+                      backgroundColor: isDisabled ? '#f3f4f6' : base.backgroundColor,
+                      cursor: isDisabled ? 'not-allowed' : 'pointer',
+                      fontStyle: isDisabled ? 'italic' : 'normal',
                     }),
                   }}
                 />
