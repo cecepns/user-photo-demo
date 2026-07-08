@@ -59,8 +59,9 @@ app.use(express.json());
 app.use(tenantResolver);
 
 // MySQL Database connection
+const rawHost = process.env.DB_HOST || '127.0.0.1';
 const dbConfig = {
-  host: process.env.DB_HOST || '127.0.0.1',
+  host: rawHost === 'localhost' ? '127.0.0.1' : rawHost,
   user: process.env.DB_USER || 'userphot_main',
   password: process.env.DB_PASSWORD !== undefined ? process.env.DB_PASSWORD : 'userphot_main', // Change this to your MySQL password
   database: process.env.DB_NAME || 'userphot_main',
@@ -197,7 +198,7 @@ async function getTenantPool(tenant) {
     const statements = cleanSql
       .split(';')
       .map(stmt => stmt.trim())
-      .filter(stmt => stmt.length > 0 && !/^insert\b/i.test(stmt));
+      .filter(stmt => stmt.length > 0);
 
     for (const statement of statements) {
       if (statement.trim()) {
@@ -389,7 +390,7 @@ async function initializeDatabase() {
     const statements = cleanSql
       .split(';')
       .map(stmt => stmt.trim())
-      .filter(stmt => stmt.length > 0 && !/^insert\b/i.test(stmt));
+      .filter(stmt => stmt.length > 0);
 
     for (const statement of statements) {
       if (statement.trim()) {

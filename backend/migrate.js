@@ -6,8 +6,9 @@
 const mysql = require('mysql2/promise');
 const { runMigrations } = require('./lib/runMigrations');
 
+const rawHost = process.env.DB_HOST || '127.0.0.1';
 const dbConfig = {
-  host: process.env.DB_HOST || 'localhost',
+  host: rawHost === 'localhost' ? '127.0.0.1' : rawHost,
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD !== undefined ? process.env.DB_PASSWORD : '',
   database: process.env.DB_NAME || 'wedding_organizer',
