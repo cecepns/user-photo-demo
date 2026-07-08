@@ -212,10 +212,6 @@ const AdminServices = () => {
       console.error('Error:', error);
       toast.error('Error menghapus item dari layanan');
     }
-    } catch (error) {
-      console.error('Error:', error);
-      toast.error('Error menghapus item dari layanan');
-    }
   };
 
   return (
