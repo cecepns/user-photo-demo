@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { apiFetch } from '../utils/api';
+import { imageUrl } from '../utils/imageUrl';
 
 const About = () => {
   const [heroContent, setHeroContent] = useState(null);
@@ -71,7 +72,7 @@ const About = () => {
               </div>
               <div className="animate-slide-up">
                 <img
-                  src={heroContent ? heroContent.image_url : "https://images.pexels.com/photos/1444442/pexels-photo-1444442.jpeg?auto=compress&cs=tinysrgb&w=800"}
+                  src={heroContent && heroContent.image_url ? imageUrl(heroContent.image_url) : "https://images.pexels.com/photos/1444442/pexels-photo-1444442.jpeg?auto=compress&cs=tinysrgb&w=800"}
                   alt="Tim perencanaan pernikahan"
                   className="w-full h-96 object-cover rounded-2xl shadow-2xl"
                 />

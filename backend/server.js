@@ -1383,6 +1383,84 @@ app.get('/api/orders', authenticateAdmin, async (req, res) => {
   }
 });
 
+app.get('/api/orders/search', authenticateAdmin, async (req, res) => {
+  try {
+    const { q } = req.query;
+    const hasQ = q && String(q).trim();
+    const searchTerm = hasQ ? `%${String(q).trim()}%` : null;
+    const limitEach = 15;
+
+    let orderSql = `
+      SELECT id, name, email, phone, address, wedding_date, service_name, total_amount, booking_amount, status, created_at
+      FROM orders
+    `;
+    let orderParams = [];
+    if (hasQ) {
+      orderSql += ` WHERE 
+        name LIKE ? OR 
+        email LIKE ? OR 
+        phone LIKE ? OR 
+        service_name LIKE ? OR
+        CAST(id AS CHAR) LIKE ?
+      `;
+      orderParams = [searchTerm, searchTerm, searchTerm, searchTerm, searchTerm];
+    }
+    orderSql += ` ORDER BY created_at DESC LIMIT ${limitEach}`;
+
+    let customSql = `
+      SELECT id, name, email, phone, wedding_date, services, additional_requests, booking_amount, status, created_at
+      FROM custom_requests
+    `;
+    let customParams = [];
+    if (hasQ) {
+      customSql += ` WHERE 
+        name LIKE ? OR 
+        email LIKE ? OR 
+        phone LIKE ? OR 
+        services LIKE ? OR
+        additional_requests LIKE ? OR
+        CAST(id AS CHAR) LIKE ?
+      `;
+      customParams = [searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm];
+    }
+    customSql += ` ORDER BY created_at DESC LIMIT ${limitEach}`;
+
+    const [[orderRows], [customRows]] = await Promise.all([
+      db.execute(orderSql, orderParams),
+      db.execute(customSql, customParams)
+    ]);
+
+    const normalizedOrders = (orderRows || []).map((row) => ({
+      ...row,
+      order_source: 'order'
+    }));
+
+    const normalizedCustom = (customRows || []).map((row) => ({
+      id: row.id,
+      name: row.name,
+      email: row.email,
+      phone: row.phone,
+      address: row.additional_requests || '',
+      wedding_date: row.wedding_date,
+      service_name: row.services || 'Layanan custom',
+      total_amount: row.booking_amount,
+      booking_amount: row.booking_amount,
+      status: row.status,
+      created_at: row.created_at,
+      order_source: 'custom_request'
+    }));
+
+    const merged = [...normalizedOrders, ...normalizedCustom].sort(
+      (a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)
+    );
+
+    res.json(merged.slice(0, 25));
+  } catch (error) {
+    console.error('Orders search error:', error);
+    res.status(500).json({ message: 'Database error' });
+  }
+});
+
 app.get('/api/orders/:id', authenticateAdmin, async (req, res) => {
   try {
     const [rows] = await db.execute('SELECT * FROM orders WHERE id = ?', [req.params.id]);
@@ -2928,83 +3006,8 @@ app.delete('/api/service-features/:id', authenticateAdmin, async (req, res) => {
 // About cards routes - REMOVED (now handled by unified service-cards endpoint)
 
 // Orders search route (for surat jalan dropdown) — orders + custom_requests
-app.get('/api/orders/search', authenticateAdmin, async (req, res) => {
-  try {
-    const { q } = req.query;
-    const hasQ = q && String(q).trim();
-    const searchTerm = hasQ ? `%${String(q).trim()}%` : null;
-    const limitEach = 15;
-
-    let orderSql = `
-      SELECT id, name, email, phone, address, wedding_date, service_name, total_amount, booking_amount, status, created_at
-      FROM orders
-    `;
-    let orderParams = [];
-    if (hasQ) {
-      orderSql += ` WHERE 
-        name LIKE ? OR 
-        email LIKE ? OR 
-        phone LIKE ? OR 
-        service_name LIKE ? OR
-        CAST(id AS CHAR) LIKE ?
-      `;
-      orderParams = [searchTerm, searchTerm, searchTerm, searchTerm, searchTerm];
-    }
-    orderSql += ` ORDER BY created_at DESC LIMIT ${limitEach}`;
-
-    let customSql = `
-      SELECT id, name, email, phone, wedding_date, services, additional_requests, booking_amount, status, created_at
-      FROM custom_requests
-    `;
-    let customParams = [];
-    if (hasQ) {
-      customSql += ` WHERE 
-        name LIKE ? OR 
-        email LIKE ? OR 
-        phone LIKE ? OR 
-        services LIKE ? OR
-        additional_requests LIKE ? OR
-        CAST(id AS CHAR) LIKE ?
-      `;
-      customParams = [searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm];
-    }
-    customSql += ` ORDER BY created_at DESC LIMIT ${limitEach}`;
-
-    const [[orderRows], [customRows]] = await Promise.all([
-      db.execute(orderSql, orderParams),
-      db.execute(customSql, customParams)
-    ]);
-
-    const normalizedOrders = (orderRows || []).map((row) => ({
-      ...row,
-      order_source: 'order'
-    }));
-
-    const normalizedCustom = (customRows || []).map((row) => ({
-      id: row.id,
-      name: row.name,
-      email: row.email,
-      phone: row.phone,
-      address: row.additional_requests || '',
-      wedding_date: row.wedding_date,
-      service_name: row.services || 'Layanan custom',
-      total_amount: row.booking_amount,
-      booking_amount: row.booking_amount,
-      status: row.status,
-      created_at: row.created_at,
-      order_source: 'custom_request'
-    }));
-
-    const merged = [...normalizedOrders, ...normalizedCustom].sort(
-      (a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)
-    );
-
-    res.json(merged.slice(0, 25));
-  } catch (error) {
-    console.error('Orders search error:', error);
-    res.status(500).json({ message: 'Database error' });
-  }
-});
+// NOTE: /api/orders/search has been moved above /api/orders/:id to avoid route conflict.
+// Express matches routes in order, so the literal 'search' segment must come before the :id param.
 
 // Surat Jalan routes
 app.get('/api/surat-jalan', authenticateAdmin, async (req, res) => {
