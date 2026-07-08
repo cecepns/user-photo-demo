@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { useSiteIdentity } from '../../hooks/useSiteIdentity';
 import { imageUrl } from '../../utils/imageUrl';
+import { apiFetch } from '../../utils/api';
 
 const AdminLogin = () => {
   const [credentials, setCredentials] = useState({
@@ -28,25 +29,17 @@ const AdminLogin = () => {
     setError('');
 
     try {
-      const response = await fetch('https://api.userphoto.my.id/api/admin/login', {
+      // apiFetch automatically sends X-Tenant-Subdomain header,
+      // so login will authenticate against the correct tenant's database
+      const data = await apiFetch('/api/admin/login', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(credentials),
       });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        localStorage.setItem('admin_token', data.token);
-        navigate('/admin/dashboard');
-      } else {
-        setError(data.message || 'Login gagal');
-      }
+      localStorage.setItem('admin_token', data.token);
+      navigate('/admin/dashboard');
     } catch (error) {
       console.error('Login error:', error);
-      setError('Error jaringan. Silakan coba lagi.');
+      setError(error.data?.message || error.message || 'Login gagal');
     } finally {
       setLoading(false);
     }
