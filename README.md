@@ -64,7 +64,7 @@ A comprehensive wedding organizer website built with React, Express.js, and MySQ
    ```
 
 ### Default Admin Credentials
-- Email: admin@weddingbliss.com
+- Email: admin@websiteowner.com
 - Password: admin123
 
 ## Database Schema

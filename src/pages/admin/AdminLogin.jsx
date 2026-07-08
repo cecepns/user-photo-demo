@@ -82,7 +82,7 @@ const AdminLogin = () => {
                 onChange={handleInputChange}
                 required
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                placeholder="admin@userwedding.com"
+                placeholder="admin@websiteowner.com"
               />
             </div>
 
@@ -108,16 +108,12 @@ const AdminLogin = () => {
             </button>
           </form>
 
-          <div className="mt-6 text-center text-sm text-gray-500 space-y-2">
+          <div className="mt-6 text-center text-sm text-gray-500">
             <p>
               Freelance?{' '}
               <a href="/freelancer/login" className="text-primary-600 hover:underline">
                 Masuk portal freelance
               </a>
-            </p>
-            <p>
-              Kredensial demo admin:<br />
-              Email: admin@userwedding.com · Password: admin123
             </p>
           </div>
         </div>

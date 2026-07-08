@@ -30,7 +30,7 @@ export default function MasterAdmin() {
   });
   
   const [resetData, setResetData] = useState({
-    email: 'admin@weddingbliss.com',
+    email: 'admin@websiteowner.com',
     password: ''
   });
   
@@ -86,7 +86,7 @@ export default function MasterAdmin() {
   const handleOpenReset = (tenant) => {
     setSelectedTenant(tenant);
     setResetData({
-      email: 'admin@weddingbliss.com',
+      email: 'admin@websiteowner.com',
       password: ''
     });
     setShowResetModal(true);

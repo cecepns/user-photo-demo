@@ -60,10 +60,10 @@ app.use(tenantResolver);
 
 // MySQL Database connection
 const dbConfig = {
-  host: 'localhost',
-  user: 'userphot_main',
-  password: 'userphot_main', // Change this to your MySQL password
-  database: 'userphot_main',
+  host: process.env.DB_HOST || '127.0.0.1',
+  user: process.env.DB_USER || 'userphot_main',
+  password: process.env.DB_PASSWORD !== undefined ? process.env.DB_PASSWORD : 'userphot_main', // Change this to your MySQL password
+  database: process.env.DB_NAME || 'userphot_main',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
@@ -197,7 +197,7 @@ async function getTenantPool(tenant) {
     const statements = cleanSql
       .split(';')
       .map(stmt => stmt.trim())
-      .filter(stmt => stmt.length > 0);
+      .filter(stmt => stmt.length > 0 && !/^insert\b/i.test(stmt));
 
     for (const statement of statements) {
       if (statement.trim()) {
@@ -224,7 +224,7 @@ async function getTenantPool(tenant) {
     const hashedPassword = bcrypt.hashSync('admin123', 10);
     await pool.execute(
       `INSERT IGNORE INTO admins (email, password) VALUES (?, ?)`,
-      ['admin@weddingbliss.com', hashedPassword]
+      ['admin@websiteowner.com', hashedPassword]
     );
 
     // Create surat_jalan table if not exists
@@ -389,7 +389,7 @@ async function initializeDatabase() {
     const statements = cleanSql
       .split(';')
       .map(stmt => stmt.trim())
-      .filter(stmt => stmt.length > 0);
+      .filter(stmt => stmt.length > 0 && !/^insert\b/i.test(stmt));
 
     for (const statement of statements) {
       if (statement.trim()) {
@@ -408,7 +408,7 @@ async function initializeDatabase() {
     const hashedPassword = bcrypt.hashSync('admin123', 10);
     await masterPool.execute(
       `INSERT IGNORE INTO admins (email, password) VALUES (?, ?)`,
-      ['admin@weddingbliss.com', hashedPassword]
+      ['admin@websiteowner.com', hashedPassword]
     );
 
     // Create surat_jalan table if not exists
