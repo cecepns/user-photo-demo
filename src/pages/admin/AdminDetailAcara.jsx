@@ -94,7 +94,7 @@ const AdminDetailAcara = () => {
       const tag = isCustom ? 'Custom' : 'Biasa';
       return {
         value: isCustom ? `custom:${row.id}` : `order:${row.id}`,
-        label: `#${prefix}${row.id} — ${row.name || '-'} — ${svc} (${tag}) · ${datePart}`,
+        label: `#${prefix}${row.id} — ${row.name || '-'}${row.bride_name || row.groom_name ? ` (${row.bride_name || '-'} & ${row.groom_name || '-'})` : ''} — ${svc} (${tag}) · ${datePart}`,
         order: {
           id: row.id,
           source: isCustom ? 'custom_request' : 'order',

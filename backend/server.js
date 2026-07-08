@@ -1391,7 +1391,7 @@ app.get('/api/orders/search', authenticateAdmin, async (req, res) => {
     const limitEach = 15;
 
     let orderSql = `
-      SELECT id, name, email, phone, address, wedding_date, service_name, total_amount, booking_amount, status, created_at
+      SELECT id, name, email, phone, address, wedding_date, bride_name, groom_name, service_name, total_amount, booking_amount, status, created_at
       FROM orders
     `;
     let orderParams = [];
@@ -1442,6 +1442,8 @@ app.get('/api/orders/search', authenticateAdmin, async (req, res) => {
       phone: row.phone,
       address: row.additional_requests || '',
       wedding_date: row.wedding_date,
+      bride_name: '',
+      groom_name: '',
       service_name: row.services || 'Layanan custom',
       total_amount: row.booking_amount,
       booking_amount: row.booking_amount,
