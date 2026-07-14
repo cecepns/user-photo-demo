@@ -156,23 +156,23 @@ const AdminContent = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     try {
       const method = editingSection ? 'PUT' : 'POST';
-      
+
       const isSiteIdentity = formData.section_name === 'site_identity';
       const payload = isSiteIdentity
         ? {
-            ...formData,
-            description: serializeSiteIdentityDescription(
-              siteContactDraft,
-              footerServicesText
-                .split('\n')
-                .map((l) => l.trim())
-                .filter(Boolean)
-                .slice(0, 20)
-            ),
-          }
+          ...formData,
+          description: serializeSiteIdentityDescription(
+            siteContactDraft,
+            footerServicesText
+              .split('\n')
+              .map((l) => l.trim())
+              .filter(Boolean)
+              .slice(0, 20)
+          ),
+        }
         : formData;
 
       const response = await fetch(buildUrl(editingSection ? `/api/content-sections/${editingSection.id}` : '/api/content-sections'), {
@@ -329,7 +329,7 @@ const AdminContent = () => {
           <div className="flex flex-wrap justify-between items-center">
             <div>
               <h1 className="text-3xl font-bold text-gray-800 mb-2">Kelola Konten</h1>
-              <p className="text-gray-600">Kelola konten dinamis untuk website Anda. Edit section <strong>site_identity</strong> untuk nama aplikasi, nama perusahaan, inisial, logo, kontak &amp; peta, daftar teks kolom Layanan di footer, serta data untuk invoice.</p>
+              <p className="text-gray-600 mb-2">Kelola informasi identitas website, pengaturan logo, kontak, layanan, serta konten dinamis pada setiap halaman utama secara mudah.</p>
             </div>
             <div className="flex flex-wrap items-center gap-4">
               <a
@@ -362,7 +362,7 @@ const AdminContent = () => {
           {CATEGORIES.map((cat) => {
             const catSections = groupedSections[cat.id] || [];
             const isOpen = openCategory === cat.id;
-            
+
             return (
               <div key={cat.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                 <button
@@ -380,7 +380,7 @@ const AdminContent = () => {
                     {isOpen ? <ChevronUp className="text-gray-500" size={20} /> : <ChevronDown className="text-gray-500" size={20} />}
                   </div>
                 </button>
-                
+
                 {isOpen && (
                   <div className="p-6 pt-0 border-t border-gray-50 bg-gray-50/20">
                     {catSections.length === 0 ? (
@@ -394,13 +394,12 @@ const AdminContent = () => {
                                 <h4 className="font-bold text-gray-800 text-base">
                                   {SECTION_LABELS[sec.section_name] || sec.section_name}
                                 </h4>
-                                <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold shrink-0 ${
-                                  sec.is_active ? "bg-green-50 text-green-700 border border-green-200" : "bg-red-50 text-red-700 border border-red-200"
-                                }`}>
+                                <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold shrink-0 ${sec.is_active ? "bg-green-50 text-green-700 border border-green-200" : "bg-red-50 text-red-700 border border-red-200"
+                                  }`}>
                                   {sec.is_active ? "Aktif" : "Nonaktif"}
                                 </span>
                               </div>
-                              
+
                               <div className="flex gap-4">
                                 {sec.image_url && (
                                   <img
@@ -417,7 +416,7 @@ const AdminContent = () => {
                                   {sec.subtitle && <p className="text-xs font-medium text-gray-500 truncate">{sec.subtitle}</p>}
                                   {sec.description && (
                                     <p className="text-xs text-gray-500 line-clamp-3 whitespace-pre-line leading-relaxed">
-                                      {sec.section_name === 'site_identity' 
+                                      {sec.section_name === 'site_identity'
                                         ? "Konfigurasi kontak, alamat, jam kerja, dan footer"
                                         : sec.description
                                       }
@@ -426,7 +425,7 @@ const AdminContent = () => {
                                 </div>
                               </div>
                             </div>
-                            
+
                             <div className="mt-4 pt-4 border-t border-gray-50 flex items-center justify-between">
                               <span className="text-xs text-gray-400">Urutan: {sec.sort_order}</span>
                               <button
@@ -451,7 +450,7 @@ const AdminContent = () => {
           {groupedSections.other && groupedSections.other.length > 0 && (() => {
             const catSections = groupedSections.other;
             const isOpen = openCategory === 'other';
-            
+
             return (
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                 <button
@@ -469,7 +468,7 @@ const AdminContent = () => {
                     {isOpen ? <ChevronUp className="text-gray-500" size={20} /> : <ChevronDown className="text-gray-500" size={20} />}
                   </div>
                 </button>
-                
+
                 {isOpen && (
                   <div className="p-6 pt-0 border-t border-gray-50 bg-gray-50/20">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6">
@@ -480,13 +479,12 @@ const AdminContent = () => {
                               <h4 className="font-bold text-gray-800 text-base truncate">
                                 {sec.section_name}
                               </h4>
-                              <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold shrink-0 ${
-                                sec.is_active ? "bg-green-50 text-green-700 border border-green-200" : "bg-red-50 text-red-700 border border-red-200"
-                              }`}>
+                              <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold shrink-0 ${sec.is_active ? "bg-green-50 text-green-700 border border-green-200" : "bg-red-50 text-red-700 border border-red-200"
+                                }`}>
                                 {sec.is_active ? "Aktif" : "Nonaktif"}
                               </span>
                             </div>
-                            
+
                             <div className="flex gap-4">
                               {sec.image_url && (
                                 <img
@@ -505,7 +503,7 @@ const AdminContent = () => {
                               </div>
                             </div>
                           </div>
-                          
+
                           <div className="mt-4 pt-4 border-t border-gray-50 flex items-center justify-between">
                             <span className="text-xs text-gray-400">Urutan: {sec.sort_order}</span>
                             <div className="flex items-center gap-2">
@@ -541,8 +539,8 @@ const AdminContent = () => {
             <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
               <div className="p-6 border-b border-gray-200">
                 <h2 className="text-xl font-bold text-gray-800">
-                  {editingSection 
-                    ? `Edit Konten — ${SECTION_LABELS[formData.section_name] || formData.section_name}` 
+                  {editingSection
+                    ? `Edit Konten — ${SECTION_LABELS[formData.section_name] || formData.section_name}`
                     : 'Tambah Konten Baru'}
                 </h2>
               </div>
@@ -552,275 +550,275 @@ const AdminContent = () => {
                   const isSiteIdentity = formData.section_name === 'site_identity';
                   return (
                     <>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {!editingSection ? (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Nama Kunci Section *
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.section_name}
-                        onChange={(e) => setFormData({...formData, section_name: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                        placeholder="contoh: custom_promo"
-                        required
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        ID unik (huruf kecil dan garis bawah, tanpa spasi).
-                      </p>
-                    </div>
-                  ) : null}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {!editingSection ? (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Nama Kunci Section *
+                            </label>
+                            <input
+                              type="text"
+                              value={formData.section_name}
+                              onChange={(e) => setFormData({ ...formData, section_name: e.target.value })}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                              placeholder="contoh: custom_promo"
+                              required
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              ID unik (huruf kecil dan garis bawah, tanpa spasi).
+                            </p>
+                          </div>
+                        ) : null}
 
-                  <div className={editingSection ? "md:col-span-2" : ""}>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Status Tampilan
-                    </label>
-                    <div className="flex items-center space-x-4">
-                      <label className="flex items-center">
-                        <input
-                          type="checkbox"
-                          checked={formData.is_active}
-                          onChange={(e) => setFormData({...formData, is_active: e.target.checked})}
-                          className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                        />
-                        <span className="ml-2 text-sm text-gray-700">Tampilkan section ini di website</span>
-                      </label>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Judul Utama
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.title}
-                      onChange={(e) => setFormData({...formData, title: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                      placeholder="Hari"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Sub Judul
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.subtitle}
-                      onChange={(e) => setFormData({...formData, subtitle: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                      placeholder="Pernikahan"
-                    />
-                  </div>
-                </div>
-
-                {isSiteIdentity ? (
-                  <div className="space-y-4 rounded-lg border border-gray-200 bg-gray-50/80 p-4">
-                    <p className="text-sm font-medium text-gray-800">Kontak &amp; lokasi (tampil di footer, halaman Kontak, dan PDF invoice)</p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Alamat baris 1</label>
-                        <input
-                          type="text"
-                          value={siteContactDraft.addressLine1}
-                          onChange={(e) =>
-                            setSiteContactDraft((p) => ({ ...p, addressLine1: e.target.value }))
-                          }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white"
-                        />
+                        <div className={editingSection ? "md:col-span-2" : ""}>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Status Tampilan
+                          </label>
+                          <div className="flex items-center space-x-4">
+                            <label className="flex items-center">
+                              <input
+                                type="checkbox"
+                                checked={formData.is_active}
+                                onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                                className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                              />
+                              <span className="ml-2 text-sm text-gray-700">Tampilkan section ini di website</span>
+                            </label>
+                          </div>
+                        </div>
                       </div>
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Alamat baris 2</label>
-                        <input
-                          type="text"
-                          value={siteContactDraft.addressLine2}
-                          onChange={(e) =>
-                            setSiteContactDraft((p) => ({ ...p, addressLine2: e.target.value }))
-                          }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white"
-                        />
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Judul Utama
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.title}
+                            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                            placeholder="Hari"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Sub Judul
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.subtitle}
+                            onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                            placeholder="Pernikahan"
+                          />
+                        </div>
                       </div>
+
+                      {isSiteIdentity ? (
+                        <div className="space-y-4 rounded-lg border border-gray-200 bg-gray-50/80 p-4">
+                          <p className="text-sm font-medium text-gray-800">Kontak &amp; lokasi (tampil di footer, halaman Kontak, dan PDF invoice)</p>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="md:col-span-2">
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Alamat baris 1</label>
+                              <input
+                                type="text"
+                                value={siteContactDraft.addressLine1}
+                                onChange={(e) =>
+                                  setSiteContactDraft((p) => ({ ...p, addressLine1: e.target.value }))
+                                }
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white"
+                              />
+                            </div>
+                            <div className="md:col-span-2">
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Alamat baris 2</label>
+                              <input
+                                type="text"
+                                value={siteContactDraft.addressLine2}
+                                onChange={(e) =>
+                                  setSiteContactDraft((p) => ({ ...p, addressLine2: e.target.value }))
+                                }
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Telepon</label>
+                              <input
+                                type="text"
+                                value={siteContactDraft.phone}
+                                onChange={(e) =>
+                                  setSiteContactDraft((p) => ({ ...p, phone: e.target.value }))
+                                }
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp</label>
+                              <input
+                                type="text"
+                                value={siteContactDraft.whatsapp || ''}
+                                onChange={(e) =>
+                                  setSiteContactDraft((p) => ({ ...p, whatsapp: e.target.value }))
+                                }
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white"
+                                placeholder="Contoh: 6289646829459"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                              <input
+                                type="email"
+                                value={siteContactDraft.email}
+                                onChange={(e) =>
+                                  setSiteContactDraft((p) => ({ ...p, email: e.target.value }))
+                                }
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white"
+                              />
+                            </div>
+                            <div className="md:col-span-2">
+                              <label className="block text-sm font-medium text-gray-700 mb-1">URL Instagram</label>
+                              <input
+                                type="url"
+                                value={siteContactDraft.instagramUrl}
+                                onChange={(e) =>
+                                  setSiteContactDraft((p) => ({ ...p, instagramUrl: e.target.value }))
+                                }
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white"
+                                placeholder="https://www.instagram.com/akun/"
+                              />
+                            </div>
+                            <div className="md:col-span-2">
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Teks / Link Website di Invoice</label>
+                              <input
+                                type="text"
+                                value={siteContactDraft.invoiceWebsiteText || ''}
+                                onChange={(e) =>
+                                  setSiteContactDraft((p) => ({ ...p, invoiceWebsiteText: e.target.value }))
+                                }
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white"
+                                placeholder="Contoh: https://sites.google.com/... atau PT Wedding Organizer"
+                              />
+                            </div>
+                            <div className="md:col-span-2">
+                              <label className="block text-sm font-medium text-gray-700 mb-1">URL embed Google Maps (iframe src)</label>
+                              <input
+                                type="url"
+                                value={siteContactDraft.mapsEmbedUrl}
+                                onChange={(e) =>
+                                  setSiteContactDraft((p) => ({ ...p, mapsEmbedUrl: e.target.value }))
+                                }
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white"
+                              />
+                            </div>
+                            <div className="md:col-span-2">
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Jam kerja (satu baris per baris)</label>
+                              <textarea
+                                value={siteContactDraft.businessHours}
+                                onChange={(e) =>
+                                  setSiteContactDraft((p) => ({ ...p, businessHours: e.target.value }))
+                                }
+                                rows={4}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white font-mono text-sm"
+                              />
+                            </div>
+                            <div className="md:col-span-2">
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Daftar layanan (kolom &quot;Layanan&quot; di footer)
+                              </label>
+                              <p className="text-xs text-gray-500 mb-2">Satu baris = satu item. Maksimal 20 baris.</p>
+                              <textarea
+                                value={footerServicesText}
+                                onChange={(e) => setFooterServicesText(e.target.value)}
+                                rows={6}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white font-mono text-sm"
+                                placeholder={DEFAULT_FOOTER_SERVICES.join('\n')}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Deskripsi
+                          </label>
+                          <textarea
+                            value={formData.description}
+                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                            rows={4}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                            placeholder="Deskripsi section..."
+                          />
+                        </div>
+                      )}
+
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Telepon</label>
-                        <input
-                          type="text"
-                          value={siteContactDraft.phone}
-                          onChange={(e) =>
-                            setSiteContactDraft((p) => ({ ...p, phone: e.target.value }))
-                          }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp</label>
-                        <input
-                          type="text"
-                          value={siteContactDraft.whatsapp || ''}
-                          onChange={(e) =>
-                            setSiteContactDraft((p) => ({ ...p, whatsapp: e.target.value }))
-                          }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white"
-                          placeholder="Contoh: 6289646829459"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                        <input
-                          type="email"
-                          value={siteContactDraft.email}
-                          onChange={(e) =>
-                            setSiteContactDraft((p) => ({ ...p, email: e.target.value }))
-                          }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white"
-                        />
-                      </div>
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">URL Instagram</label>
-                        <input
-                          type="url"
-                          value={siteContactDraft.instagramUrl}
-                          onChange={(e) =>
-                            setSiteContactDraft((p) => ({ ...p, instagramUrl: e.target.value }))
-                          }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white"
-                          placeholder="https://www.instagram.com/akun/"
-                        />
-                      </div>
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Teks / Link Website di Invoice</label>
-                        <input
-                          type="text"
-                          value={siteContactDraft.invoiceWebsiteText || ''}
-                          onChange={(e) =>
-                            setSiteContactDraft((p) => ({ ...p, invoiceWebsiteText: e.target.value }))
-                          }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white"
-                          placeholder="Contoh: https://sites.google.com/... atau PT Wedding Organizer"
-                        />
-                      </div>
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">URL embed Google Maps (iframe src)</label>
-                        <input
-                          type="url"
-                          value={siteContactDraft.mapsEmbedUrl}
-                          onChange={(e) =>
-                            setSiteContactDraft((p) => ({ ...p, mapsEmbedUrl: e.target.value }))
-                          }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white"
-                        />
-                      </div>
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Jam kerja (satu baris per baris)</label>
-                        <textarea
-                          value={siteContactDraft.businessHours}
-                          onChange={(e) =>
-                            setSiteContactDraft((p) => ({ ...p, businessHours: e.target.value }))
-                          }
-                          rows={4}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white font-mono text-sm"
-                        />
-                      </div>
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Daftar layanan (kolom &quot;Layanan&quot; di footer)
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          URL Gambar
                         </label>
-                        <p className="text-xs text-gray-500 mb-2">Satu baris = satu item. Maksimal 20 baris.</p>
-                        <textarea
-                          value={footerServicesText}
-                          onChange={(e) => setFooterServicesText(e.target.value)}
-                          rows={6}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white font-mono text-sm"
-                          placeholder={DEFAULT_FOOTER_SERVICES.join('\n')}
+                        {formData.image_url && (
+                          <img
+                            src={imageUrl(formData.image_url)}
+                            alt="Preview"
+                            className="h-24 w-auto rounded-lg border border-gray-200 object-cover mb-3"
+                            onError={(ev) => {
+                              ev.currentTarget.style.display = 'none';
+                            }}
+                          />
+                        )}
+                        <label className="inline-flex items-center gap-2 px-3 py-2 bg-[#2f4274] text-white rounded-lg cursor-pointer hover:bg-[#2a3b68] text-sm font-medium">
+                          <Upload size={16} />
+                          {uploadingImage ? 'Mengupload...' : 'Upload Gambar'}
+                          <input
+                            type="file"
+                            accept="image/jpeg,image/png,image/gif,image/webp"
+                            className="hidden"
+                            onChange={handleUploadImage}
+                            disabled={uploadingImage}
+                          />
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.image_url}
+                          onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent mt-2"
+                          placeholder={isSiteIdentity ? 'Logo akan diisi dari hasil upload' : 'URL gambar atau filename upload'}
+                          readOnly={isSiteIdentity}
                         />
+                        {isSiteIdentity && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            Untuk logo brand, gunakan tombol upload (tanpa input link manual).
+                          </p>
+                        )}
                       </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Deskripsi
-                    </label>
-                    <textarea
-                      value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      rows={4}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                      placeholder="Deskripsi section..."
-                    />
-                  </div>
-                )}
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    URL Gambar
-                  </label>
-                    {formData.image_url && (
-                      <img
-                        src={imageUrl(formData.image_url)}
-                        alt="Preview"
-                        className="h-24 w-auto rounded-lg border border-gray-200 object-cover mb-3"
-                        onError={(ev) => {
-                          ev.currentTarget.style.display = 'none';
-                        }}
-                      />
-                    )}
-                    <label className="inline-flex items-center gap-2 px-3 py-2 bg-[#2f4274] text-white rounded-lg cursor-pointer hover:bg-[#2a3b68] text-sm font-medium">
-                      <Upload size={16} />
-                      {uploadingImage ? 'Mengupload...' : 'Upload Gambar'}
-                      <input
-                        type="file"
-                        accept="image/jpeg,image/png,image/gif,image/webp"
-                        className="hidden"
-                        onChange={handleUploadImage}
-                        disabled={uploadingImage}
-                      />
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.image_url}
-                      onChange={(e) => setFormData({...formData, image_url: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent mt-2"
-                      placeholder={isSiteIdentity ? 'Logo akan diisi dari hasil upload' : 'URL gambar atau filename upload'}
-                      readOnly={isSiteIdentity}
-                    />
-                    {isSiteIdentity && (
-                      <p className="text-xs text-gray-500 mt-1">
-                        Untuk logo brand, gunakan tombol upload (tanpa input link manual).
-                      </p>
-                    )}
-                </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Teks Tombol
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.button_text}
+                            onChange={(e) => setFormData({ ...formData, button_text: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                            placeholder="Konsultasi Gratis"
+                          />
+                        </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Teks Tombol
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.button_text}
-                      onChange={(e) => setFormData({...formData, button_text: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                      placeholder="Konsultasi Gratis"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      URL Tombol
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.button_url}
-                      onChange={(e) => setFormData({...formData, button_url: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                      placeholder="/contact"
-                    />
-                  </div>
-                </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            URL Tombol
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.button_url}
+                            onChange={(e) => setFormData({ ...formData, button_url: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                            placeholder="/contact"
+                          />
+                        </div>
+                      </div>
                     </>
                   );
                 })()}
@@ -832,7 +830,7 @@ const AdminContent = () => {
                   <input
                     type="number"
                     value={formData.sort_order}
-                    onChange={(e) => setFormData({...formData, sort_order: parseInt(e.target.value) || 0})}
+                    onChange={(e) => setFormData({ ...formData, sort_order: parseInt(e.target.value) || 0 })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     placeholder="0"
                   />
