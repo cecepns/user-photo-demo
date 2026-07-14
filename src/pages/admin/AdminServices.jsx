@@ -224,7 +224,7 @@ const AdminServices = () => {
 
       <AdminLayout>
         <div className="mb-8">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-wrap gap-4 justify-between items-center">
             <div>
               <h1 className="text-3xl font-bold text-gray-800 mb-2">Kelola Layanan</h1>
             </div>
