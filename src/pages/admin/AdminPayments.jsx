@@ -106,9 +106,9 @@ const AdminPayments = () => {
 
       <AdminLayout>
         <div className="mb-8">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-wrap gap-4 justify-between items-center">
             <div>
-              <h1 className=" text-3xl font-bold text-gray-800 mb-2">Metode Pembayaran</h1>
+              <h1 className="text-3xl font-bold text-gray-800 mb-2">Metode Pembayaran</h1>
               <p className="text-gray-600">Kelola opsi pembayaran untuk transaksi pelanggan.</p>
             </div>
             <button
