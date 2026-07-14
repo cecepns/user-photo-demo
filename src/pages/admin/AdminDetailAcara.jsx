@@ -618,22 +618,25 @@ const AdminDetailAcara = () => {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={5} className="p-8 text-center">Memuat...</td></tr>
-              ) : items.map((row) => (
-                <tr key={row.id} className="border-t">
-                  <td className="px-4 py-3">{row.client_name}</td>
-                  <td className="px-4 py-3">{row.bride_name} & {row.groom_name}</td>
-                  <td className="px-4 py-3">{row.fg_vg || '-'}</td>
-                  <td className="px-4 py-3">{row.wedding_date ? formatDate(row.wedding_date) : '-'}</td>
-                  <td className="px-4 py-3 flex gap-2">
-                    <button type="button" onClick={() => generatePdf(row)} className="text-green-600 hover:text-green-700" title="Unduh PDF Acara"><Download size={18} /></button>
-                    <button type="button" onClick={() => handleCopyText(row)} className="text-blue-600 hover:text-blue-700" title="Salin Detail (WA)"><Copy size={18} /></button>
-                    <button type="button" onClick={() => openEdit(row)} className="text-primary-600 hover:text-primary-700"><Edit size={18} /></button>
-                    <button type="button" onClick={() => handleDelete(row.id)} className="text-red-600 hover:text-red-700"><Trash2 size={18} /></button>
-                  </td>
-
-                </tr>
-              ))}
+                <tr><td colSpan={5} className="p-8 text-center text-gray-500">Memuat...</td></tr>
+              ) : items.length === 0 ? (
+                <tr><td colSpan={5} className="p-8 text-center text-gray-500 font-medium">Belum ada data detail acara.</td></tr>
+              ) : (
+                items.map((row) => (
+                  <tr key={row.id} className="border-t">
+                    <td className="px-4 py-3">{row.client_name}</td>
+                    <td className="px-4 py-3">{row.bride_name} & {row.groom_name}</td>
+                    <td className="px-4 py-3">{row.fg_vg || '-'}</td>
+                    <td className="px-4 py-3">{row.wedding_date ? formatDate(row.wedding_date) : '-'}</td>
+                    <td className="px-4 py-3 flex gap-2">
+                      <button type="button" onClick={() => generatePdf(row)} className="text-green-600 hover:text-green-700" title="Unduh PDF Acara"><Download size={18} /></button>
+                      <button type="button" onClick={() => handleCopyText(row)} className="text-blue-600 hover:text-blue-700" title="Salin Detail (WA)"><Copy size={18} /></button>
+                      <button type="button" onClick={() => openEdit(row)} className="text-primary-600 hover:text-primary-700"><Edit size={18} /></button>
+                      <button type="button" onClick={() => handleDelete(row.id)} className="text-red-600 hover:text-red-700"><Trash2 size={18} /></button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

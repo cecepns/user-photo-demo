@@ -3405,6 +3405,18 @@ app.delete('/api/surat-jalan/:id', authenticateAdmin, async (req, res) => {
   }
 });
 
+function deleteFileSafe(filename) {
+  if (!filename) return;
+  const filePath = path.join(UPLOAD_DIR, filename);
+  try {
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+  } catch (err) {
+    console.error(`Error deleting file ${filename}:`, err.message);
+  }
+}
+
 // Album progress (status album untuk klien)
 function normalizePhoneNumber(value) {
   return String(value || '').replace(/\D/g, '');
@@ -3680,7 +3692,7 @@ app.get('/api/freelance-calendar', authenticateToken, async (req, res) => {
     const [rows] = await db.execute(
       `SELECT fa.id, fa.order_source, fa.order_id, fa.freelancer_id, fa.photographer_name,
         DATE_FORMAT(fa.duty_date, '%Y-%m-%d') AS duty_date,
-        fa.notes, fa.created_at, fa.updated_at,
+        fa.notes, fa.fee, fa.transport_fee, fa.client_drive_link, fa.created_at, fa.updated_at,
         CASE WHEN fa.order_source = 'order' THEN o.name ELSE cr.name END AS client_name,
         CASE WHEN fa.order_source = 'order' THEN o.phone ELSE cr.phone END AS client_phone,
         CASE WHEN fa.order_source = 'order' THEN o.service_name ELSE cr.services END AS service_label,
@@ -3745,8 +3757,8 @@ app.post('/api/freelance-calendar', authenticateAdmin, async (req, res) => {
 
     const [result] = await db.execute(
       `INSERT INTO freelance_photographer_assignments
-        (order_source, order_id, freelancer_id, photographer_name, duty_date, notes)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+        (order_source, order_id, freelancer_id, photographer_name, duty_date, notes, fee, transport_fee)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         src,
         oid,
@@ -3754,6 +3766,8 @@ app.post('/api/freelance-calendar', authenticateAdmin, async (req, res) => {
         resolved.photographerName,
         dd,
         notes != null ? String(notes).trim().slice(0, 4000) : null,
+        Number(req.body.fee) || 0,
+        Number(req.body.transport_fee) || 0,
       ]
     );
     res.json({ id: result.insertId, message: 'Jadwal freelance disimpan' });
@@ -3794,6 +3808,14 @@ app.put('/api/freelance-calendar/:id', authenticateAdmin, async (req, res) => {
       fields.push('notes = ?');
       vals.push(notes != null ? String(notes).trim().slice(0, 4000) : null);
     }
+    if (fee !== undefined) {
+      fields.push('fee = ?');
+      vals.push(Number(fee) || 0);
+    }
+    if (transport_fee !== undefined) {
+      fields.push('transport_fee = ?');
+      vals.push(Number(transport_fee) || 0);
+    }
     if (!fields.length) {
       return res.status(400).json({ message: 'Tidak ada field yang diubah' });
     }
@@ -3825,6 +3847,43 @@ app.delete('/api/freelance-calendar/:id', authenticateAdmin, async (req, res) =>
     res.json({ message: 'Jadwal freelance dihapus' });
   } catch (error) {
     console.error('Freelance calendar delete error:', error);
+    res.status(500).json({ message: 'Database error' });
+  }
+});
+
+app.put('/api/freelance-calendar/assignment/:id/drive-link', authenticateToken, async (req, res) => {
+  const id = Number(req.params.id);
+  const { client_drive_link } = req.body || {};
+  if (!Number.isFinite(id) || id <= 0) {
+    return res.status(400).json({ message: 'ID tidak valid' });
+  }
+
+  try {
+    if (req.user.role === 'freelancer') {
+      const fid = Number(req.user.freelancerId || req.user.id);
+      const [rows] = await db.execute(
+        `SELECT id FROM freelance_photographer_assignments 
+         WHERE id = ? AND (
+           freelancer_id = ? 
+           OR (freelancer_id IS NULL AND LOWER(TRIM(photographer_name)) = LOWER(TRIM((SELECT name FROM freelancers_inhouse WHERE id = ? LIMIT 1))))
+         ) LIMIT 1`,
+        [id, fid, fid]
+      );
+      if (rows.length === 0) {
+        return res.status(403).json({ message: 'Anda tidak memiliki akses ke penugasan ini' });
+      }
+    } else if (req.user.role !== 'admin' && req.user.role !== 'website_owner') {
+      return res.status(403).json({ message: 'Akses ditolak' });
+    }
+
+    await db.execute(
+      'UPDATE freelance_photographer_assignments SET client_drive_link = ? WHERE id = ?',
+      [client_drive_link ? String(client_drive_link).trim().slice(0, 2048) : null, id]
+    );
+
+    res.json({ message: 'Link drive berhasil diperbarui' });
+  } catch (error) {
+    console.error('Update drive link error:', error);
     res.status(500).json({ message: 'Database error' });
   }
 });
@@ -4113,6 +4172,16 @@ app.get('/api/admin/finance/orders', authenticateAdmin, async (req, res) => {
     if (orderId && orderSource) {
       searchSql += ` AND order_id = ? AND order_source = ? `;
       searchParams.push(orderId, orderSource);
+    }
+    const filterYear = req.query.year ? Number(req.query.year) : null;
+    const filterMonth = req.query.month ? Number(req.query.month) : null;
+    if (filterYear) {
+      searchSql += ` AND YEAR(wedding_date) = ? `;
+      searchParams.push(filterYear);
+    }
+    if (filterMonth) {
+      searchSql += ` AND MONTH(wedding_date) = ? `;
+      searchParams.push(filterMonth);
     }
 
     const unionSql = `
@@ -4553,6 +4622,24 @@ app.put('/api/order-progress/:id', authenticateAdmin, async (req, res) => {
       params
     );
     if (!result.affectedRows) return res.status(404).json({ message: 'Data tidak ditemukan' });
+
+    // Clean up original files if status is updated to 'selesai'
+    if (req.body?.album_status === 'selesai') {
+      const [highResPhotos] = await db.execute(
+        'SELECT original_filename FROM album_photos WHERE order_progress_id = ? AND is_high_res = 1',
+        [id]
+      );
+      for (const p of highResPhotos) {
+        if (p.original_filename) {
+          deleteFileSafe(p.original_filename);
+        }
+      }
+      await db.execute(
+        'UPDATE album_photos SET original_filename = NULL WHERE order_progress_id = ? AND is_high_res = 1',
+        [id]
+      );
+    }
+
     res.json({ message: 'Progress diperbarui' });
   } catch (error) {
     console.error('Order progress update error:', error);
@@ -4561,10 +4648,181 @@ app.put('/api/order-progress/:id', authenticateAdmin, async (req, res) => {
 });
 
 app.delete('/api/order-progress/:id', authenticateAdmin, async (req, res) => {
+  const id = Number(req.params.id);
   try {
-    await db.execute('DELETE FROM order_progress WHERE id = ?', [req.params.id]);
+    const [photos] = await db.execute(
+      'SELECT filename, original_filename FROM album_photos WHERE order_progress_id = ?',
+      [id]
+    );
+    for (const p of photos) {
+      deleteFileSafe(p.filename);
+      deleteFileSafe(p.original_filename);
+    }
+
+    await db.execute('DELETE FROM order_progress WHERE id = ?', [id]);
     res.json({ message: 'Progress dihapus' });
   } catch (error) {
+    console.error('Delete order progress error:', error);
+    res.status(500).json({ message: 'Database error' });
+  }
+});
+
+// --- Album Photos & Workflow ---
+
+app.post('/api/order-progress/:id/upload-sort', authenticateAdmin, (req, res) => {
+  const id = Number(req.params.id);
+
+  uploadMiddleware.array('files', 150)(req, res, async (err) => {
+    if (err) {
+      return res.status(400).json({ message: err.message || 'Upload gagal' });
+    }
+
+    const files = req.files || [];
+    if (files.length === 0) {
+      return res.status(400).json({ message: 'Tidak ada file yang diunggah' });
+    }
+
+    try {
+      const [activeAlbums] = await db.execute(
+        "SELECT id FROM order_progress WHERE album_status = 'diproses' AND id != ?",
+        [id]
+      );
+      if (activeAlbums.length > 0) {
+        for (const f of files) {
+          deleteFileSafe(f.filename);
+        }
+        return res.status(400).json({
+          message: 'Anda memiliki proses album lain yang sedang aktif. Harap selesaikan terlebih dahulu sebelum memulai proses album baru.'
+        });
+      }
+
+      const [existing] = await db.execute(
+        'SELECT filename FROM album_photos WHERE order_progress_id = ? AND is_high_res = 0',
+        [id]
+      );
+      for (const f of existing) {
+        deleteFileSafe(f.filename);
+      }
+      await db.execute(
+        'DELETE FROM album_photos WHERE order_progress_id = ? AND is_high_res = 0',
+        [id]
+      );
+
+      await db.execute('UPDATE order_progress SET album_status = "pending" WHERE id = ?', [id]);
+
+      for (const f of files) {
+        await db.execute(
+          `INSERT INTO album_photos (order_progress_id, filename, original_filename, is_selected, is_high_res)
+           VALUES (?, ?, NULL, 0, 0)`,
+          [id, f.filename]
+        );
+      }
+
+      res.json({ message: 'Foto sortir berhasil diunggah' });
+    } catch (error) {
+      console.error('Upload sort error:', error);
+      res.status(500).json({ message: 'Database error' });
+    }
+  });
+});
+
+app.post('/api/order-progress/:id/upload-highres', authenticateAdmin, (req, res) => {
+  const id = Number(req.params.id);
+  
+  const uploadFields = uploadMiddleware.fields([
+    { name: 'files', maxCount: 150 },
+    { name: 'compressed_files', maxCount: 150 }
+  ]);
+
+  uploadFields(req, res, async (err) => {
+    if (err) {
+      return res.status(400).json({ message: err.message || 'Upload gagal' });
+    }
+
+    const origFiles = req.files?.['files'] || [];
+    const compFiles = req.files?.['compressed_files'] || [];
+
+    if (origFiles.length === 0) {
+      return res.status(400).json({ message: 'Tidak ada file original yang diunggah' });
+    }
+
+    try {
+      await db.execute('UPDATE order_progress SET album_status = "diproses" WHERE id = ?', [id]);
+
+      const [existing] = await db.execute(
+        'SELECT filename, original_filename FROM album_photos WHERE order_progress_id = ? AND is_high_res = 1',
+        [id]
+      );
+      for (const f of existing) {
+        deleteFileSafe(f.filename);
+        deleteFileSafe(f.original_filename);
+      }
+      await db.execute(
+        'DELETE FROM album_photos WHERE order_progress_id = ? AND is_high_res = 1',
+        [id]
+      );
+
+      for (let i = 0; i < origFiles.length; i++) {
+        const origFilename = origFiles[i].filename;
+        const compFilename = compFiles[i] ? compFiles[i].filename : origFilename;
+
+        await db.execute(
+          `INSERT INTO album_photos (order_progress_id, filename, original_filename, is_selected, is_high_res)
+           VALUES (?, ?, ?, 1, 1)`,
+          [id, compFilename, origFilename]
+        );
+      }
+
+      res.json({ message: 'Foto original berhasil diunggah' });
+    } catch (error) {
+      console.error('Upload highres error:', error);
+      res.status(500).json({ message: 'Database error' });
+    }
+  });
+});
+
+app.get('/api/order-progress/:id/photos', async (req, res) => {
+  const id = Number(req.params.id);
+  try {
+    const [rows] = await db.execute(
+      `SELECT id, filename, original_filename, is_selected, is_high_res 
+       FROM album_photos WHERE order_progress_id = ? ORDER BY id ASC`,
+      [id]
+    );
+    res.json(rows);
+  } catch (error) {
+    console.error('Get album photos error:', error);
+    res.status(500).json({ message: 'Database error' });
+  }
+});
+
+app.put('/api/order-progress/:id/select-photos', async (req, res) => {
+  const id = Number(req.params.id);
+  const { selected_photo_ids } = req.body || {};
+  
+  if (!Array.isArray(selected_photo_ids)) {
+    return res.status(400).json({ message: 'selected_photo_ids harus berupa array' });
+  }
+  if (selected_photo_ids.length > 150) {
+    return res.status(400).json({ message: 'Maksimal memilih 150 foto' });
+  }
+
+  try {
+    await db.execute('UPDATE album_photos SET is_selected = 0 WHERE order_progress_id = ?', [id]);
+
+    if (selected_photo_ids.length > 0) {
+      const placeholders = selected_photo_ids.map(() => '?').join(',');
+      await db.execute(
+        `UPDATE album_photos SET is_selected = 1 WHERE order_progress_id = ? AND id IN (${placeholders})`,
+        [id, ...selected_photo_ids]
+      );
+    }
+
+    await db.execute('UPDATE order_progress SET album_status = "diproses" WHERE id = ?', [id]);
+
+    res.json({ message: 'Pilihan foto berhasil disimpan' });
+  } catch (error) {
+    console.error('Select photos error:', error);
     res.status(500).json({ message: 'Database error' });
   }
 });

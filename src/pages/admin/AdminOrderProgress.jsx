@@ -7,6 +7,7 @@ import AdminLayout from '../../components/AdminLayout';
 import { formatDate, toDateOnlyString } from '../../utils/formatters';
 import { API_ENDPOINTS } from '../../utils/endpoints';
 import { apiGet, apiPost, apiPut, apiDelete } from '../../utils/request';
+import { API_BASE, imageUrl } from '../../utils/imageUrl';
 import {
   PHOTO_STATUS_OPTIONS,
   VIDEO_STATUS_OPTIONS,
@@ -33,6 +34,7 @@ const AdminOrderProgress = () => {
   const [editingId, setEditingId] = useState(null);
   const [selectedOrderOpt, setSelectedOrderOpt] = useState(null);
   const [activeFilter, setActiveFilter] = useState('all');
+  const [photos, setPhotos] = useState([]);
   const [form, setForm] = useState({
     photo_status: 'photo_progress',
     video_status: 'video_progress',
@@ -43,6 +45,50 @@ const AdminOrderProgress = () => {
     album_link: '',
     custom_links: [],
   });
+
+  const fetchAlbumPhotos = useCallback(async (id = editingId) => {
+    if (!id) return;
+    try {
+      const res = await apiGet(`/api/order-progress/${id}/photos`);
+      setPhotos(Array.isArray(res) ? res : []);
+    } catch (err) {
+      console.error(err);
+    }
+  }, [editingId]);
+
+  const compressImage = (file, maxWidth = 1000, quality = 0.6) => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target.result;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          canvas.toBlob((blob) => {
+            resolve(new File([blob], file.name, {
+              type: 'image/jpeg',
+              lastModified: Date.now()
+            }));
+          }, 'image/jpeg', quality);
+        };
+      };
+    });
+  };
 
 
   const fetchList = useCallback(async () => {
@@ -104,6 +150,7 @@ const AdminOrderProgress = () => {
 
   const openCreate = () => {
     setEditingId(null);
+    setPhotos([]);
     setForm({
       photo_status: 'photo_progress',
       video_status: 'video_progress',
@@ -120,6 +167,8 @@ const AdminOrderProgress = () => {
 
   const openEdit = (row) => {
     setEditingId(row.id);
+    setPhotos([]);
+    fetchAlbumPhotos(row.id);
     let parsedCustomLinks = [];
     try {
       if (row.custom_links) {
@@ -521,6 +570,187 @@ const AdminOrderProgress = () => {
                     </div>
                   ))}
                 </div>
+
+                {editingId && (
+                  <div className="border-t pt-4 space-y-4">
+                    <h4 className="text-sm font-bold text-gray-800">Alur Penyortiran &amp; Cetak Album</h4>
+                    
+                    {/* Step 1: Upload Sorting Photos */}
+                    <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs font-semibold text-gray-700">1. Unggah Foto Sortir</span>
+                        <span className="text-[10px] text-gray-500">Otomatis Dikompres Sisi Klien</span>
+                      </div>
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        onChange={async (e) => {
+                          const files = Array.from(e.target.files || []);
+                          if (files.length === 0) return;
+                          
+                          const toastId = toast.loading("Mengompres & mengunggah gambar...");
+                          try {
+                            const formData = new FormData();
+                            for (const file of files) {
+                              const compressed = await compressImage(file, 1000, 0.6);
+                              formData.append("files", compressed);
+                            }
+                            
+                            const res = await fetch(`${API_BASE}/api/order-progress/${editingId}/upload-sort`, {
+                              method: "POST",
+                              headers: {
+                                Authorization: `Bearer ${localStorage.getItem("admin_token")}`
+                              },
+                              body: formData
+                            });
+                            const data = await res.json();
+                            if (res.ok) {
+                              toast.success("Foto sortir berhasil diunggah!", { id: toastId });
+                              fetchAlbumPhotos(editingId);
+                            } else {
+                              toast.error(data.message || "Gagal unggah", { id: toastId });
+                            }
+                          } catch (err) {
+                            toast.error("Error upload", { id: toastId });
+                          }
+                        }}
+                        className="w-full text-xs"
+                      />
+                    </div>
+
+                    {/* Step 2: Client selections & Upload Highres */}
+                    {photos.length > 0 && (
+                      <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs font-semibold text-gray-700">2. Foto Terpilih Klien ({photos.filter(p => p.is_selected === 1).length})</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const list = photos.filter(p => p.is_selected === 1).map(p => p.filename).join("\n");
+                              navigator.clipboard.writeText(list);
+                              toast.success("Daftar nama file disalin!");
+                            }}
+                            className="text-[10px] text-primary-600 hover:underline font-semibold"
+                          >
+                            Salin Nama File
+                          </button>
+                        </div>
+                        <div className="max-h-28 overflow-y-auto text-[11px] bg-white border p-2 rounded divide-y">
+                          {photos.filter(p => p.is_selected === 1).map(p => (
+                            <div key={p.id} className="py-1 text-gray-700 truncate" title={p.filename}>
+                              {p.filename}
+                            </div>
+                          ))}
+                          {photos.filter(p => p.is_selected === 1).length === 0 && (
+                            <div className="text-gray-400 italic">Klien belum memilih foto.</div>
+                          )}
+                        </div>
+
+                        <div className="pt-2 border-t space-y-2">
+                          <span className="block text-[11px] font-semibold text-gray-700">3. Unggah Foto High-Res Cetak (Maks 150)</span>
+                          <input
+                            type="file"
+                            multiple
+                            accept="image/*"
+                            onChange={async (e) => {
+                              const files = Array.from(e.target.files || []);
+                              if (files.length === 0) return;
+                              if (files.length > 150) {
+                                toast.error("Maksimal 150 file original");
+                                return;
+                              }
+
+                              const toastId = toast.loading("Memproses & mengunggah file original...");
+                              try {
+                                const formData = new FormData();
+                                for (const file of files) {
+                                  formData.append("files", file);
+                                  const comp = await compressImage(file, 800, 0.5);
+                                  formData.append("compressed_files", comp);
+                                }
+
+                                const res = await fetch(`${API_BASE}/api/order-progress/${editingId}/upload-highres`, {
+                                  method: "POST",
+                                  headers: {
+                                    Authorization: `Bearer ${localStorage.getItem("admin_token")}`
+                                  },
+                                  body: formData
+                                });
+                                const data = await res.json();
+                                if (res.ok) {
+                                  toast.success("Foto original cetak berhasil diunggah!", { id: toastId });
+                                  fetchAlbumPhotos(editingId);
+                                } else {
+                                  toast.error(data.message || "Gagal unggah original", { id: toastId });
+                                }
+                              } catch (err) {
+                                toast.error("Error upload original", { id: toastId });
+                              }
+                            }}
+                            className="w-full text-xs"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Step 3: Print layout generator & files list preview */}
+                    {photos.some(p => p.is_high_res === 1) && (
+                      <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 space-y-2">
+                        <span className="block text-xs font-semibold text-gray-700">4. Pratinjau Foto Resolusi Tinggi</span>
+                        <div className="grid grid-cols-5 gap-1.5 max-h-32 overflow-y-auto p-1 bg-white border rounded">
+                          {photos.filter(p => p.is_high_res === 1).map(p => (
+                            <div key={p.id} className="relative aspect-square bg-gray-100 rounded overflow-hidden" title={p.original_filename}>
+                              <img
+                                src={imageUrl(p.filename)}
+                                alt=""
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const origLinks = photos
+                                .filter(p => p.is_high_res === 1 && p.original_filename)
+                                .map(p => `${API_BASE}/uploads-weddingsapp/${p.original_filename}`);
+                              
+                              if (origLinks.length === 0) {
+                                toast.error("Tidak ada file resolusi tinggi.");
+                                return;
+                              }
+                              
+                              const win = window.open("", "_blank");
+                              win.document.write(`
+                                <html>
+                                  <head>
+                                    <title>Original High-Res Album Photos</title>
+                                    <style>
+                                      body { font-family: sans-serif; padding: 20px; }
+                                      li { margin-bottom: 8px; word-break: break-all; }
+                                    </style>
+                                  </head>
+                                  <body>
+                                    <h2>Daftar URL Foto Resolusi Tinggi untuk Cetak (${origLinks.length} file)</h2>
+                                    <ol>
+                                      ${origLinks.map(lnk => `<li><a href="${lnk}" target="_blank">${lnk}</a></li>`).join("")}
+                                    </ol>
+                                  </body>
+                                </html>
+                              `);
+                              win.document.close();
+                            }}
+                            className="flex-1 py-1.5 bg-[#2f4274] hover:bg-[#202e53] text-white rounded text-xs font-semibold shadow-sm"
+                          >
+                            Generate Album (File Ori)
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <div className="flex gap-2 justify-end">
                   <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 border rounded-lg">Batal</button>

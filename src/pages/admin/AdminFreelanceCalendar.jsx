@@ -282,7 +282,12 @@ const AdminFreelanceCalendar = () => {
           groom_name: data.groom_name,
           notes: data.notes,
           order_id: row.order_id,
-          order_source: row.order_source
+          order_source: row.order_source,
+          photographer_name: row.photographer_name,
+          fee: row.fee,
+          transport_fee: row.transport_fee,
+          client_drive_link: row.client_drive_link,
+          duty_notes: row.notes,
         });
         return;
       }
@@ -299,7 +304,12 @@ const AdminFreelanceCalendar = () => {
           groom_name: data.groom_name,
           notes: data.notes,
           order_id: row.order_id,
-          order_source: row.order_source
+          order_source: row.order_source,
+          photographer_name: row.photographer_name,
+          fee: row.fee,
+          transport_fee: row.transport_fee,
+          client_drive_link: row.client_drive_link,
+          duty_notes: row.notes,
         });
       } else {
         const data = await apiGet(`/api/custom-requests/${row.order_id}`);
@@ -313,7 +323,12 @@ const AdminFreelanceCalendar = () => {
           groom_name: '',
           notes: data.additional_requests,
           order_id: row.order_id,
-          order_source: row.order_source
+          order_source: row.order_source,
+          photographer_name: row.photographer_name,
+          fee: row.fee,
+          transport_fee: row.transport_fee,
+          client_drive_link: row.client_drive_link,
+          duty_notes: row.notes,
         });
       }
     } catch (e) {
@@ -329,7 +344,12 @@ const AdminFreelanceCalendar = () => {
         groom_name: '',
         notes: row.notes,
         order_id: row.order_id,
-        order_source: row.order_source
+        order_source: row.order_source,
+        photographer_name: row.photographer_name,
+        fee: row.fee,
+        transport_fee: row.transport_fee,
+        client_drive_link: row.client_drive_link,
+        duty_notes: row.notes,
       });
     } finally {
       setLoadingClient(false);
@@ -919,6 +939,61 @@ const AdminFreelanceCalendar = () => {
                         <p className="text-sm font-medium text-gray-900 mt-0.5 whitespace-pre-wrap">{selectedClient.notes}</p>
                       </div>
                     )}
+                    <div className="border-t border-gray-150 pt-4 space-y-3">
+                      <h3 className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                        Rincian Jasa &amp; Link Drive Freelance
+                      </h3>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-400 uppercase">Fotografer / Videografer</label>
+                        <p className="text-sm font-medium text-gray-900 mt-0.5">{selectedClient.photographer_name || '—'}</p>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-400 uppercase">Jasa Freelance</label>
+                          <p className="text-sm font-semibold text-gray-900 mt-0.5">{formatRupiah(selectedClient.fee || 0)}</p>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-400 uppercase">Biaya Transport</label>
+                          <p className="text-sm font-semibold text-gray-900 mt-0.5">{formatRupiah(selectedClient.transport_fee || 0)}</p>
+                        </div>
+                      </div>
+                      <div className="bg-gray-50 p-2.5 rounded-lg border border-gray-200">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs font-semibold text-gray-500">Total Jasa + Transport</span>
+                          <span className="text-sm font-bold text-primary-700">
+                            {formatRupiah((Number(selectedClient.fee) || 0) + (Number(selectedClient.transport_fee) || 0))}
+                          </span>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">Link Drive Client</label>
+                        {selectedClient.client_drive_link ? (
+                          <div className="flex items-center gap-2 bg-gray-50 px-2.5 py-1.5 rounded-lg border border-gray-200">
+                            <a
+                              href={selectedClient.client_drive_link}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-xs text-primary-600 hover:underline truncate max-w-[240px] font-medium"
+                            >
+                              {selectedClient.client_drive_link}
+                            </a>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                navigator.clipboard.writeText(selectedClient.client_drive_link);
+                                toast.success('Link drive berhasil disalin');
+                              }}
+                              className="ml-auto p-1 text-gray-500 hover:text-gray-700 bg-white border rounded hover:shadow-sm"
+                              title="Salin Link"
+                            >
+                              <Copy size={12} />
+                            </button>
+                          </div>
+                        ) : (
+                          <p className="text-xs text-gray-400 italic">Freelancer belum mengunggah link drive.</p>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>

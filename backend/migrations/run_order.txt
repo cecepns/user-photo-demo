@@ -26,3 +26,4 @@ add_discount_to_order_financials.sql
 create_tenants_table.sql
 dedup_seedable_tables.sql
 add_unique_constraints_to_seedable_tables.sql
+add_freelance_and_album_workflow.sql

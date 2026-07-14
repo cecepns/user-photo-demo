@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Helmet } from "react-helmet-async";
 import { Eye, Trash2, ChevronLeft, ChevronRight, X, Edit, Download, CheckCircle, Info } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
@@ -77,6 +77,16 @@ const AdminOrders = () => {
   const [calendarSearch, setCalendarSearch] = useState("");
   const [activeYear, setActiveYear] = useState(new Date().getFullYear());
   const { appName, contact: siteContact } = useSiteIdentity();
+
+  const orderTableRef = useRef(null);
+
+  useEffect(() => {
+    if (selectedDate && orderTableRef.current) {
+      if (window.innerWidth < 768) {
+        orderTableRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
+  }, [selectedDate]);
 
   const [selectedFreelancerId, setSelectedFreelancerId] = useState("");
   const [selectedFreelancerRate, setSelectedFreelancerRate] = useState(null);
@@ -1517,8 +1527,9 @@ const AdminOrders = () => {
         </div>
 
         {/* Orders Table */}
-        {selectedDate && (
-          <div className="space-y-6">
+        <div ref={orderTableRef}>
+          {selectedDate && (
+            <div className="space-y-6">
             {tableFilteredOrders && (
               <div className="flex items-center justify-between bg-blue-50 border border-blue-100 px-4 py-2 rounded-lg">
                 <span className="text-sm text-blue-800">
@@ -1823,6 +1834,7 @@ const AdminOrders = () => {
             )}
           </div>
         )}
+        </div>
 
         {/* Order Detail Modal */}
         {showDetailModal && selectedOrder && (
@@ -1895,6 +1907,14 @@ const AdminOrders = () => {
                           value={selectedOrder.vendor_id || ""}
                           onChange={async (e) => {
                             const vId = e.target.value ? Number(e.target.value) : null;
+                            const chosenVendor = vendorsList.find(v => v.id === vId);
+                            let vendorCostStr = "";
+                            if (vId && chosenVendor) {
+                              const promptVal = window.prompt(`Masukkan Harga Pengeluaran untuk Vendor "${chosenVendor.name}" (Rp):`, "0");
+                              if (promptVal !== null) {
+                                vendorCostStr = promptVal.trim();
+                              }
+                            }
                             try {
                               const url = selectedOrder.orderType === "custom_request"
                                 ? `${API_BASE}/custom-requests/${selectedOrder.id}/vendor`
@@ -1911,6 +1931,17 @@ const AdminOrders = () => {
                                 toast.success("Vendor berhasil diupdate");
                                 setSelectedOrder(prev => ({ ...prev, vendor_id: vId }));
                                 fetchOrders();
+
+                                // Auto add to production cost items if cost is > 0
+                                const costVal = Number(vendorCostStr) || 0;
+                                if (vId && chosenVendor && costVal > 0) {
+                                  const itemLabel = `Vendor - ${chosenVendor.name}`;
+                                  // Remove any existing vendor production cost item to avoid duplicates
+                                  const filteredItems = finProductionItems.filter(i => !i.label.toLowerCase().startsWith('vendor -'));
+                                  const nextItems = [...filteredItems, { label: itemLabel, amount: String(costVal) }];
+                                  setFinProductionItems(nextItems);
+                                  await autoSaveFinanceItems(nextItems);
+                                }
                               } else {
                                 toast.error("Gagal update vendor");
                               }
@@ -1985,7 +2016,8 @@ const AdminOrders = () => {
                                       freelancer_id: Number(selectedFreelancerId),
                                       photographer_name: fl.name,
                                       duty_date: ymd,
-                                      notes: taskLabel
+                                      notes: taskLabel,
+                                      fee: Number(taskPrice)
                                     })
                                   });
                                   if (res.ok) {
@@ -2039,40 +2071,76 @@ const AdminOrders = () => {
                             );
                           })()}
                         </div>
-                        <div className="space-y-1 max-h-32 overflow-y-auto mt-2">
+                        <div className="space-y-2 max-h-48 overflow-y-auto mt-2">
                           {assignedFreelancers.map(af => (
-                            <div key={af.id} className="flex justify-between items-center bg-gray-50 px-2 py-1 rounded text-xs">
-                              <span>{af.photographer_name} {af.notes ? `(${af.notes})` : ""}</span>
-                              <button
-                                type="button"
-                                onClick={async () => {
-                                  if (!window.confirm(`Hapus penugasan ${af.photographer_name}?`)) return;
-                                  try {
-                                    const res = await fetch(`${API_BASE}/freelance-calendar/${af.id}`, {
-                                      method: "DELETE",
-                                      headers: { Authorization: `Bearer ${localStorage.getItem("admin_token")}` }
-                                    });
-                                    if (res.ok) {
-                                      toast.success("Penugasan dibatalkan");
-                                      fetchAssignedFreelancers();
+                            <div key={af.id} className="flex flex-col gap-1 bg-gray-50 p-2 rounded text-xs border border-gray-200">
+                              <div className="flex justify-between items-center">
+                                <span className="font-semibold text-gray-800">{af.photographer_name} {af.notes ? `(${af.notes})` : ""}</span>
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    if (!window.confirm(`Hapus penugasan ${af.photographer_name}?`)) return;
+                                    try {
+                                      const res = await fetch(`${API_BASE}/freelance-calendar/${af.id}`, {
+                                        method: "DELETE",
+                                        headers: { Authorization: `Bearer ${localStorage.getItem("admin_token")}` }
+                                      });
+                                      if (res.ok) {
+                                        toast.success("Penugasan dibatalkan");
+                                        fetchAssignedFreelancers();
 
-                                      // Auto remove from production cost items
-                                      const taskLabel = af.notes || "Foto";
-                                      const itemLabel = `${af.photographer_name} - ${taskLabel}`;
-                                      const nextItems = finProductionItems.filter(i => i.label.toLowerCase() !== itemLabel.toLowerCase());
-                                      setFinProductionItems(nextItems);
-                                      await autoSaveFinanceItems(nextItems);
-                                    } else {
-                                      toast.error("Gagal membatalkan");
+                                        // Auto remove from production cost items
+                                        const taskLabel = af.notes || "Foto";
+                                        const itemLabel = `${af.photographer_name} - ${taskLabel}`;
+                                        const nextItems = finProductionItems.filter(i => i.label.toLowerCase() !== itemLabel.toLowerCase());
+                                        setFinProductionItems(nextItems);
+                                        await autoSaveFinanceItems(nextItems);
+                                      } else {
+                                        toast.error("Gagal membatalkan");
+                                      }
+                                    } catch (err) {
+                                      toast.error("Error");
                                     }
-                                  } catch (err) {
-                                    toast.error("Error");
-                                  }
-                                }}
-                                className="text-red-500 hover:text-red-700 font-semibold"
-                              >
-                                Hapus
-                              </button>
+                                  }}
+                                  className="text-red-500 hover:text-red-700 font-semibold"
+                                >
+                                  Hapus
+                                </button>
+                              </div>
+                              <div className="flex items-center gap-2 mt-1 pt-1 border-t border-gray-100">
+                                <div>
+                                  <span className="text-[10px] text-gray-500">Jasa: </span>
+                                  <span className="font-medium text-gray-700">{formatRupiah(af.fee || 0)}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5 ml-auto">
+                                  <span className="text-[10px] text-gray-500">Transport:</span>
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    value={af.transport_fee || ""}
+                                    onChange={async (e) => {
+                                      const val = Number(e.target.value) || 0;
+                                      setAssignedFreelancers(prev => prev.map(item => item.id === af.id ? { ...item, transport_fee: val } : item));
+                                      
+                                      // Save to server
+                                      try {
+                                        await fetch(`${API_BASE}/freelance-calendar/${af.id}`, {
+                                          method: "PUT",
+                                          headers: {
+                                            "Content-Type": "application/json",
+                                            Authorization: `Bearer ${localStorage.getItem("admin_token")}`
+                                          },
+                                          body: JSON.stringify({ transport_fee: val })
+                                        });
+                                      } catch (err) {
+                                        console.error("Error updating transport fee:", err);
+                                      }
+                                    }}
+                                    className="w-20 border rounded px-1.5 py-0.5 text-right text-[10px]"
+                                    placeholder="Rp 0"
+                                  />
+                                </div>
+                              </div>
                             </div>
                           ))}
                         </div>  {assignedFreelancers.length === 0 && (

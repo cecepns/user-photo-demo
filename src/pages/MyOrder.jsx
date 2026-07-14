@@ -42,6 +42,8 @@ const MyOrder = () => {
   const [albumProgress, setAlbumProgress] = useState(null);
   const [orderProgress, setOrderProgress] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [albumPhotos, setAlbumPhotos] = useState([]);
+  const [selectedPhotoIds, setSelectedPhotoIds] = useState([]);
 
   const parseInvoiceInput = (value) => {
     const raw = String(value || "").trim();
@@ -120,9 +122,25 @@ const MyOrder = () => {
         const orderProgJson = await apiFetch(
           `/api/order-progress/public/${apiSource}/${lookupResult.data.id}?phone=${encodeURIComponent(phone)}`
         );
-        setOrderProgress(orderProgJson.progress || null);
+        const op = orderProgJson.progress || null;
+        setOrderProgress(op);
+        
+        if (op?.id) {
+          const photos = await apiFetch(`/api/order-progress/${op.id}/photos`);
+          setAlbumPhotos(Array.isArray(photos) ? photos : []);
+          setSelectedPhotoIds(
+            (Array.isArray(photos) ? photos : [])
+              .filter(p => p.is_selected === 1)
+              .map(p => p.id)
+          );
+        } else {
+          setAlbumPhotos([]);
+          setSelectedPhotoIds([]);
+        }
       } catch {
         setOrderProgress(null);
+        setAlbumPhotos([]);
+        setSelectedPhotoIds([]);
       }
     } catch (error) {
       setOrder(null);
@@ -436,6 +454,108 @@ const MyOrder = () => {
                     )}
                   </div>
                 </div>
+
+                {/* Gallery Penyortiran Foto Album */}
+                {albumPhotos.length > 0 && (
+                  <div className="bg-white rounded-2xl border border-[#d7e3ff] shadow-lg p-4 md:p-6 lg:col-span-2">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
+                      <div>
+                        <h2 className="text-lg font-semibold text-[#2f4274]">
+                          Penyortiran Foto Cetak Album
+                        </h2>
+                        <p className="text-sm text-gray-500">
+                          Pilih foto yang ingin Anda masukkan ke dalam album cetak (Maksimal 150 foto).
+                        </p>
+                      </div>
+                      <div className="bg-[#f0f4ff] px-3 py-1.5 rounded-lg border border-primary-200 shrink-0">
+                        <span className="text-xs font-semibold text-primary-700">
+                          Terpilih: {selectedPhotoIds.length} / 150
+                        </span>
+                      </div>
+                    </div>
+
+                    {albumPhotos.some(p => p.is_high_res === 1) && (
+                      <div className="mb-4 p-3 bg-yellow-50 text-yellow-800 border border-yellow-250 rounded-lg text-xs font-medium">
+                        Foto resolusi tinggi telah diunggah oleh admin untuk pengerjaan cetak. Anda dapat melihat pratinjau tata letak.
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3 max-h-[500px] overflow-y-auto p-2 bg-gray-50 rounded-lg border">
+                      {albumPhotos.map((p) => {
+                        const isSelected = selectedPhotoIds.includes(p.id);
+                        return (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => {
+                              if (albumPhotos.some(photo => photo.is_high_res === 1)) {
+                                toast.error("Pilihan tidak dapat diubah setelah admin memproses foto");
+                                return;
+                              }
+                              if (isSelected) {
+                                setSelectedPhotoIds(prev => prev.filter(id => id !== p.id));
+                              } else {
+                                if (selectedPhotoIds.length >= 150) {
+                                  toast.error("Maksimal memilih 150 foto");
+                                  return;
+                                }
+                                setSelectedPhotoIds(prev => [...prev, p.id]);
+                              }
+                            }}
+                            className={`relative aspect-square bg-gray-200 rounded-lg overflow-hidden border-2 transition-all ${
+                              isSelected
+                                ? "border-primary-500 ring-2 ring-primary-200"
+                                : "border-transparent hover:border-gray-300"
+                            }`}
+                          >
+                            <img
+                              src={imageUrl(p.filename)}
+                              alt=""
+                              className="w-full h-full object-cover"
+                            />
+                            <div className="absolute top-1.5 right-1.5 flex items-center justify-center">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                readOnly
+                                className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500 pointer-events-none"
+                              />
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {!albumPhotos.some(photo => photo.is_high_res === 1) && (
+                      <div className="mt-4 flex justify-end">
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              const res = await fetch(`${API_BASE}/api/order-progress/${orderProgress.id}/select-photos`, {
+                                method: "PUT",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ selected_photo_ids: selectedPhotoIds })
+                              });
+                              const data = await res.json();
+                              if (res.ok) {
+                                toast.success("Pilihan foto berhasil disimpan!");
+                                loadOrder();
+                              } else {
+                                toast.error(data.message || "Gagal menyimpan pilihan");
+                              }
+                            } catch (err) {
+                              toast.error("Gagal menyimpan pilihan");
+                            }
+                          }}
+                          className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-semibold shadow-md transition-all"
+                        >
+                          Simpan Pilihan Cetak
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>

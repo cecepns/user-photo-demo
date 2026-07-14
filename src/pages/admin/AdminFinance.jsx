@@ -2,8 +2,9 @@ import { useCallback, useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import AsyncSelect from 'react-select/async';
 import {
-  Plus, Trash2, Save, Settings, Edit, ChevronLeft, ChevronRight, X, Search, Landmark, Coins, Truck, DollarSign, Percent, Info,
+  Plus, Trash2, Save, Settings, Edit, ChevronLeft, ChevronRight, X, Search, Landmark, Coins, Truck, DollarSign, Percent, Info, Download
 } from 'lucide-react';
+import jsPDF from 'jspdf';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cell, Legend } from 'recharts';
 import toast from 'react-hot-toast';
 import AdminLayout from '../../components/AdminLayout';
@@ -82,6 +83,12 @@ const AdminFinance = () => {
         limit: String(pagination.limit),
       });
       if (debouncedSearch) params.set('search', debouncedSearch);
+      
+      params.set('year', String(year));
+      if (period === 'monthly') {
+        params.set('month', String(month));
+      }
+      
       const data = await apiGet(`${API_ENDPOINTS.ADMIN.FINANCE_ORDERS}?${params}`);
       setOrders(data.data || []);
       setPagination((p) => ({ ...p, ...data.pagination }));
@@ -90,7 +97,7 @@ const AdminFinance = () => {
     } finally {
       setLoading(false);
     }
-  }, [pagination.page, pagination.limit, debouncedSearch]);
+  }, [pagination.page, pagination.limit, debouncedSearch, period, year, month]);
 
   const loadAssignments = useCallback(async () => {
     try {
@@ -272,6 +279,123 @@ const AdminFinance = () => {
     return match.map((m) => m.photographer_name).join(', ') || '-';
   };
 
+  const generateReportPDF = async () => {
+    try {
+      const params = new URLSearchParams({
+        page: "1",
+        limit: "500",
+        year: String(year)
+      });
+      if (period === 'monthly') params.set('month', String(month));
+      if (debouncedSearch) params.set('search', debouncedSearch);
+
+      const res = await apiGet(`${API_ENDPOINTS.ADMIN.FINANCE_ORDERS}?${params}`);
+      const reportOrders = res.data || [];
+
+      const doc = new jsPDF();
+      const periodText = period === 'monthly' ? `${MONTH_NAMES[month - 1]} ${year}` : `${year}`;
+
+      // Header
+      doc.setFontSize(18);
+      doc.setFont("helvetica", "bold");
+      doc.text("LAPORAN KEUANGAN", 105, 20, { align: "center" });
+
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Periode: ${periodText}`, 20, 30);
+      doc.text(`Tanggal Cetak: ${new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}`, 20, 36);
+
+      doc.setLineWidth(0.5);
+      doc.line(20, 42, 190, 42);
+
+      // Summary Card Table
+      doc.setFont("helvetica", "bold");
+      doc.text("RINGKASAN KEUANGAN", 20, 52);
+      
+      doc.setFont("helvetica", "normal");
+      let currentY = 60;
+      const summaryItems = [
+        ["Total Uang Masuk", formatRupiah(summary?.grossIncome || 0)],
+        ["Total Potongan / Diskon", formatRupiah(summary?.discounts || 0)],
+        ["Total Pengeluaran / Akomodasi / Produksi", formatRupiah((summary?.productionCost || 0) + (summary?.accommodationCost || 0))],
+        ["Total Pendapatan Bersih", formatRupiah(summary?.netIncome || 0)]
+      ];
+
+      summaryItems.forEach(([label, value]) => {
+        doc.text(label, 20, currentY);
+        doc.setFont("helvetica", "bold");
+        doc.text(value, 190, currentY, { align: "right" });
+        doc.setFont("helvetica", "normal");
+        currentY += 8;
+      });
+
+      doc.setLineWidth(0.2);
+      doc.line(20, currentY, 190, currentY);
+      currentY += 10;
+
+      // Transactions list
+      doc.setFont("helvetica", "bold");
+      doc.text("RINCIAN TRANSAKSI PESANAN", 20, currentY);
+      currentY += 8;
+
+      doc.setFontSize(9);
+      doc.text("Klien", 20, currentY);
+      doc.text("Layanan / Paket", 65, currentY);
+      doc.text("Masuk", 115, currentY, { align: "right" });
+      doc.text("Diskon", 135, currentY, { align: "right" });
+      doc.text("Keluar", 155, currentY, { align: "right" });
+      doc.text("Bersih", 190, currentY, { align: "right" });
+      
+      doc.setLineWidth(0.3);
+      doc.line(20, currentY + 2, 190, currentY + 2);
+      currentY += 8;
+
+      doc.setFont("helvetica", "normal");
+      if (reportOrders.length === 0) {
+        doc.text("Belum ada data transaksi untuk periode ini.", 105, currentY, { align: "center" });
+      } else {
+        reportOrders.forEach((row) => {
+          if (currentY > 275) {
+            doc.addPage();
+            currentY = 20;
+            // Draw table header again
+            doc.setFont("helvetica", "bold");
+            doc.text("Klien", 20, currentY);
+            doc.text("Layanan / Paket", 65, currentY);
+            doc.text("Masuk", 115, currentY, { align: "right" });
+            doc.text("Diskon", 135, currentY, { align: "right" });
+            doc.text("Keluar", 155, currentY, { align: "right" });
+            doc.text("Bersih", 190, currentY, { align: "right" });
+            doc.setLineWidth(0.3);
+            doc.line(20, currentY + 2, 190, currentY + 2);
+            currentY += 8;
+            doc.setFont("helvetica", "normal");
+          }
+
+          const clientNameText = doc.splitTextToSize(row.client_name || '-', 40);
+          const packageNameText = doc.splitTextToSize(row.package_name || '-', 45);
+
+          const maxLine = Math.max(clientNameText.length, packageNameText.length);
+          
+          doc.text(clientNameText, 20, currentY);
+          doc.text(packageNameText, 65, currentY);
+          doc.text(formatRupiah(row.gross_amount), 115, currentY, { align: "right" });
+          doc.text(row.discount > 0 ? `-${formatRupiah(row.discount)}` : '-', 135, currentY, { align: "right" });
+          doc.text(formatRupiah(row.production_total + row.accommodation_cost), 155, currentY, { align: "right" });
+          doc.text(formatRupiah(row.net_amount), 190, currentY, { align: "right" });
+
+          currentY += maxLine * 5;
+        });
+      }
+
+      doc.save(`laporan-keuangan-${periodText.replace(/\s+/g, '-')}.pdf`);
+      toast.success("Laporan keuangan berhasil diunduh");
+    } catch (e) {
+      console.error(e);
+      toast.error("Gagal mengunduh laporan keuangan");
+    }
+  };
+
   const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 
   return (
@@ -285,7 +409,13 @@ const AdminFinance = () => {
             <h1 className="text-3xl font-bold text-gray-800">Catatan Keuangan</h1>
             <p className="text-gray-600">Pendapatan, biaya produksi, dan pendapatan bersih pesanan.</p>
           </div>
-
+          <button
+            type="button"
+            onClick={generateReportPDF}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-[#2f4274] hover:bg-[#202e53] text-white rounded-lg font-medium text-sm transition-colors shrink-0"
+          >
+            <Download size={18} /> Cetak Laporan PDF
+          </button>
         </div>
 
         {/* Filter Period */}

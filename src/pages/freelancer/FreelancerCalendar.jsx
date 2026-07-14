@@ -7,8 +7,9 @@ import QRCode from 'qrcode';
 import FreelancerLayout from '../../components/FreelancerLayout';
 import { formatDate } from '../../utils/formatters';
 import { API_ENDPOINTS } from '../../utils/endpoints';
-import { freelancerGet } from '../../utils/request';
+import { freelancerGet, freelancerPut } from '../../utils/request';
 import { useSiteIdentity } from '../../hooks/useSiteIdentity';
+import { formatRupiah } from '../../utils/formatters';
 import {
   colorForPhotographer,
   styleForPhotographer,
@@ -303,6 +304,20 @@ const FreelancerCalendar = () => {
 
 
 
+  const handleUpdateDriveLink = async (assignmentId, currentLink) => {
+    const newLink = window.prompt("Masukkan Link Google Drive Pekerjaan Client:", currentLink || "");
+    if (newLink === null) return;
+    try {
+      await freelancerPut(`/api/freelance-calendar/assignment/${assignmentId}/drive-link`, {
+        client_drive_link: newLink.trim()
+      });
+      toast.success("Link drive berhasil disimpan");
+      fetchAssignments();
+    } catch (err) {
+      toast.error(err.message || "Gagal menyimpan link drive");
+    }
+  };
+
   const days = getCalendarDays(calendarMonth);
   const selectedDayEvents = selectedDateKey ? eventsByDate[selectedDateKey] || [] : [];
   const freelancerName = localStorage.getItem('freelancer_name') || 'Anda';
@@ -437,6 +452,50 @@ const FreelancerCalendar = () => {
                             <p className="text-xs text-gray-500 mt-0.5">{row.service_label}</p>
                           )}
                           <p className="text-xs text-gray-400">{row.client_phone}</p>
+                          <div className="mt-2 text-xs bg-gray-50 p-2 rounded-lg border border-gray-150 space-y-1 max-w-sm">
+                            <div className="flex justify-between">
+                              <span className="text-gray-500">Jasa Tugas:</span>
+                              <span className="font-medium">{formatRupiah(row.fee || 0)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-500">Biaya Transport:</span>
+                              <span className="font-medium">{formatRupiah(row.transport_fee || 0)}</span>
+                            </div>
+                            <div className="flex justify-between border-t border-gray-200 pt-1 font-semibold text-primary-700">
+                              <span>Total Payout:</span>
+                              <span>{formatRupiah((Number(row.fee) || 0) + (Number(row.transport_fee) || 0))}</span>
+                            </div>
+                            <div className="border-t border-gray-200 pt-1.5 mt-1.5">
+                              <span className="block text-[10px] text-gray-400 font-semibold uppercase">Link Google Drive Klien</span>
+                              {row.client_drive_link ? (
+                                <div className="flex items-center gap-1.5 mt-1">
+                                  <a
+                                    href={row.client_drive_link}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-[11px] text-primary-600 hover:underline font-medium truncate max-w-[180px]"
+                                  >
+                                    {row.client_drive_link}
+                                  </a>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleUpdateDriveLink(row.id, row.client_drive_link)}
+                                    className="text-[10px] text-blue-600 hover:text-blue-850 font-semibold ml-auto"
+                                  >
+                                    Edit
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => handleUpdateDriveLink(row.id, "")}
+                                  className="mt-1 px-2 py-1 bg-primary-600 hover:bg-primary-700 text-white rounded text-[10px] font-medium"
+                                >
+                                  Unggah Link Drive
+                                </button>
+                              )}
+                            </div>
+                          </div>
                         </td>
                         <td className="py-3 pr-2 text-gray-600 whitespace-pre-wrap">{row.notes || '-'}</td>
                         <td className="py-3 pr-2">
