@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { ChevronLeft, ChevronRight, X, Calendar, Download, Copy } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Calendar, Download, Copy, Info } from 'lucide-react';
 import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
 import QRCode from 'qrcode';
@@ -22,6 +22,16 @@ const FreelancerCalendar = () => {
   const [assignments, setAssignments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedDateKey, setSelectedDateKey] = useState(null);
+
+  const detailRef = useRef(null);
+
+  useEffect(() => {
+    if (selectedDateKey && detailRef.current) {
+      if (window.innerWidth < 768) {
+        detailRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  }, [selectedDateKey]);
 
   const year = calendarMonth.getFullYear();
   const month = calendarMonth.getMonth() + 1;
@@ -381,7 +391,7 @@ const FreelancerCalendar = () => {
         </div>
 
         {selectedDateKey && (
-          <div className="bg-white rounded-xl border border-gray-100 shadow p-6 mb-6">
+          <div ref={detailRef} className="bg-white rounded-xl border border-gray-100 shadow p-6 mb-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-800">
                 Detail Penugasan Anda Tanggal {formatDate(selectedDateKey)}
@@ -397,7 +407,12 @@ const FreelancerCalendar = () => {
             {selectedDayEvents.length === 0 ? (
               <p className="text-sm text-gray-500 py-4">Tidak ada penugasan di tanggal ini.</p>
             ) : (
-              <div className="overflow-x-auto">
+              <>
+                <div className="md:hidden flex items-center gap-2 mb-2 text-blue-700 bg-blue-50 px-3 py-2 rounded-lg text-xs font-medium">
+                  <Info size={14} className="shrink-0 animate-pulse" />
+                  <span>Geser tabel ke kanan untuk melihat kolom lainnya &amp; tombol aksi &rarr;</span>
+                </div>
+                <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="text-left text-gray-500 border-b">

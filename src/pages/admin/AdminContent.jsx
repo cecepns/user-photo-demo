@@ -260,13 +260,20 @@ const AdminContent = () => {
               <h1 className="text-3xl font-bold text-gray-800 mb-2">Kelola Konten</h1>
               <p className="text-gray-600">Kelola konten dinamis untuk website Anda. Edit section <strong>site_identity</strong> untuk nama aplikasi, nama perusahaan, inisial, logo, kontak &amp; peta, daftar teks kolom Layanan di footer, serta data untuk invoice.</p>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center gap-4">
               <a
                 href="/admin/service-cards"
-                className="px-4 py-2 text-primary-600 bg-primary-50 rounded-lg hover:bg-primary-100 transition-colors flex items-center gap-2"
+                className="px-4 py-2 text-primary-600 bg-primary-50 rounded-lg hover:bg-primary-100 transition-colors flex items-center gap-2 text-sm font-medium"
               >
                 <Edit size={16} />
                 Kelola Service Cards
+              </a>
+              <a
+                href="/admin/service-features"
+                className="px-4 py-2 text-primary-600 bg-primary-50 rounded-lg hover:bg-primary-100 transition-colors flex items-center gap-2 text-sm font-medium"
+              >
+                <Edit size={16} />
+                Kelola Fitur Layanan
               </a>
               <button
                 onClick={openCreateModal}

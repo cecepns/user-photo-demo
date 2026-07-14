@@ -219,9 +219,7 @@ CREATE TABLE IF NOT EXISTS gallery_images (
   UNIQUE KEY uq_gallery_image_url (image_url(191))
 );
 
--- Insert sample data
-
--- Seed content sections (data aktual dari produksi)
+-- Seed content sections (data default dipertahankan)
 INSERT IGNORE INTO content_sections (id, section_name, title, subtitle, description, image_url, button_text, button_url, is_active, sort_order) VALUES
 (1,  'hero_section',            'Hari', 'Pernikahan, Sempurna Anda', 'Buatlah Kesan Indah di Moment Pernikahanmu, dan Abadikan Setiap Moment di Hari Bahagia Mu, Libatkan Kami Dalam setiap Moment Mu Acara Bahagiamu.', '', 'Visit / Survey', '/contact', 1, 1),
 (3,  'services_hero_section',   '', '', 'Silahkan pilih Paket Keinginanmu, dan sesuaikan Kebutuhanmu dengan menambahkan pilihan lainnya,', '', '', '', 1, 3),
@@ -235,88 +233,4 @@ INSERT IGNORE INTO content_sections (id, section_name, title, subtitle, descript
 (12, 'services_preview_section','Pilihan Layanan Pernikahan', 'WEDDING PACKAGE | DEKORASI | MUA | DOKUMENTASI | STUDIO | ENTERTAINMENT | SOUNDSYSTEM | MC | RPOSESI ADAT | CREW WO', '', '', '', '', 0, 2),
 (13, 'button_item_detail',      '', '', '', '', 'Checkout', '', 1, 1),
 (15, 'site_identity',           'Chekusphoto', 'PT.Chekusphoto Asik', '{\"siteContact\":{\"addressLine1\":\" Citra Raya Cluster Avaneu Park Blok ZB 19/18 Kec Cikupa,Tangerang\",\"addressLine2\":\"Provinsi Banten\",\"phone\":\"083141308442\",\"email\":\"As.veytea@gmail.com\",\"instagramUrl\":\"https://www.instagram.com/chekusphoto?igsh=c2thNWZuZG5ub3lr&utm_source=qr\",\"mapsEmbedUrl\":\"\",\"businessHours\":\"Senin - Jumat: 09:00 - 18:00\\nSabtu: 10:00 - 16:00\\nMinggu: Hanya dengan janji temu\"},\"footerServices\":[\"Perencanaan Pernikahan\",\"Koordinasi Acara\",\"Pemilihan Paket\",\"Dokumentasi\"]}', '', 'U', '', 1, 1),
-(16, 'Chekusphoto',             'Abadikan momentmu', 'Photo + video', 'Kami menyediakan Jasa photo & video Di setiap moment kalian kami siap Abadikan', '', 'Konsul Gratis', '088214350399', 1, 0);
-
--- Sample service features
-INSERT IGNORE INTO service_features (id, title, description, icon, sort_order) VALUES 
-(1, 'Perencanaan profesional', 'Tim perencana berpengalaman yang akan mengatur setiap detail pernikahan Anda', '📋', 1),
-(2, 'Tim berpengalaman', 'Tim ahli dengan pengalaman bertahun-tahun dalam industri pernikahan', '👥', 2),
-(3, 'Kualitas terjamin', 'Komitmen kami untuk memberikan layanan berkualitas tinggi', '⭐', 3),
-(4, 'Pelayanan 24/7', 'Dukungan penuh selama proses perencanaan hingga hari pernikahan', '🕐', 4),
-(5, 'Garansi kepuasan', 'Jaminan kepuasan 100% untuk setiap layanan yang kami berikan', '✅', 5);
-
--- Sample service cards (service type)
-INSERT IGNORE INTO service_cards (id, title, description, icon, button_text, button_url, card_type, sort_order) VALUES 
-(1, 'Dokumentasi Wedding', 'Pilih dari berbagai paket pernikahan yang sudah kami siapkan dengan harga terjangkau dan layanan lengkap', '💒', 'Lihat Paket →', '/services', 'service', 1),
-(2, 'Custom Service', 'Buat layanan pernikahan sesuai dengan visi dan kebutuhan unik Anda dengan konsultasi langsung', '✨', 'Buat Custom →', '/custom-service', 'service', 2);
-
--- Sample about cards (about type)
-INSERT IGNORE INTO service_cards (id, title, description, icon, button_text, button_url, card_type, sort_order) VALUES 
-(3, 'Layanan Personal', 'Setiap pernikahan unik, dan kami menyesuaikan layanan kami dengan visi dan preferensi Anda.', '💖', '', '', 'about', 1),
-(4, 'Perhatian pada Detail', 'Dari dekorasi terkecil hingga gestur terbesar, kami memastikan kesempurnaan dalam setiap elemen.', '✨', '', '', 'about', 2),
-(5, 'Perencanaan Bebas Stres', 'Kami menangani semua logistik sehingga Anda bisa fokus menikmati masa tunangan dan hari spesial.', '🎯', '', '', 'about', 3);
-
--- Sample items
-INSERT IGNORE INTO items (id, name, description, price, category) VALUES 
-(1, 'Venue Decoration', 'Complete venue setup with floral arrangements and lighting', 5000, 'Decoration'),
-(2, 'Wedding Coordination', 'Professional wedding coordinator for the entire day', 3000, 'Coordination'),
-(3, 'Photography Package', 'Professional photographer for ceremony and reception', 4000, 'Photography'),
-(4, 'Catering Service', 'Complete dining experience for all guests', 8000, 'Catering'),
-(5, 'Entertainment', 'Live music and DJ services', 2500, 'Entertainment'),
-(6, 'Intimate Venue Setup', 'Cozy decoration perfect for small gatherings', 2500, 'Decoration'),
-(7, 'Mini Photography', 'Professional photos for intimate ceremonies', 2000, 'Photography'),
-(8, 'Small Catering', 'Gourmet catering for small groups', 4000, 'Catering'),
-(9, 'Luxury Decoration', 'Premium floral arrangements and exclusive setup', 15000, 'Decoration'),
-(10, 'Premium Photography', 'Award-winning photographers and videographers', 10000, 'Photography'),
-(11, 'Gourmet Catering', 'Multi-course dining with premium ingredients', 20000, 'Catering'),
-(12, 'Luxury Transportation', 'Premium vehicle arrangements for the couple', 3000, 'Transportation');
-
--- Sample services
-INSERT IGNORE INTO services (id, name, description, base_price, image) VALUES 
-(1, 'Complete Dokumentasi Wedding', 'Full wedding planning service including venue, decoration, catering, and coordination', 25000, 'https://images.pexels.com/photos/1444442/pexels-photo-1444442.jpeg?auto=compress&cs=tinysrgb&w=800'),
-(2, 'Intimate Dokumentasi Wedding', 'Perfect for small gatherings with personalized touches and elegant decoration', 12000, 'https://images.pexels.com/photos/1024993/pexels-photo-1024993.jpeg?auto=compress&cs=tinysrgb&w=800'),
-(3, 'Luxury Dokumentasi Wedding', 'Premium service with exclusive venues, high-end decoration, and professional coordination', 50000, 'https://images.pexels.com/photos/1616113/pexels-photo-1616113.jpeg?auto=compress&cs=tinysrgb&w=800');
-
--- Sample service-item relationships
-INSERT IGNORE INTO service_items (service_id, item_id, custom_price, is_required, sort_order) VALUES 
-(1, 1, NULL, true, 1),
-(1, 2, NULL, true, 2),
-(1, 3, NULL, true, 3),
-(1, 4, NULL, true, 4),
-(1, 5, NULL, false, 5),
-(2, 6, NULL, true, 1),
-(2, 7, NULL, true, 2),
-(2, 8, NULL, true, 3),
-(3, 9, NULL, true, 1),
-(3, 10, NULL, true, 2),
-(3, 11, NULL, true, 3),
-(3, 12, NULL, false, 4);
-
--- Sample payment methods
-INSERT IGNORE INTO payment_methods (type, name, account_number, details) VALUES 
-('bank', 'Bank Central Asia (BCA)', '1234567890', 'Account name: WeddingBliss Indonesia'),
-('bank', 'Bank Mandiri', '0987654321', 'Account name: WeddingBliss Indonesia'),
-('qris', 'QRIS', '', 'Scan QRIS untuk pembayaran cepat dan aman'),
-('ewallet', 'GoPay', '', 'Pembayaran melalui GoPay'),
-('ewallet', 'OVO', '', 'Pembayaran melalui OVO'),
-('ewallet', 'DANA', '', 'Pembayaran melalui DANA');
-
--- Sample articles
-INSERT IGNORE INTO articles (title, content, excerpt, image, category) VALUES 
-('Tips Memilih Venue Pernikahan', 'Artikel lengkap tentang cara memilih venue pernikahan yang tepat...', 'Panduan lengkap memilih venue pernikahan sesuai budget dan kebutuhan', 'https://images.pexels.com/photos/1444442/pexels-photo-1444442.jpeg?auto=compress&cs=tinysrgb&w=800', 'Tips'),
-('Dekorasi Pernikahan Minimalis', 'Inspirasi dekorasi pernikahan dengan tema minimalis modern...', 'Ide dekorasi pernikahan minimalis yang elegan dan terjangkau', 'https://images.pexels.com/photos/1024993/pexels-photo-1024993.jpeg?auto=compress&cs=tinysrgb&w=800', 'Dekorasi'),
-('Fotografi Pernikahan Terbaik', 'Tips memilih fotografer pernikahan dan paket fotografi...', 'Panduan memilih fotografer dan paket fotografi pernikahan', 'https://images.pexels.com/photos/1616113/pexels-photo-1616113.jpeg?auto=compress&cs=tinysrgb&w=800', 'Fotografi');
-
--- Sample gallery categories
-INSERT IGNORE INTO gallery_categories (name, description, sort_order) VALUES 
-('Dekorasi', 'Koleksi dekorasi pernikahan indah', 1),
-('Fotografi', 'Hasil fotografi pernikahan profesional', 2),
-('Venue', 'Pilihan venue pernikahan eksklusif', 3),
-('Catering', 'Hidangan pernikahan lezat', 4);
-
--- Sample gallery images
-INSERT IGNORE INTO gallery_images (title, description, image_url, category_id, is_featured, sort_order) VALUES 
-('Dekorasi Outdoor', 'Dekorasi pernikahan outdoor yang romantis', 'https://images.pexels.com/photos/1444442/pexels-photo-1444442.jpeg?auto=compress&cs=tinysrgb&w=800', 1, true, 1),
-('Fotografi Prewedding', 'Sesi fotografi prewedding di alam', 'https://images.pexels.com/photos/1024993/pexels-photo-1024993.jpeg?auto=compress&cs=tinysrgb&w=800', 2, true, 1),
-('Venue Indoor', 'Venue pernikahan indoor yang elegan', 'https://images.pexels.com/photos/1616113/pexels-photo-1616113.jpeg?auto=compress&cs=tinysrgb&w=800', 3, false, 1),
-('Hidangan Utama', 'Hidangan utama pernikahan yang lezat', 'https://images.pexels.com/photos/1444442/pexels-photo-1444442.jpeg?auto=compress&cs=tinysrgb&w=800', 4, false, 1); 
+(16, 'Chekusphoto',             'Abadikan momentmu', 'Photo + video', 'Kami menyediakan Jasa photo & video Di setiap moment kalian kami siap Abadikan', '', 'Konsul Gratis', '088214350399', 1, 0); 

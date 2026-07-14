@@ -6,6 +6,7 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
+  Info,
 } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 import AdminLayout from "../../components/AdminLayout";
@@ -230,6 +231,10 @@ const AdminOrdersHistory = () => {
 
         <div className="space-y-6">
           <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+            <div className="md:hidden flex items-center gap-2 m-4 mb-2 text-blue-700 bg-blue-50 px-3 py-2 rounded-lg text-xs font-medium">
+              <Info size={14} className="shrink-0 animate-pulse" />
+              <span>Geser tabel ke kanan untuk melihat kolom lainnya &amp; tombol aksi &rarr;</span>
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[900px]">
                 <thead>

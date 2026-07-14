@@ -112,7 +112,10 @@ const buildIdentity = (data) => {
   };
 };
 
-const defaultIdentity = buildIdentity(null);
+const defaultIdentity = {
+  ...buildIdentity(null),
+  loading: true
+};
 
 export const replaceBrandTokens = (text, identity = defaultIdentity) => {
   const source = String(text || '');
@@ -134,10 +137,19 @@ export const useSiteIdentity = () => {
       try {
         const data = await apiFetch('/api/content-sections/site_identity');
         if (!cancelled) {
-          setIdentity(buildIdentity(data));
+          setIdentity({
+            ...buildIdentity(data),
+            loading: false
+          });
         }
       } catch (error) {
         console.error('Error fetching site identity:', error);
+        if (!cancelled) {
+          setIdentity(prev => ({
+            ...prev,
+            loading: false
+          }));
+        }
       }
     };
 

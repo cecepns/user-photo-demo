@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Helmet } from 'react-helmet-async';
-import { Download, Plus, Edit, Trash2, X, Copy } from 'lucide-react';
+import { Download, Plus, Edit, Trash2, X, Copy, Info } from 'lucide-react';
 import AsyncSelect from 'react-select/async';
 import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
@@ -600,8 +600,13 @@ const AdminDetailAcara = () => {
           className="mb-4 border rounded-lg px-3 py-2 max-w-sm w-full"
         />
 
-        <div className="bg-white rounded-xl shadow overflow-x-auto">
-          <table className="min-w-full text-sm">
+        <div className="bg-white rounded-xl shadow overflow-hidden">
+          <div className="md:hidden flex items-center gap-2 m-4 mb-2 text-blue-700 bg-blue-50 px-3 py-2 rounded-lg text-xs font-medium">
+            <Info size={14} className="shrink-0 animate-pulse" />
+            <span>Geser tabel ke kanan untuk melihat kolom lainnya &amp; tombol aksi &rarr;</span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-4 py-3 text-left">Client</th>

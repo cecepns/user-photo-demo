@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Plus, Edit, Trash2, Package, Upload, X, Image as ImageIcon } from 'lucide-react';
+import { Plus, Edit, Trash2, Package, Upload, X, Image as ImageIcon, Info } from 'lucide-react';
 import PropTypes from 'prop-types';
 import toast, { Toaster } from 'react-hot-toast';
 import AdminLayout from '../../components/AdminLayout';
@@ -179,6 +179,10 @@ const AdminItems = () => {
 
         {/* Items Table */}
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+          <div className="md:hidden flex items-center gap-2 m-4 mb-2 text-blue-700 bg-blue-50 px-3 py-2 rounded-lg text-xs font-medium">
+            <Info size={14} className="shrink-0 animate-pulse" />
+            <span>Geser tabel ke kanan untuk melihat kolom lainnya &amp; tombol aksi &rarr;</span>
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[640px]">
               <thead>

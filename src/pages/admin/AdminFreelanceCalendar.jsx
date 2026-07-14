@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { Helmet } from 'react-helmet-async';
 import AsyncSelect from 'react-select/async';
-import { ChevronLeft, ChevronRight, Edit, Trash2, Plus, X, Download, Copy } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Edit, Trash2, Plus, X, Download, Copy, Eye, Info } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import jsPDF from 'jspdf';
 
@@ -36,6 +36,16 @@ const AdminFreelanceCalendar = () => {
   const [showClientModal, setShowClientModal] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
   const [loadingClient, setLoadingClient] = useState(false);
+
+  const detailRef = useRef(null);
+
+  useEffect(() => {
+    if (selectedDateKey && detailRef.current) {
+      if (window.innerWidth < 768) {
+        detailRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  }, [selectedDateKey]);
 
   const year = calendarMonth.getFullYear();
   const month = calendarMonth.getMonth() + 1;
@@ -597,7 +607,7 @@ const AdminFreelanceCalendar = () => {
         </div>
 
         {selectedDateKey && (
-          <div className="bg-white rounded-xl border border-gray-100 shadow p-6 mb-6">
+          <div ref={detailRef} className="bg-white rounded-xl border border-gray-100 shadow p-6 mb-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-800">
                 Detail Penugasan Tanggal {formatDate(selectedDateKey)}
@@ -613,39 +623,59 @@ const AdminFreelanceCalendar = () => {
             {selectedDayEvents.length === 0 ? (
               <p className="text-sm text-gray-500 py-4">Belum ada penugasan di tanggal ini.</p>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-left text-gray-500 border-b">
-                      <th className="py-2 pr-2">Fg/Vg</th>
-                      <th className="py-2 pr-2">Klien / Pesanan</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {selectedDayEvents.map((row) => (
-                      <tr
-                        key={row.id}
-                        onClick={() => handleViewClientDetail(row)}
-                        className="border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors"
-                        title="Klik untuk detail client"
-                      >
-                        <td className="py-3 pr-2 font-medium text-gray-700">
-                          <span
-                            className="inline-block rounded px-2 py-0.5 text-xs font-semibold"
-                            style={styleForPhotographer(row.photographer_name)}
-                          >
-                            {row.photographer_name}
-                          </span>
-                        </td>
-                        <td className="py-3 pr-2 font-medium text-primary-600 hover:underline">
-                          {row.client_name || '-'} · #
-                          {row.order_source === 'custom_request' ? `C${row.order_id}` : row.order_id}
-                        </td>
+              <>
+                <div className="md:hidden flex items-center gap-2 mb-2 text-blue-700 bg-blue-50 px-3 py-2 rounded-lg text-xs font-medium">
+                  <Info size={14} className="shrink-0 animate-pulse" />
+                  <span>Geser tabel ke kanan untuk melihat kolom lainnya &amp; tombol aksi &rarr;</span>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-left text-gray-500 border-b">
+                        <th className="py-2 pr-2">Fg/Vg</th>
+                        <th className="py-2 pr-2">Klien / Pesanan</th>
+                        <th className="py-2 pr-2 text-center w-24">Aksi</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {selectedDayEvents.map((row) => (
+                        <tr
+                          key={row.id}
+                          onClick={() => handleViewClientDetail(row)}
+                          className="border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors"
+                          title="Klik untuk detail client"
+                        >
+                          <td className="py-3 pr-2 font-medium text-gray-700">
+                            <span
+                              className="inline-block rounded px-2 py-0.5 text-xs font-semibold"
+                              style={styleForPhotographer(row.photographer_name)}
+                            >
+                              {row.photographer_name}
+                            </span>
+                          </td>
+                          <td className="py-3 pr-2 font-medium text-primary-600 hover:underline">
+                            {row.client_name || '-'} · #
+                            {row.order_source === 'custom_request' ? `C${row.order_id}` : row.order_id}
+                          </td>
+                          <td className="py-3 pr-2 text-center">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleViewClientDetail(row);
+                              }}
+                              className="inline-flex items-center justify-center p-1.5 rounded-lg text-primary-600 bg-primary-50 hover:bg-primary-100 transition-colors"
+                              title="Lihat Detail"
+                            >
+                              <Eye size={16} />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
           </div>
         )}

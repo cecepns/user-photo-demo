@@ -43,8 +43,21 @@ import MasterAdmin from './pages/admin/MasterAdmin';
 import ProtectedRoute from './components/ProtectedRoute';
 import ProtectedFreelancerRoute from './components/ProtectedFreelancerRoute';
 import SiteIdentitySync from './components/SiteIdentitySync';
+import { useSiteIdentity } from './hooks/useSiteIdentity';
 
 function App() {
+  const identity = useSiteIdentity();
+
+  if (identity.loading) {
+    return (
+      <div className="fixed inset-0 bg-slate-900 flex items-center justify-center z-[9999]">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="w-12 h-12 border-4 border-slate-700 border-t-[#2f4274] rounded-full animate-spin"></div>
+          <p className="text-slate-300 text-sm font-medium tracking-wide">Memuat halaman...</p>
+        </div>
+      </div>
+    );
+  }
   return (
     <HelmetProvider>
       <Router>

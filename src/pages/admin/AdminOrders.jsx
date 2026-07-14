@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { Helmet } from "react-helmet-async";
-import { Eye, Trash2, ChevronLeft, ChevronRight, X, Edit, Download, CheckCircle } from "lucide-react";
+import { Eye, Trash2, ChevronLeft, ChevronRight, X, Edit, Download, CheckCircle, Info } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 import AdminLayout from "../../components/AdminLayout";
 import { formatRupiah, formatDate, formatDateTime, toLocalDate, toDateOnlyString } from "../../utils/formatters";
@@ -1563,6 +1563,10 @@ const AdminOrders = () => {
             )}
             {/* Orders Table */}
             <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+              <div className="md:hidden flex items-center gap-2 m-4 mb-2 text-blue-700 bg-blue-50 px-3 py-2 rounded-lg text-xs font-medium">
+                <Info size={14} className="shrink-0 animate-pulse" />
+                <span>Geser tabel ke kanan untuk melihat kolom lainnya &amp; tombol aksi &rarr;</span>
+              </div>
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-gray-50">

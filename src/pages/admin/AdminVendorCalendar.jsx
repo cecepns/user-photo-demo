@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { Helmet } from "react-helmet-async";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, Info } from "lucide-react";
 import AdminLayout from "../../components/AdminLayout";
 import { toLocalDate } from "../../utils/formatters";
 
@@ -55,6 +55,16 @@ const AdminVendorCalendar = () => {
   const [vendorFilter, setVendorFilter] = useState("all");
   const [assignedVendorId, setAssignedVendorId] = useState("");
   const [savingAssignedVendor, setSavingAssignedVendor] = useState(false);
+
+  const detailRef = useRef(null);
+
+  useEffect(() => {
+    if (selectedDate && detailRef.current) {
+      if (window.innerWidth < 768) {
+        detailRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
+  }, [selectedDate]);
 
   const getVendorColorClass = (vendorKey, vendorName = "") => {
     const vendorNameNormalized = normalizeText(vendorName);
@@ -454,7 +464,7 @@ const AdminVendorCalendar = () => {
         </div>
 
         {selectedDate && (
-          <div className="mt-6 bg-white rounded-xl shadow-lg border border-gray-100 p-6">
+          <div ref={detailRef} className="mt-6 bg-white rounded-xl shadow-lg border border-gray-100 p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-800">
                 Detail Vendor{" "}
@@ -476,9 +486,14 @@ const AdminVendorCalendar = () => {
             {dedupedSelectedDateEvents.length === 0 ? (
               <p className="text-sm text-gray-500">Tidak ada jadwal vendor di tanggal ini.</p>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50">
+              <>
+                <div className="md:hidden flex items-center gap-2 mb-2 text-blue-700 bg-blue-50 px-3 py-2 rounded-lg text-xs font-medium">
+                  <Info size={14} className="shrink-0 animate-pulse" />
+                  <span>Geser tabel ke kanan untuk melihat kolom lainnya &amp; tombol aksi &rarr;</span>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50">
                     <tr>
                       <th className="px-4 py-2 text-left">Vendor</th>
                       <th className="px-4 py-2 text-left">Client</th>

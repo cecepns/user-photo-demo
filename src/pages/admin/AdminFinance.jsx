@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import AsyncSelect from 'react-select/async';
 import {
-  Plus, Trash2, Save, Settings, Edit, ChevronLeft, ChevronRight, X, Search, Landmark, Coins, Truck, DollarSign, Percent,
+  Plus, Trash2, Save, Settings, Edit, ChevronLeft, ChevronRight, X, Search, Landmark, Coins, Truck, DollarSign, Percent, Info,
 } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cell, Legend } from 'recharts';
 import toast from 'react-hot-toast';
@@ -429,6 +429,10 @@ const AdminFinance = () => {
               <h3 className="font-semibold text-gray-700">Daftar Transaksi Keuangan</h3>
             </div>
 
+            <div className="md:hidden flex items-center gap-2 m-4 mb-2 text-blue-700 bg-blue-50 px-3 py-2 rounded-lg text-xs font-medium">
+              <Info size={14} className="shrink-0 animate-pulse" />
+              <span>Geser tabel ke kanan untuk melihat kolom lainnya &amp; tombol aksi &rarr;</span>
+            </div>
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm">
                 <thead className="bg-gray-50">
