@@ -226,7 +226,7 @@ const AdminLayout = ({ children }) => {
       {/* Main content */}
       <div className="lg:pl-64">
         {/* Top bar */}
-        <div className="bg-white shadow-sm border-b border-gray-200">
+        <div className="bg-white shadow-sm border-b border-gray-200 fixed top-0 right-0 left-0 lg:left-64 z-10">
           <div className="flex items-center justify-between h-16 px-4">
             <button
               onClick={() => setIsSidebarOpen(true)}
@@ -250,7 +250,7 @@ const AdminLayout = ({ children }) => {
         </div>
 
         {/* Page content */}
-        <main className="p-6">
+        <main className="p-6 pt-[88px]">
           {children}
         </main>
       </div>
