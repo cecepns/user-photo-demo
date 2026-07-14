@@ -345,8 +345,9 @@ const AdminOrderProgress = () => {
             </tbody>
           </table>
         </div>
+      </div>
 
-        {/* Pagination */}
+      {/* Pagination */}
         {!loading && pagination.total > pagination.limit && (
           <div className="mt-4 flex items-center justify-between text-sm text-gray-600">
             <span>Total: {pagination.total} data</span>

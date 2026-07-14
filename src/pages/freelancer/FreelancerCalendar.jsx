@@ -468,9 +468,10 @@ const FreelancerCalendar = () => {
                   </tbody>
                 </table>
               </div>
-            )}
-          </div>
-        )}
+            </>
+          )}
+        </div>
+      )}
       </FreelancerLayout>
     </>
   );

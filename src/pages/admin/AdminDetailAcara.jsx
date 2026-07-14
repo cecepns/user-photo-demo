@@ -637,8 +637,9 @@ const AdminDetailAcara = () => {
             </tbody>
           </table>
         </div>
+      </div>
 
-        {typeof document !== 'undefined' && createPortal(modal, document.body)}
+      {typeof document !== 'undefined' && createPortal(modal, document.body)}
       </AdminLayout>
     </>
   );
