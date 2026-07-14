@@ -219,18 +219,4 @@ CREATE TABLE IF NOT EXISTS gallery_images (
   UNIQUE KEY uq_gallery_image_url (image_url(191))
 );
 
--- Seed content sections (data default dipertahankan)
-INSERT IGNORE INTO content_sections (id, section_name, title, subtitle, description, image_url, button_text, button_url, is_active, sort_order) VALUES
-(1,  'hero_section',            'Hari', 'Pernikahan, Sempurna Anda', 'Buatlah Kesan Indah di Moment Pernikahanmu, dan Abadikan Setiap Moment di Hari Bahagia Mu, Libatkan Kami Dalam setiap Moment Mu Acara Bahagiamu.', '', 'Visit / Survey', '/contact', 1, 1),
-(3,  'services_hero_section',   '', '', 'Silahkan pilih Paket Keinginanmu, dan sesuaikan Kebutuhanmu dengan menambahkan pilihan lainnya,', '', '', '', 1, 3),
-(4,  'custom_service_section',  '', 'PT.CHEKUSPHOTO ASIK', '', '', 'Mulai Sekarang', '/custom-service', 1, 4),
-(5,  'gallery_hero_section',    'Galeri Pernikahan', '', 'Jelajahi koleksi pernikahan indah kami dan dapatkan inspirasi untuk hari spesial Anda.', '', '', '', 1, 5),
-(6,  'about_hero_section',      'Tentang Chekusphoto', '', 'Kami bersemangat menciptakan momen magis dan mewujudkan impian pernikahan Anda menjadi kenyataan. Dengan pengalaman bertahun-tahun dan perhatian pada detail, kami memastikan hari spesial Anda sempurna.', 'https://i.imghippo.com/files/nO3133mg.jpeg', '', '', 1, 6),
-(7,  'about_mission_section',   'Misi Kami', '', 'Menciptakan pengalaman pernikahan luar biasa yang melampaui ekspektasi dan menciptakan kenangan abadi. Kami percaya setiap pasangan layak mendapat perayaan yang unik seperti kisah cinta mereka.', '', '', '', 1, 7),
-(8,  'about_cta_section',       'Siap Mulai Merencanakan?', '', 'Mari Ciptakan Moment Pernikahan Anda, Hubungi kami untuk konsultasi gratis', '', 'Mulai Hari Ini', '/contact', 1, 8),
-(9,  'contact_hero_section',    'Hubungi Kami', '', 'Siap merencanakan moment impian Anda? Hubungi kami untuk konsultasi gratis', '', '', '', 1, 9),
-(11, 'home_cta_section',        'Siap Merencanakan Pernikahan Impian Anda?', '', 'Mari mulai menciptakan hari sempurna yang selalu Anda impikan. Hubungi kami untuk konsultasi gratis.', '', 'Booking Konsultasi', '/contact', 0, 3),
-(12, 'services_preview_section','Pilihan Layanan Pernikahan', 'WEDDING PACKAGE | DEKORASI | MUA | DOKUMENTASI | STUDIO | ENTERTAINMENT | SOUNDSYSTEM | MC | RPOSESI ADAT | CREW WO', '', '', '', '', 0, 2),
-(13, 'button_item_detail',      '', '', '', '', 'Checkout', '', 1, 1),
-(15, 'site_identity',           'Chekusphoto', 'PT.Chekusphoto Asik', '{\"siteContact\":{\"addressLine1\":\" Citra Raya Cluster Avaneu Park Blok ZB 19/18 Kec Cikupa,Tangerang\",\"addressLine2\":\"Provinsi Banten\",\"phone\":\"083141308442\",\"email\":\"As.veytea@gmail.com\",\"instagramUrl\":\"https://www.instagram.com/chekusphoto?igsh=c2thNWZuZG5ub3lr&utm_source=qr\",\"mapsEmbedUrl\":\"\",\"businessHours\":\"Senin - Jumat: 09:00 - 18:00\\nSabtu: 10:00 - 16:00\\nMinggu: Hanya dengan janji temu\"},\"footerServices\":[\"Perencanaan Pernikahan\",\"Koordinasi Acara\",\"Pemilihan Paket\",\"Dokumentasi\"]}', '', 'U', '', 1, 1),
-(16, 'Chekusphoto',             'Abadikan momentmu', 'Photo + video', 'Kami menyediakan Jasa photo & video Di setiap moment kalian kami siap Abadikan', '', 'Konsul Gratis', '088214350399', 1, 0); 
+-- -- Seed content sections (data default dipertahankan via backend javascript seeder)

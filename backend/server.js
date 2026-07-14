@@ -245,6 +245,9 @@ async function getTenantPool(tenant) {
     // Run pending migrations
     await runMigrations(pool, { silent: true });
 
+    // Seed content sections safely
+    await seedContentSections(pool);
+
     tenantPools.set(tenant.db_name, pool);
     console.log(`Successfully initialized database connection pool for tenant: ${tenant.name} (${tenant.db_name})`);
     return pool;
@@ -314,6 +317,192 @@ async function tenantResolver(req, res, next) {
   } catch (error) {
     console.error('Tenant resolver error:', error);
     res.status(500).json({ message: 'Error resolving tenant database.' });
+  }
+}
+
+async function seedContentSections(pool) {
+  const defaultSections = [
+    {
+      id: 1,
+      section_name: 'hero_section',
+      title: 'Hari',
+      subtitle: 'Pernikahan, Sempurna Anda',
+      description: 'Buatlah Kesan Indah di Moment Pernikahanmu, dan Abadikan Setiap Moment di Hari Bahagia Mu, Libatkan Kami Dalam setiap Moment Mu Acara Bahagiamu.',
+      image_url: '',
+      button_text: 'Visit / Survey',
+      button_url: '/contact',
+      is_active: 1,
+      sort_order: 1
+    },
+    {
+      id: 3,
+      section_name: 'services_hero_section',
+      title: '',
+      subtitle: '',
+      description: 'Silahkan pilih Paket Keinginanmu, dan sesuaikan Kebutuhanmu dengan menambahkan pilihan lainnya,',
+      image_url: '',
+      button_text: '',
+      button_url: '',
+      is_active: 1,
+      sort_order: 3
+    },
+    {
+      id: 4,
+      section_name: 'custom_service_section',
+      title: '',
+      subtitle: 'PT.CHEKUSPHOTO ASIK',
+      description: '',
+      image_url: '',
+      button_text: 'Mulai Sekarang',
+      button_url: '/custom-service',
+      is_active: 1,
+      sort_order: 4
+    },
+    {
+      id: 5,
+      section_name: 'gallery_hero_section',
+      title: 'Galeri Pernikahan',
+      subtitle: '',
+      description: 'Jelajahi koleksi pernikahan indah kami dan dapatkan inspirasi untuk hari spesial Anda.',
+      image_url: '',
+      button_text: '',
+      button_url: '',
+      is_active: 1,
+      sort_order: 5
+    },
+    {
+      id: 6,
+      section_name: 'about_hero_section',
+      title: 'Tentang Chekusphoto',
+      subtitle: '',
+      description: 'Kami bersemangat menciptakan momen magis dan mewujudkan impian pernikahan Anda menjadi kenyataan. Dengan pengalaman bertahun-tahun dan perhatian pada detail, kami memastikan hari spesial Anda sempurna.',
+      image_url: 'https://i.imghippo.com/files/nO3133mg.jpeg',
+      button_text: '',
+      button_url: '',
+      is_active: 1,
+      sort_order: 6
+    },
+    {
+      id: 7,
+      section_name: 'about_mission_section',
+      title: 'Misi Kami',
+      subtitle: '',
+      description: 'Menciptakan pengalaman pernikahan luar biasa yang melampaui ekspektasi dan menciptakan kenangan abadi. Kami percaya setiap pasangan layak mendapat perayaan yang unik seperti kisah cinta mereka.',
+      image_url: '',
+      button_text: '',
+      button_url: '',
+      is_active: 1,
+      sort_order: 7
+    },
+    {
+      id: 8,
+      section_name: 'about_cta_section',
+      title: 'Siap Mulai Merencanakan?',
+      subtitle: '',
+      description: 'Mari Ciptakan Moment Pernikahan Anda, Hubungi kami untuk konsultasi gratis',
+      image_url: '',
+      button_text: 'Mulai Hari Ini',
+      button_url: '/contact',
+      is_active: 1,
+      sort_order: 8
+    },
+    {
+      id: 9,
+      section_name: 'contact_hero_section',
+      title: 'Hubungi Kami',
+      subtitle: '',
+      description: 'Siap merencanakan moment impian Anda? Hubungi kami untuk konsultasi gratis',
+      image_url: '',
+      button_text: '',
+      button_url: '',
+      is_active: 1,
+      sort_order: 9
+    },
+    {
+      id: 11,
+      section_name: 'home_cta_section',
+      title: 'Siap Merencanakan Pernikahan Impian Anda?',
+      subtitle: '',
+      description: 'Mari mulai menciptakan hari sempurna yang selalu Anda impikan. Hubungi kami untuk konsultasi gratis.',
+      image_url: '',
+      button_text: 'Booking Konsultasi',
+      button_url: '/contact',
+      is_active: 0,
+      sort_order: 3
+    },
+    {
+      id: 12,
+      section_name: 'services_preview_section',
+      title: 'Pilihan Layanan Pernikahan',
+      subtitle: 'WEDDING PACKAGE | DEKORASI | MUA | DOKUMENTASI | STUDIO | ENTERTAINMENT | SOUNDSYSTEM | MC | RPOSESI ADAT | CREW WO',
+      description: '',
+      image_url: '',
+      button_text: '',
+      button_url: '',
+      is_active: 0,
+      sort_order: 2
+    },
+    {
+      id: 13,
+      section_name: 'button_item_detail',
+      title: '',
+      subtitle: '',
+      description: '',
+      image_url: '',
+      button_text: 'Checkout',
+      button_url: '',
+      is_active: 1,
+      sort_order: 1
+    },
+    {
+      id: 15,
+      section_name: 'site_identity',
+      title: 'Chekusphoto',
+      subtitle: 'PT.Chekusphoto Asik',
+      description: JSON.stringify({
+        siteContact: {
+          addressLine1: " Citra Raya Cluster Avaneu Park Blok ZB 19/18 Kec Cikupa,Tangerang",
+          addressLine2: "Provinsi Banten",
+          phone: "083141308442",
+          email: "As.veytea@gmail.com",
+          instagramUrl: "https://www.instagram.com/chekusphoto?igsh=c2thNWZuZG5ub3lr&utm_source=qr",
+          mapsEmbedUrl: "",
+          businessHours: "Senin - Jumat: 09:00 - 18:00\nSabtu: 10:00 - 16:00\nMinggu: Hanya dengan janji temu"
+        },
+        footerServices: ["Perencanaan Pernikahan", "Koordinasi Acara", "Pemilihan Paket", "Dokumentasi"]
+      }),
+      image_url: '',
+      button_text: 'U',
+      button_url: '',
+      is_active: 1,
+      sort_order: 1
+    },
+    {
+      id: 16,
+      section_name: 'Chekusphoto',
+      title: 'Abadikan momentmu',
+      subtitle: 'Photo + video',
+      description: 'Kami menyediakan Jasa photo & video Di setiap moment kalian kami siap Abadikan',
+      image_url: '',
+      button_text: 'Konsul Gratis',
+      button_url: '088214350399',
+      is_active: 1,
+      sort_order: 0
+    }
+  ];
+
+  for (const sec of defaultSections) {
+    try {
+      const [rows] = await pool.execute('SELECT 1 FROM content_sections WHERE section_name = ? LIMIT 1', [sec.section_name]);
+      if (rows.length === 0) {
+        await pool.execute(
+          'INSERT INTO content_sections (id, section_name, title, subtitle, description, image_url, button_text, button_url, is_active, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          [sec.id, sec.section_name, sec.title, sec.subtitle, sec.description, sec.image_url, sec.button_text, sec.button_url, sec.is_active, sec.sort_order]
+        );
+      }
+    } catch (err) {
+      console.error(`Error seeding content_section ${sec.section_name}:`, err.message);
+    }
   }
 }
 
@@ -436,6 +625,9 @@ async function initializeDatabase() {
     `);
 
     await runMigrations(masterPool);
+
+    // Seed content sections safely
+    await seedContentSections(masterPool);
 
     console.log('Database initialized successfully');
   } catch (error) {

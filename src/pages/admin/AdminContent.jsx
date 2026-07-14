@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Edit, Plus, Trash2, Upload } from 'lucide-react';
+import { Edit, Plus, Trash2, Upload, ChevronDown, ChevronUp } from 'lucide-react';
 import toast from 'react-hot-toast';
 import AdminLayout from '../../components/AdminLayout';
 import { API_BASE, imageUrl } from '../../utils/imageUrl';
@@ -40,6 +40,49 @@ function getAuthHeaders(extra = {}) {
   };
 }
 
+const SECTION_LABELS = {
+  site_identity: 'Identitas & Informasi Profil Website',
+  Chekusphoto: 'Branding Ringkasan (Photo & Video)',
+  hero_section: 'Banner Utama Halaman Depan',
+  services_hero_section: 'Header Daftar Paket Layanan',
+  services_preview_section: 'Judul Preview Layanan',
+  custom_service_section: 'Banner Layanan Kustom',
+  button_item_detail: 'Label Tombol Detail Paket',
+  home_cta_section: 'Banner Ajakan Aksi (CTA) Halaman Depan',
+  about_hero_section: 'Banner Utama Tentang Kami',
+  about_mission_section: 'Misi & Visi Kami',
+  about_cta_section: 'Banner Ajakan Aksi Tentang Kami',
+  gallery_hero_section: 'Header Halaman Galeri',
+  contact_hero_section: 'Header Halaman Kontak'
+};
+
+const CATEGORIES = [
+  {
+    id: 'profile',
+    name: 'Profil & Branding Website',
+    description: 'Logo website, nama aplikasi, alamat kontak, jam operasional, link sosial media, dan teks footer.',
+    sections: ['site_identity', 'Chekusphoto']
+  },
+  {
+    id: 'home',
+    name: 'Halaman Home (Beranda)',
+    description: 'Banner utama, promo layanan kustom, deskripsi daftar paket, dan tombol ajakan aksi (CTA) di beranda.',
+    sections: ['hero_section', 'services_hero_section', 'services_preview_section', 'custom_service_section', 'home_cta_section', 'button_item_detail']
+  },
+  {
+    id: 'about',
+    name: 'Halaman Tentang & Galeri',
+    description: 'Konten cerita tentang kami, visi/misi perusahaan, tombol ajakan halaman tentang, dan header galeri.',
+    sections: ['about_hero_section', 'about_mission_section', 'about_cta_section', 'gallery_hero_section']
+  },
+  {
+    id: 'contact',
+    name: 'Halaman Kontak',
+    description: 'Judul header dan sub-judul pada halaman kontak kami.',
+    sections: ['contact_hero_section']
+  }
+];
+
 const AdminContent = () => {
   const [sections, setSections] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -63,6 +106,34 @@ const AdminContent = () => {
   const [footerServicesText, setFooterServicesText] = useState(
     () => DEFAULT_FOOTER_SERVICES.join('\n')
   );
+
+  const [openCategory, setOpenCategory] = useState('profile');
+
+  const groupedSections = useMemo(() => {
+    const grouped = {
+      profile: [],
+      home: [],
+      about: [],
+      contact: [],
+      other: []
+    };
+
+    sections.forEach(sec => {
+      if (CATEGORIES[0].sections.includes(sec.section_name)) {
+        grouped.profile.push(sec);
+      } else if (CATEGORIES[1].sections.includes(sec.section_name)) {
+        grouped.home.push(sec);
+      } else if (CATEGORIES[2].sections.includes(sec.section_name)) {
+        grouped.about.push(sec);
+      } else if (CATEGORIES[3].sections.includes(sec.section_name)) {
+        grouped.contact.push(sec);
+      } else {
+        grouped.other.push(sec);
+      }
+    });
+
+    return grouped;
+  }, [sections]);
 
   useEffect(() => {
     fetchSections();
@@ -286,67 +357,182 @@ const AdminContent = () => {
           </div>
         </div>
 
-        {/* Content Sections Table */}
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[700px]">
-              <thead>
-                <tr className="bg-gradient-to-r from-[#2f4274] to-[#3d5285] text-white">
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-white/95">Nama Section</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-white/95">Judul</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-white/95">Status</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-white/95 w-20">Urutan</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-white/95 w-24">Aksi</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-100">
-                {sections.map((section, idx) => (
-                  <tr
-                    key={section.id}
-                    className={`transition-colors duration-150 hover:bg-[#2f4274]/[0.04] ${idx % 2 === 1 ? "bg-gray-50/50" : ""}`}
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-semibold text-gray-900">{section.section_name}</div>
-                    </td>
-                    <td className="px-6 py-4 max-w-xs">
-                      <div className="text-sm text-gray-900 truncate" title={section.title}>{section.title}</div>
-                      {section.subtitle && (
-                        <div className="text-xs text-gray-500 truncate" title={section.subtitle}>{section.subtitle}</div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold ${
-                        section.is_active ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                      }`}>
-                        {section.is_active ? "Aktif" : "Nonaktif"}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {section.sort_order}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => handleEdit(section)}
-                          className="p-2 rounded-lg text-[#2f4274] bg-[#2f4274]/10 hover:bg-[#2f4274]/20 transition-colors"
-                          title="Edit"
-                        >
-                          <Edit size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(section.id)}
-                          className="p-2 rounded-lg text-red-600 bg-red-50 hover:bg-red-100 transition-colors"
-                          title="Hapus"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+        {/* Content Sections Accordion */}
+        <div className="space-y-4">
+          {CATEGORIES.map((cat) => {
+            const catSections = groupedSections[cat.id] || [];
+            const isOpen = openCategory === cat.id;
+            
+            return (
+              <div key={cat.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <button
+                  onClick={() => setOpenCategory(isOpen ? null : cat.id)}
+                  className="w-full flex items-center justify-between p-6 text-left hover:bg-gray-50/50 transition-colors focus:outline-none"
+                >
+                  <div className="space-y-1">
+                    <h3 className="text-lg font-bold text-gray-800">{cat.name}</h3>
+                    <p className="text-sm text-gray-500 font-normal">{cat.description}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold px-2.5 py-1 bg-gray-100 text-gray-600 rounded-full">
+                      {catSections.length} Item
+                    </span>
+                    {isOpen ? <ChevronUp className="text-gray-500" size={20} /> : <ChevronDown className="text-gray-500" size={20} />}
+                  </div>
+                </button>
+                
+                {isOpen && (
+                  <div className="p-6 pt-0 border-t border-gray-50 bg-gray-50/20">
+                    {catSections.length === 0 ? (
+                      <p className="text-sm text-gray-500 py-6 text-center">Belum ada konten untuk kategori ini.</p>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6">
+                        {catSections.map((sec) => (
+                          <div key={sec.id} className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
+                            <div className="space-y-3">
+                              <div className="flex items-start justify-between gap-4">
+                                <h4 className="font-bold text-gray-800 text-base">
+                                  {SECTION_LABELS[sec.section_name] || sec.section_name}
+                                </h4>
+                                <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold shrink-0 ${
+                                  sec.is_active ? "bg-green-50 text-green-700 border border-green-200" : "bg-red-50 text-red-700 border border-red-200"
+                                }`}>
+                                  {sec.is_active ? "Aktif" : "Nonaktif"}
+                                </span>
+                              </div>
+                              
+                              <div className="flex gap-4">
+                                {sec.image_url && (
+                                  <img
+                                    src={imageUrl(sec.image_url)}
+                                    alt={sec.title || "Preview"}
+                                    className="w-20 h-20 rounded-lg object-cover border border-gray-100 bg-gray-50 shrink-0"
+                                    onError={(ev) => {
+                                      ev.currentTarget.style.display = 'none';
+                                    }}
+                                  />
+                                )}
+                                <div className="space-y-1 min-w-0 flex-1">
+                                  {sec.title && <p className="text-sm font-semibold text-gray-900 truncate">{sec.title}</p>}
+                                  {sec.subtitle && <p className="text-xs font-medium text-gray-500 truncate">{sec.subtitle}</p>}
+                                  {sec.description && (
+                                    <p className="text-xs text-gray-500 line-clamp-3 whitespace-pre-line leading-relaxed">
+                                      {sec.section_name === 'site_identity' 
+                                        ? "Konfigurasi kontak, alamat, jam kerja, dan footer"
+                                        : sec.description
+                                      }
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className="mt-4 pt-4 border-t border-gray-50 flex items-center justify-between">
+                              <span className="text-xs text-gray-400">Urutan: {sec.sort_order}</span>
+                              <button
+                                onClick={() => handleEdit(sec)}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#2f4274] hover:bg-[#202e53] text-white rounded-lg text-xs font-semibold transition-colors"
+                              >
+                                <Edit size={12} />
+                                Edit Konten
+                              </button>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
+          {/* Kategori Kustom / Lainnya (hanya muncul jika ada data) */}
+          {groupedSections.other && groupedSections.other.length > 0 && (() => {
+            const catSections = groupedSections.other;
+            const isOpen = openCategory === 'other';
+            
+            return (
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <button
+                  onClick={() => setOpenCategory(isOpen ? null : 'other')}
+                  className="w-full flex items-center justify-between p-6 text-left hover:bg-gray-50/50 transition-colors focus:outline-none"
+                >
+                  <div className="space-y-1">
+                    <h3 className="text-lg font-bold text-gray-800">Konten Kustom / Lainnya</h3>
+                    <p className="text-sm text-gray-500 font-normal">Daftar konten kustom tambahan yang dibuat manual.</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold px-2.5 py-1 bg-gray-100 text-gray-600 rounded-full">
+                      {catSections.length} Item
+                    </span>
+                    {isOpen ? <ChevronUp className="text-gray-500" size={20} /> : <ChevronDown className="text-gray-500" size={20} />}
+                  </div>
+                </button>
+                
+                {isOpen && (
+                  <div className="p-6 pt-0 border-t border-gray-50 bg-gray-50/20">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6">
+                      {catSections.map((sec) => (
+                        <div key={sec.id} className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
+                          <div className="space-y-3">
+                            <div className="flex items-start justify-between gap-4">
+                              <h4 className="font-bold text-gray-800 text-base truncate">
+                                {sec.section_name}
+                              </h4>
+                              <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold shrink-0 ${
+                                sec.is_active ? "bg-green-50 text-green-700 border border-green-200" : "bg-red-50 text-red-700 border border-red-200"
+                              }`}>
+                                {sec.is_active ? "Aktif" : "Nonaktif"}
+                              </span>
+                            </div>
+                            
+                            <div className="flex gap-4">
+                              {sec.image_url && (
+                                <img
+                                  src={imageUrl(sec.image_url)}
+                                  alt={sec.title || "Preview"}
+                                  className="w-20 h-20 rounded-lg object-cover border border-gray-100 bg-gray-50 shrink-0"
+                                  onError={(ev) => {
+                                    ev.currentTarget.style.display = 'none';
+                                  }}
+                                />
+                              )}
+                              <div className="space-y-1 min-w-0 flex-1">
+                                {sec.title && <p className="text-sm font-semibold text-gray-900 truncate">{sec.title}</p>}
+                                {sec.subtitle && <p className="text-xs font-medium text-gray-500 truncate">{sec.subtitle}</p>}
+                                {sec.description && <p className="text-xs text-gray-500 line-clamp-3 leading-relaxed">{sec.description}</p>}
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="mt-4 pt-4 border-t border-gray-50 flex items-center justify-between">
+                            <span className="text-xs text-gray-400">Urutan: {sec.sort_order}</span>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => handleEdit(sec)}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#2f4274] hover:bg-[#202e53] text-white rounded-lg text-xs font-semibold transition-colors"
+                              >
+                                <Edit size={12} />
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleDelete(sec.id)}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-xs font-semibold transition-colors"
+                              >
+                                <Trash2 size={12} />
+                                Hapus
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </div>
 
         {/* Modal */}
@@ -354,8 +540,10 @@ const AdminContent = () => {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
               <div className="p-6 border-b border-gray-200">
-                <h2 className="text-xl font-semibold text-gray-800">
-                  {editingSection ? 'Edit Konten' : 'Tambah Konten Baru'}
+                <h2 className="text-xl font-bold text-gray-800">
+                  {editingSection 
+                    ? `Edit Konten — ${SECTION_LABELS[formData.section_name] || formData.section_name}` 
+                    : 'Tambah Konten Baru'}
                 </h2>
               </div>
 
@@ -365,27 +553,28 @@ const AdminContent = () => {
                   return (
                     <>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Nama Section *
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.section_name}
-                      onChange={(e) => setFormData({...formData, section_name: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                      placeholder="hero_section"
-                      required
-                      disabled={!!editingSection}
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Nama unik untuk section (contoh: hero_section)
-                    </p>
-                  </div>
+                  {!editingSection ? (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Nama Kunci Section *
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.section_name}
+                        onChange={(e) => setFormData({...formData, section_name: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                        placeholder="contoh: custom_promo"
+                        required
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        ID unik (huruf kecil dan garis bawah, tanpa spasi).
+                      </p>
+                    </div>
+                  ) : null}
 
-                  <div>
+                  <div className={editingSection ? "md:col-span-2" : ""}>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Status
+                      Status Tampilan
                     </label>
                     <div className="flex items-center space-x-4">
                       <label className="flex items-center">
@@ -395,7 +584,7 @@ const AdminContent = () => {
                           onChange={(e) => setFormData({...formData, is_active: e.target.checked})}
                           className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                         />
-                        <span className="ml-2 text-sm text-gray-700">Aktif</span>
+                        <span className="ml-2 text-sm text-gray-700">Tampilkan section ini di website</span>
                       </label>
                     </div>
                   </div>
