@@ -113,11 +113,13 @@ const Home = () => {
 
             <div className="relative" data-aos="fade-left" data-aos-delay="300">
               <div className="absolute inset-0 bg-gradient-to-r from-primary-200 to-secondary-200 rounded-full blur-3xl opacity-30 animate-float"></div>
-              <img
-                src={heroContent && heroContent.image_url ? imageUrl(heroContent.image_url) : "https://placehold.co/500x700"}
-                alt="Upacara pernikahan yang indah"
-                className="relative z-10 w-full h-96 lg:h-[500px] object-contain rounded-2xl"
-              />
+              {heroContent && heroContent.image_url && (
+                <img
+                  src={imageUrl(heroContent.image_url)}
+                  alt="Upacara pernikahan yang indah"
+                  className="relative z-10 w-full h-96 lg:h-[500px] object-contain rounded-2xl"
+                />
+              )}
             </div>
           </div>
         </div>

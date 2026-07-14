@@ -39,11 +39,13 @@ const Navbar = () => {
         <div className="p-4 md:px-8 flex items-center justify-between h-20">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-3">
-            <img
-              src={logoUrl ? imageUrl(logoUrl) : "https://placehold.co/35x35"}
-              alt={appName}
-              className="w-24 h-auto"
-            />
+            {logoUrl && (
+              <img
+                src={imageUrl(logoUrl)}
+                alt={appName}
+                className="w-24 h-auto"
+              />
+            )}
           </Link>
 
           {/* Desktop Menu */}

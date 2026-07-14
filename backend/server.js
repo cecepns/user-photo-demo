@@ -168,7 +168,7 @@ async function getTenantPool(tenant) {
       user: dbConfig.user,
       password: dbConfig.password
     });
-    await connection.execute(`CREATE DATABASE IF NOT EXISTS ${tenant.db_name}`);
+    await connection.execute(`CREATE DATABASE IF NOT EXISTS \`${tenant.db_name}\``);
     await connection.end();
   } catch (err) {
     // Di cPanel/shared hosting, user database sering kali tidak punya hak 'CREATE DATABASE' global.
@@ -2741,7 +2741,7 @@ app.get('/api/content-sections', async (req, res) => {
     res.json(sections);
   } catch (error) {
     console.error('Content sections error:', error);
-    res.status(500).json({ message: 'Database error' });
+    res.status(500).json({ message: 'Database error', error: error.message });
   }
 });
 
@@ -2759,7 +2759,7 @@ app.get('/api/content-sections/:sectionName', async (req, res) => {
     res.json(section);
   } catch (error) {
     console.error('Content section error:', error);
-    res.status(500).json({ message: 'Database error' });
+    res.status(500).json({ message: 'Database error', error: error.message });
   }
 });
 
