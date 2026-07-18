@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
+import Compressor from 'compressorjs';
 import AsyncSelect from 'react-select/async';
 import { Edit, Trash2, Plus, Info } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -79,37 +80,32 @@ const AdminOrderProgress = () => {
     }
   };
 
-  const compressImage = (file, maxWidth = 1000, quality = 0.6) => {
+  const compressImage = (file, maxWidth = 1000, targetSizeKb = 300) => {
     return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = (event) => {
-        const img = new Image();
-        img.src = event.target.result;
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          let width = img.width;
-          let height = img.height;
-
-          if (width > maxWidth) {
-            height = Math.round((height * maxWidth) / width);
-            width = maxWidth;
+      new Compressor(file, {
+        quality: 0.6,
+        maxWidth: maxWidth,
+        success(result) {
+          if (result.size > targetSizeKb * 1024) {
+            // Compress again with lower quality if still above 300KB
+            new Compressor(result, {
+              quality: 0.3,
+              maxWidth: maxWidth,
+              success(finalResult) {
+                resolve(finalResult);
+              },
+              error() {
+                resolve(result); // Fallback to 0.6 compressed version
+              }
+            });
+          } else {
+            resolve(result);
           }
-
-          canvas.width = width;
-          canvas.height = height;
-
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, width, height);
-
-          canvas.toBlob((blob) => {
-            resolve(new File([blob], file.name, {
-              type: 'image/jpeg',
-              lastModified: Date.now()
-            }));
-          }, 'image/jpeg', quality);
-        };
-      };
+        },
+        error() {
+          resolve(file); // Fallback to original file on error
+        },
+      });
     });
   };
 
