@@ -8,7 +8,7 @@ const AdminLayout = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { appName, appInitial, logoUrl } = useSiteIdentity();
+  const { appName, appInitial, logoUrl, loading } = useSiteIdentity();
 
   const categories = [
     {
@@ -106,16 +106,23 @@ const AdminLayout = ({ children }) => {
         } transition-transform duration-300 ease-in-out lg:translate-x-0 lg:inset-0`}>
         {/* Header - Fixed at top */}
         <div className="flex items-center justify-center h-20 px-4 bg-gradient-to-r from-primary-600 to-secondary-600 flex-shrink-0">
-          <Link to="/" className="flex items-center space-x-3">
-            {logoUrl ? (
-              <img src={imageUrl(logoUrl)} alt={appName} className="w-10 h-10 rounded-full object-cover bg-white" />
-            ) : (
-              <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
-                <span className="text-primary-600 font-bold">{appInitial}</span>
-              </div>
-            )}
-            <span className=" text-xl font-bold text-white">{appName}</span>
-          </Link>
+          {loading ? (
+            <div className="flex items-center space-x-3 w-full justify-center">
+              <div className="w-9 h-9 bg-white/20 rounded-full animate-pulse flex-shrink-0" />
+              <div className="h-5 w-28 bg-white/20 rounded animate-pulse" />
+            </div>
+          ) : (
+            <Link to="/" className="flex items-center space-x-3">
+              {logoUrl ? (
+                <img src={imageUrl(logoUrl)} alt={appName} className="w-10 h-10 rounded-full object-cover bg-white" />
+              ) : (
+                <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
+                  <span className="text-primary-600 font-bold">{appInitial}</span>
+                </div>
+              )}
+              <span className=" text-xl font-bold text-white">{appName}</span>
+            </Link>
+          )}
         </div>
 
         {/* Scrollable Navigation Area */}

@@ -89,3 +89,25 @@ h1, h2, h3, h4, h5, h6 {
 input, textarea {
   outline: none !important;
 }
+
+/* Premium 3-bubble loader animation */
+@keyframes bubble-bounce {
+  0%, 100% {
+    transform: translateY(0) scale(0.85);
+    opacity: 0.35;
+  }
+  50% {
+    transform: translateY(-8px) scale(1.05);
+    opacity: 1;
+  }
+}
+
+.bubble-loader-dot {
+  animation: bubble-bounce 1.2s infinite ease-in-out;
+}
+.bubble-loader-dot:nth-child(1) {
+  animation-delay: -0.32s;
+}
+.bubble-loader-dot:nth-child(2) {
+  animation-delay: -0.16s;
+}

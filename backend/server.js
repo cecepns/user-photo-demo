@@ -3782,7 +3782,7 @@ app.put('/api/freelance-calendar/:id', authenticateAdmin, async (req, res) => {
   if (!Number.isFinite(id) || id <= 0) {
     return res.status(400).json({ message: 'ID tidak valid' });
   }
-  const { photographer_name, freelancer_id, duty_date, notes } = req.body || {};
+  const { photographer_name, freelancer_id, duty_date, notes, fee, transport_fee } = req.body || {};
 
   try {
     const fields = [];

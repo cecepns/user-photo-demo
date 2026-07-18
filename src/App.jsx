@@ -52,11 +52,10 @@ function App() {
     return (
       <div className="fixed inset-0 bg-white flex flex-col items-center justify-center z-[9999]">
         <div className="relative flex flex-col items-center space-y-6">
-          <div className="relative w-20 h-20">
-            <div className="absolute inset-0 rounded-full border-4 border-gray-100 border-t-[#2f4274] animate-spin"></div>
-            <div className="absolute inset-2 bg-gradient-to-tr from-[#2f4274]/10 to-[#2f4274]/5 rounded-full animate-pulse flex items-center justify-center">
-              <div className="w-3 h-3 bg-[#2f4274] rounded-full"></div>
-            </div>
+          <div className="flex items-center space-x-2.5 h-10">
+            <div className="w-3.5 h-3.5 bg-[#2f4274] rounded-full bubble-loader-dot"></div>
+            <div className="w-3.5 h-3.5 bg-[#2f4274] rounded-full bubble-loader-dot"></div>
+            <div className="w-3.5 h-3.5 bg-[#2f4274] rounded-full bubble-loader-dot"></div>
           </div>
           <div className="flex flex-col items-center space-y-1">
             <span className="text-gray-900 text-base font-semibold tracking-wide animate-pulse">

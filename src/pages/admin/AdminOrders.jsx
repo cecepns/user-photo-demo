@@ -2118,13 +2118,15 @@ const AdminOrders = () => {
                                     type="number"
                                     min={0}
                                     value={af.transport_fee || ""}
-                                    onChange={async (e) => {
+                                    onChange={(e) => {
                                       const val = Number(e.target.value) || 0;
                                       setAssignedFreelancers(prev => prev.map(item => item.id === af.id ? { ...item, transport_fee: val } : item));
-                                      
-                                      // Save to server
+                                    }}
+                                    onBlur={async (e) => {
+                                      const val = Number(e.target.value) || 0;
+                                      const toastId = toast.loading("Menyimpan biaya transport...");
                                       try {
-                                        await fetch(`${API_BASE}/freelance-calendar/${af.id}`, {
+                                        const res = await fetch(`${API_BASE}/freelance-calendar/${af.id}`, {
                                           method: "PUT",
                                           headers: {
                                             "Content-Type": "application/json",
@@ -2132,8 +2134,20 @@ const AdminOrders = () => {
                                           },
                                           body: JSON.stringify({ transport_fee: val })
                                         });
+                                        if (res.ok) {
+                                          toast.success("Biaya transport disimpan!", { id: toastId });
+                                        } else {
+                                          const data = await res.json().catch(() => ({}));
+                                          toast.error(data.message || "Gagal menyimpan biaya transport", { id: toastId });
+                                        }
                                       } catch (err) {
                                         console.error("Error updating transport fee:", err);
+                                        toast.error("Gagal menyimpan biaya transport", { id: toastId });
+                                      }
+                                    }}
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter") {
+                                        e.target.blur();
                                       }
                                     }}
                                     className="w-20 border rounded px-1.5 py-0.5 text-right text-[10px]"
