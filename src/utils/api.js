@@ -1,6 +1,6 @@
 import { API_BASE } from './endpoints';
 
-function getSubdomain() {
+export function getSubdomain() {
   const hostname = window.location.hostname;
   
   // Check query parameter '?tenant=subdomain' (very useful for local development and testing)
@@ -12,7 +12,8 @@ function getSubdomain() {
   }
   
   const savedTenant = localStorage.getItem('selected_tenant_subdomain');
-  if (savedTenant && (hostname === 'localhost' || hostname === '127.0.0.1')) {
+  const isLocal = hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.') || hostname.startsWith('10.') || hostname.startsWith('172.') || /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname);
+  if (savedTenant && isLocal) {
     return savedTenant;
   }
 

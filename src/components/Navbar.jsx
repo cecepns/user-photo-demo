@@ -8,7 +8,7 @@ const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
-  const { appName, logoUrl } = useSiteIdentity();
+  const { appName, logoUrl, loading } = useSiteIdentity();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -38,15 +38,19 @@ const Navbar = () => {
       <div className="container-custom">
         <div className="p-4 md:px-8 flex items-center justify-between h-20">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-3">
-            {logoUrl && (
-              <img
-                src={imageUrl(logoUrl)}
-                alt={appName}
-                className="w-24 h-auto"
-              />
-            )}
-          </Link>
+          {loading ? (
+            <div className="w-24 h-8 bg-gray-200 rounded animate-pulse" />
+          ) : (
+            <Link to="/" className="flex items-center space-x-3">
+              {logoUrl && (
+                <img
+                  src={imageUrl(logoUrl)}
+                  alt={appName}
+                  className="w-24 h-auto"
+                />
+              )}
+            </Link>
+          )}
 
           {/* Desktop Menu */}
           <div className="hidden lg:flex items-center space-x-8">

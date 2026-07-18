@@ -4781,6 +4781,32 @@ app.post('/api/order-progress/:id/upload-highres', authenticateAdmin, (req, res)
   });
 });
 
+app.delete('/api/order-progress/photos/:photoId', authenticateAdmin, async (req, res) => {
+  const photoId = Number(req.params.photoId);
+  if (!Number.isFinite(photoId) || photoId <= 0) {
+    return res.status(400).json({ message: 'ID foto tidak valid' });
+  }
+  try {
+    const [rows] = await db.execute(
+      'SELECT filename, original_filename FROM album_photos WHERE id = ?',
+      [photoId]
+    );
+    if (rows.length === 0) {
+      return res.status(404).json({ message: 'Foto tidak ditemukan' });
+    }
+    const { filename, original_filename } = rows[0];
+    deleteFileSafe(filename);
+    if (original_filename) {
+      deleteFileSafe(original_filename);
+    }
+    await db.execute('DELETE FROM album_photos WHERE id = ?', [photoId]);
+    res.json({ message: 'Foto berhasil dihapus' });
+  } catch (error) {
+    console.error('Delete photo error:', error);
+    res.status(500).json({ message: 'Database error' });
+  }
+});
+
 app.get('/api/order-progress/:id/photos', async (req, res) => {
   const id = Number(req.params.id);
   try {

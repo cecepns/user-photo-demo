@@ -35,6 +35,7 @@ const AdminOrderProgress = () => {
   const [selectedOrderOpt, setSelectedOrderOpt] = useState(null);
   const [activeFilter, setActiveFilter] = useState('all');
   const [photos, setPhotos] = useState([]);
+  const [sortPage, setSortPage] = useState(1);
   const [form, setForm] = useState({
     photo_status: 'photo_progress',
     video_status: 'video_progress',
@@ -55,6 +56,28 @@ const AdminOrderProgress = () => {
       console.error(err);
     }
   }, [editingId]);
+
+  const handleDeletePhoto = async (photoId) => {
+    if (!window.confirm("Hapus foto ini?")) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/order-progress/photos/${photoId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("admin_token")}`
+        }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success("Foto berhasil dihapus");
+        fetchAlbumPhotos(editingId);
+      } else {
+        toast.error(data.message || "Gagal menghapus foto");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Error menghapus foto");
+    }
+  };
 
   const compressImage = (file, maxWidth = 1000, quality = 0.6) => {
     return new Promise((resolve) => {
@@ -151,6 +174,7 @@ const AdminOrderProgress = () => {
   const openCreate = () => {
     setEditingId(null);
     setPhotos([]);
+    setSortPage(1);
     setForm({
       photo_status: 'photo_progress',
       video_status: 'video_progress',
@@ -168,6 +192,7 @@ const AdminOrderProgress = () => {
   const openEdit = (row) => {
     setEditingId(row.id);
     setPhotos([]);
+    setSortPage(1);
     fetchAlbumPhotos(row.id);
     let parsedCustomLinks = [];
     try {
@@ -245,6 +270,12 @@ const AdminOrderProgress = () => {
     if (type === 'video' && PROGRESS_VIDEO_STATUSES.includes(status)) return 'bg-purple-100 text-purple-800';
     return 'bg-gray-100 text-gray-700';
   };
+
+  const sortingPhotos = photos.filter(p => p.is_high_res === 0);
+  const sortPhotosLimit = 10;
+  const totalSortPages = Math.ceil(sortingPhotos.length / sortPhotosLimit) || 1;
+  const currentSortPage = Math.min(sortPage, totalSortPages);
+  const paginatedSortPhotos = sortingPhotos.slice((currentSortPage - 1) * sortPhotosLimit, currentSortPage * sortPhotosLimit);
 
   return (
     <>
@@ -617,6 +648,61 @@ const AdminOrderProgress = () => {
                         }}
                         className="w-full text-xs"
                       />
+
+                      {/* Preview Sorting Photos */}
+                      {sortingPhotos.length > 0 && (
+                        <div className="space-y-2 pt-2 border-t border-gray-200">
+                          <div className="flex justify-between items-center">
+                            <span className="block text-[11px] font-semibold text-gray-600">Pratinjau Foto Sortir ({sortingPhotos.length} file)</span>
+                          </div>
+                          <div className="grid grid-cols-5 gap-1.5 p-1 bg-white border rounded">
+                            {paginatedSortPhotos.map(p => (
+                              <div key={p.id} className="relative aspect-square bg-gray-100 rounded overflow-hidden group">
+                                <img
+                                  src={imageUrl(p.filename)}
+                                  alt=""
+                                  className="w-full h-full object-cover"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeletePhoto(p.id)}
+                                  className="absolute top-1 right-1 p-1 bg-red-600/90 text-white rounded hover:bg-red-700 opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow"
+                                  title="Hapus foto"
+                                >
+                                  <Trash2 size={12} />
+                                </button>
+                                {p.is_selected === 1 && (
+                                  <span className="absolute bottom-1 left-1 px-1 py-0.5 bg-green-500/90 text-white text-[8px] rounded font-bold uppercase shadow-sm">
+                                    Terpilih
+                                  </span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                          {/* Sorting Photos Pagination */}
+                          {totalSortPages > 1 && (
+                            <div className="flex justify-between items-center text-[10px] text-gray-500 pt-1">
+                              <button
+                                type="button"
+                                disabled={currentSortPage <= 1}
+                                onClick={() => setSortPage(prev => Math.max(1, prev - 1))}
+                                className="px-2 py-0.5 border rounded bg-white hover:bg-gray-50 disabled:opacity-40 disabled:hover:bg-white shadow-sm font-semibold transition-colors"
+                              >
+                                ← Seb
+                              </button>
+                              <span className="font-medium text-gray-600">Hal {currentSortPage}/{totalSortPages}</span>
+                              <button
+                                type="button"
+                                disabled={currentSortPage >= totalSortPages}
+                                onClick={() => setSortPage(prev => Math.min(totalSortPages, prev + 1))}
+                                className="px-2 py-0.5 border rounded bg-white hover:bg-gray-50 disabled:opacity-40 disabled:hover:bg-white shadow-sm font-semibold transition-colors"
+                              >
+                                Sel →
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     {/* Step 2: Client selections & Upload Highres */}

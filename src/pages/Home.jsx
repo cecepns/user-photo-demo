@@ -11,6 +11,7 @@ const Home = () => {
   const [servicesContent, setServicesContent] = useState(null);
   const [serviceCards, setServiceCards] = useState([]);
   const [ctaContent, setCtaContent] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     AOS.init({
@@ -20,10 +21,22 @@ const Home = () => {
       mirror: false,
     });
 
-    fetchHeroContent();
-    fetchServicesContent();
-    fetchServiceCards();
-    fetchCtaContent();
+    const loadAll = async () => {
+      setLoading(true);
+      try {
+        await Promise.all([
+          fetchHeroContent(),
+          fetchServicesContent(),
+          fetchServiceCards(),
+          fetchCtaContent()
+        ]);
+      } catch (err) {
+        console.error('Error loading home data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadAll();
   }, []);
 
   const fetchHeroContent = async () => {
@@ -80,48 +93,73 @@ const Home = () => {
       <section className="relative min-h-screen flex items-center gradient-bg hero-pattern overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent"></div>
 
-        <div className="container-custom relative z-10 p-4 md:px-8 pt-24 md:pt-20">
-          <div className="flex flex-col-reverse lg:grid lg:grid-cols-2 gap-12 items-center">
-            <div data-aos="fade-right" data-aos-delay="200">
-              <h1 className="text-3xl md:text-5xl lg:text-7xl font-bold text-gray-800 mb-6 leading-tight">
-                {heroContent ? heroContent.title : 'Hari'}
-                {heroContent && heroContent.subtitle
-                  ? heroContent.subtitle.split(', ').map((part, index) => (
-                    <span key={index} className={`block ${index === 0 ? 'text-gradient' : ''}`}>
-                      {part}
-                    </span>
-                  ))
-                  : <span className="text-gradient block">Pernikahan</span>
-                }
-              </h1>
-              <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-                {heroContent ? heroContent.description : 'Buatlah Kesan Indah di Moment Pernikahanmu, dan Abadikan Setiap Moment di Hari Bahagia Mu, Libatkan Kami Untuk Mengatur Acara Bahagiamu.'}
-              </p>
-              <div
-                className="flex flex-col sm:flex-row gap-4"
-                data-aos="fade-up"
-                data-aos-delay="400"
-              >
-                <Link
-                  to={heroContent ? heroContent.button_url : '/contact'}
-                  className="btn-primary-outline text-center"
-                >
-                  {heroContent ? heroContent.button_text : 'Konsultasi Gratis'}
-                </Link>
+        <div className="container-custom relative z-10 p-4 md:px-8 pt-24 md:pt-20 w-full">
+          {loading ? (
+            <div className="flex flex-col-reverse lg:grid lg:grid-cols-2 gap-12 items-center w-full">
+              <div className="space-y-6 w-full animate-pulse">
+                {/* Title Skeleton */}
+                <div className="space-y-3">
+                  <div className="h-10 md:h-14 bg-gray-200 rounded-lg w-3/4"></div>
+                  <div className="h-10 md:h-14 bg-gray-300 rounded-lg w-1/2"></div>
+                </div>
+                {/* Description Skeleton */}
+                <div className="space-y-2.5">
+                  <div className="h-4 bg-gray-200 rounded w-full"></div>
+                  <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+                  <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                </div>
+                {/* Button Skeleton */}
+                <div className="h-12 bg-gray-300 rounded-lg w-40 mt-4"></div>
+              </div>
+
+              {/* Image Skeleton */}
+              <div className="relative w-full flex justify-center animate-pulse">
+                <div className="w-full h-96 lg:h-[450px] bg-gray-200 rounded-2xl"></div>
               </div>
             </div>
+          ) : (
+            <div className="flex flex-col-reverse lg:grid lg:grid-cols-2 gap-12 items-center">
+              <div data-aos="fade-right" data-aos-delay="200">
+                <h1 className="text-3xl md:text-5xl lg:text-7xl font-bold text-gray-800 mb-6 leading-tight">
+                  {heroContent ? heroContent.title : 'Hari'}
+                  {heroContent && heroContent.subtitle
+                    ? heroContent.subtitle.split(', ').map((part, index) => (
+                      <span key={index} className={`block ${index === 0 ? 'text-gradient' : ''}`}>
+                        {part}
+                      </span>
+                    ))
+                    : <span className="text-gradient block">Pernikahan</span>
+                  }
+                </h1>
+                <p className="text-xl text-gray-600 mb-8 leading-relaxed">
+                  {heroContent ? heroContent.description : 'Buatlah Kesan Indah di Moment Pernikahanmu, dan Abadikan Setiap Moment di Hari Bahagia Mu, Libatkan Kami Untuk Mengatur Acara Bahagiamu.'}
+                </p>
+                <div
+                  className="flex flex-col sm:flex-row gap-4"
+                  data-aos="fade-up"
+                  data-aos-delay="400"
+                >
+                  <Link
+                    to={heroContent ? heroContent.button_url : '/contact'}
+                    className="btn-primary-outline text-center"
+                  >
+                    {heroContent ? heroContent.button_text : 'Konsultasi Gratis'}
+                  </Link>
+                </div>
+              </div>
 
-            <div className="relative" data-aos="fade-left" data-aos-delay="300">
-              <div className="absolute inset-0 bg-gradient-to-r from-primary-200 to-secondary-200 rounded-full blur-3xl opacity-30 animate-float"></div>
-              {heroContent && heroContent.image_url && (
-                <img
-                  src={imageUrl(heroContent.image_url)}
-                  alt="Upacara pernikahan yang indah"
-                  className="relative z-10 w-full h-96 lg:h-[500px] object-contain rounded-2xl"
-                />
-              )}
+              <div className="relative" data-aos="fade-left" data-aos-delay="300">
+                <div className="absolute inset-0 bg-gradient-to-r from-primary-200 to-secondary-200 rounded-full blur-3xl opacity-30 animate-float"></div>
+                {heroContent && heroContent.image_url && (
+                  <img
+                    src={imageUrl(heroContent.image_url)}
+                    alt="Upacara pernikahan yang indah"
+                    className="relative z-10 w-full h-96 lg:h-[500px] object-contain rounded-2xl"
+                  />
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </section>
 
@@ -179,118 +217,156 @@ const Home = () => {
       {/* Services Preview */}
       <section className="section-padding">
         <div className="container-custom">
-          <div className="text-center mb-16" data-aos="fade-up">
-            <h2 className=" text-4xl lg:text-5xl font-bold text-gray-800 mb-6">
-              {servicesContent ? servicesContent.title : ''}
-            </h2>
-            <p className="font-bold text-gray-600 max-w-4xl mx-auto leading-relaxed">
-              {servicesContent ? servicesContent.subtitle : ''}
-            </p>
-          </div>
+          {loading ? (
+            <div className="animate-pulse space-y-12 w-full">
+              {/* Title & Subtitle Skeleton */}
+              <div className="flex flex-col items-center space-y-4">
+                <div className="h-10 bg-gray-200 rounded-lg w-64"></div>
+                <div className="h-4 bg-gray-200 rounded w-96 max-w-full"></div>
+              </div>
+              
+              {/* Cards Skeleton */}
+              <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                <div className="bg-gray-100 rounded-2xl p-8 space-y-6 flex flex-col items-center">
+                  <div className="w-16 h-16 bg-gray-200 rounded-full"></div>
+                  <div className="h-6 bg-gray-200 rounded w-40"></div>
+                  <div className="h-4 bg-gray-200 rounded w-full"></div>
+                  <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+                  <div className="h-12 bg-gray-300 rounded-lg w-full mt-4"></div>
+                </div>
+                <div className="bg-gray-100 rounded-2xl p-8 space-y-6 flex flex-col items-center">
+                  <div className="w-16 h-16 bg-gray-200 rounded-full"></div>
+                  <div className="h-6 bg-gray-200 rounded w-40"></div>
+                  <div className="h-4 bg-gray-200 rounded w-full"></div>
+                  <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+                  <div className="h-12 bg-gray-300 rounded-lg w-full mt-4"></div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="text-center mb-16" data-aos="fade-up">
+                <h2 className=" text-4xl lg:text-5xl font-bold text-gray-800 mb-6">
+                  {servicesContent ? servicesContent.title : ''}
+                </h2>
+                <p className="font-bold text-gray-600 max-w-4xl mx-auto leading-relaxed">
+                  {servicesContent ? servicesContent.subtitle : ''}
+                </p>
+              </div>
 
-          <div className="grid md:grid-cols-2 gap-8 mb-12 max-w-4xl mx-auto" data-aos="fade-up">
-            {serviceCards.length > 0 ? (
-              serviceCards.map((card) => (
-                <div
-                  key={card.id}
-                  className="bg-[#f0f8ff] rounded-2xl shadow-lg overflow-hidden card-hover border border-gray-100"
-                >
-                  <div className="p-8 text-center">
-                    <div className="text-6xl mb-6">{card.icon}</div>
-                    <h3 className="text-2xl font-semibold text-gray-800 mb-4">
-                      {card.title}
-                    </h3>
-                    <p className="text-gray-600 mb-6">
-                      {card.description}
-                    </p>
-                    <Link
-                      to={card.button_url}
-                      className="w-full text-center block btn-primary font-medium"
+              <div className="grid md:grid-cols-2 gap-8 mb-12 max-w-4xl mx-auto" data-aos="fade-up">
+                {serviceCards.length > 0 ? (
+                  serviceCards.map((card) => (
+                    <div
+                      key={card.id}
+                      className="bg-[#f0f8ff] rounded-2xl shadow-lg overflow-hidden card-hover border border-gray-100"
                     >
-                      {card.button_text}
-                    </Link>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <>
-                {/* Fallback Dokumentasi Wedding Card */}
-                <div
-                  className="bg-white rounded-2xl shadow-lg overflow-hidden card-hover border border-gray-100"
-                  data-aos="fade-up"
-                  data-aos-delay="300"
-                >
-                  <div className="p-8 text-center">
-                    <div className="text-6xl mb-6">💒</div>
-                    <h3 className="text-2xl font-semibold text-gray-800 mb-4">
-                      Dokumentasi Wedding
-                    </h3>
-                    <p className="text-gray-600 mb-6">
-                      Pilih dari berbagai paket pernikahan yang sudah kami siapkan
-                      dengan harga terjangkau dan layanan lengkap
-                    </p>
-                    <Link
-                      to="/services"
-                      className="w-full text-center block btn-primary font-medium"
+                      <div className="p-8 text-center">
+                        <div className="text-6xl mb-6">{card.icon}</div>
+                        <h3 className="text-2xl font-semibold text-gray-800 mb-4">
+                          {card.title}
+                        </h3>
+                        <p className="text-gray-600 mb-6">
+                          {card.description}
+                        </p>
+                        <Link
+                          to={card.button_url}
+                          className="w-full text-center block btn-primary font-medium"
+                        >
+                          {card.button_text}
+                        </Link>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <>
+                    {/* Fallback Dokumentasi Wedding Card */}
+                    <div
+                      className="bg-white rounded-2xl shadow-lg overflow-hidden card-hover border border-gray-100"
+                      data-aos="fade-up"
+                      data-aos-delay="300"
                     >
-                      Lihat Paket →
-                    </Link>
-                  </div>
-                </div>
+                      <div className="p-8 text-center">
+                        <div className="text-6xl mb-6">💒</div>
+                        <h3 className="text-2xl font-semibold text-gray-800 mb-4">
+                          Dokumentasi Wedding
+                        </h3>
+                        <p className="text-gray-600 mb-6">
+                          Pilih dari berbagai paket pernikahan yang sudah kami siapkan
+                          dengan harga terjangkau dan layanan lengkap
+                        </p>
+                        <Link
+                          to="/services"
+                          className="w-full text-center block btn-primary font-medium"
+                        >
+                          Lihat Paket →
+                        </Link>
+                      </div>
+                    </div>
 
-                {/* Fallback Custom Service Card */}
-                <div
-                  className="bg-white rounded-2xl shadow-lg overflow-hidden card-hover border border-gray-100"
-                  data-aos="fade-up"
-                  data-aos-delay="500"
-                >
-                  <div className="p-8 text-center">
-                    <div className="text-6xl mb-6">✨</div>
-                    <h3 className="text-2xl font-semibold text-gray-800 mb-4">
-                      Custom Service
-                    </h3>
-                    <p className="text-gray-600 mb-6">
-                      Buat layanan pernikahan sesuai dengan visi dan kebutuhan unik
-                      Anda dengan konsultasi langsung
-                    </p>
-                    <Link
-                      to="/custom-service"
-                      className="w-full text-center block btn-primary font-medium"
+                    {/* Fallback Custom Service Card */}
+                    <div
+                      className="bg-white rounded-2xl shadow-lg overflow-hidden card-hover border border-gray-100"
+                      data-aos="fade-up"
+                      data-aos-delay="500"
                     >
-                      Buat Custom →
-                    </Link>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
+                      <div className="p-8 text-center">
+                        <div className="text-6xl mb-6">✨</div>
+                        <h3 className="text-2xl font-semibold text-gray-800 mb-4">
+                          Custom Service
+                        </h3>
+                        <p className="text-gray-600 mb-6">
+                          Buat layanan pernikahan sesuai dengan visi dan kebutuhan unik
+                          Anda dengan konsultasi langsung
+                        </p>
+                        <Link
+                          to="/custom-service"
+                          className="w-full text-center block btn-primary font-medium"
+                        >
+                          Buat Custom →
+                        </Link>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </section>
 
       {/* CTA Section */}
       <section className="section-padding bg-gray-900 text-white relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-primary-900/20 to-secondary-900/20"></div>
-        <div className="container-custom relative z-10">
-          <div className="text-center max-w-4xl mx-auto" data-aos="fade-up">
-            <h2 className="  text-3xl lg:text-5xl font-bold mb-6">
-              {ctaContent ? ctaContent.title : ''}
-            </h2>
-            <p className="text-xl text-gray-300 mb-8">
-              {ctaContent ? ctaContent.description : ''}
-            </p>
-            <div
-              className="flex flex-col sm:flex-row gap-4 justify-center"
-              data-aos="fade-up"
-              data-aos-delay="300"
-            >
-              <Link
-                to={ctaContent ? ctaContent.button_url : '/contact'}
-                className="border-2 border-white text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-white hover:text-gray-900 transition-all duration-300"
-              >
-                {ctaContent ? ctaContent.button_text : 'Booking Konsultasi'}
-              </Link>
+        <div className="container-custom relative z-10 w-full flex justify-center">
+          {loading ? (
+            <div className="animate-pulse space-y-6 w-full max-w-4xl flex flex-col items-center">
+              <div className="h-10 bg-gray-800 rounded-lg w-3/4"></div>
+              <div className="h-6 bg-gray-800 rounded w-1/2"></div>
+              <div className="h-14 bg-gray-800 rounded-lg w-48 mt-4"></div>
             </div>
-          </div>
+          ) : (
+            <div className="text-center max-w-4xl mx-auto" data-aos="fade-up">
+              <h2 className="  text-3xl lg:text-5xl font-bold mb-6">
+                {ctaContent ? ctaContent.title : ''}
+              </h2>
+              <p className="text-xl text-gray-300 mb-8">
+                {ctaContent ? ctaContent.description : ''}
+              </p>
+              <div
+                className="flex flex-col sm:flex-row gap-4 justify-center"
+                data-aos="fade-up"
+                data-aos-delay="300"
+              >
+                <Link
+                  to={ctaContent ? ctaContent.button_url : '/contact'}
+                  className="border-2 border-white text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-white hover:text-gray-900 transition-all duration-300"
+                >
+                  {ctaContent ? ctaContent.button_text : 'Booking Konsultasi'}
+                </Link>
+              </div>
+            </div>
+          )}
         </div>
       </section>
     </>
